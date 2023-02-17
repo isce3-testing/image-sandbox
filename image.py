@@ -2,6 +2,7 @@ import io
 from shlex import split
 from subprocess import run
 from sys import stdin
+from typing import Union
 
 
 class Image:
@@ -28,8 +29,6 @@ class Image:
             A name or ID by which to find this image using docker inspect.
         """
         self.docker_args = " -i"
-        if stdin.isatty():
-            self.docker_args += " --tty"
         self.bash_args = " -ci"
         self._id = get_image_id(name_or_id)
 
@@ -38,7 +37,7 @@ class Image:
         cls,
         context: str,
         tag: str,
-        output_file=None,
+        output_file: Union[io.TextIOBase, None] = None,
         dockerfile_loc: str = ""
     ):
         """Build a Dockerfile at the given path with the given name, then
@@ -97,7 +96,7 @@ class Image:
             context: str,
             tag: str,
             dockerfile_string: str,
-            output_file=None):
+            output_file: Union[io.TextIOBase, None] = None):
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
 
@@ -177,7 +176,7 @@ class Image:
     def run(
             self,
             cmd: str,
-            output_file=None,
+            output_file: Union[io.TextIOBase, None] = None,
             interactive: bool = True):
         """Run the given command on a container spun up on this image.
 
@@ -205,7 +204,11 @@ class Image:
             Raised if the docker run command fails. Holds the value returned by
             the docker run command in its returncode attribute.
         """
-        docker_args = self.docker_args if interactive else ""
+        docker_args = ""
+        if interactive:
+            docker_args = self.docker_args
+            if stdin.isatty():
+                docker_args += " --tty"
         bash_args = self.bash_args if interactive else ""
         command = f"docker run {docker_args} --network=host --rm" + \
             f"{self._id} bash{bash_args} '{cmd}'"
