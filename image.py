@@ -63,7 +63,7 @@ class Image:
         -------
         Image
             An Image class instance that references a Docker image built from
-            the Dockerfile at context/dockerfile_location
+            the Dockerfile at context/dockerfile_loc
 
         Raises
         -------
@@ -77,7 +77,7 @@ class Image:
         else:
             dockerfile_arg = ""
 
-        command = "docker build --network=host" + \
+        command = "docker build --network=host " + \
             f"{context}{dockerfile_arg} -t {tag}"
         process = run(
             split(command),
@@ -92,11 +92,12 @@ class Image:
 
     @classmethod
     def build_from_string(
-            cls,
-            context: str,
-            tag: str,
-            dockerfile_string: str,
-            output_file: Union[io.TextIOBase, None] = None):
+        cls,
+        context: str,
+        tag: str,
+        dockerfile_string: str,
+        output_file: Union[io.TextIOBase, None] = None
+    ):
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
 
@@ -118,7 +119,7 @@ class Image:
         -------
         Image
             An Image class instance that references a Docker image built from
-            the Dockerfile-formatted string at context/dockerfile_location
+            the Dockerfile-formatted string at context/dockerfile_loc
 
         Raises
         -------
@@ -174,10 +175,11 @@ class Image:
         return output_text
 
     def run(
-            self,
-            cmd: str,
-            output_file: Union[io.TextIOBase, None] = None,
-            interactive: bool = True):
+        self,
+        cmd: str,
+        output_file: Union[io.TextIOBase, None] = None,
+        interactive: bool = True
+    ):
         """Run the given command on a container spun up on this image.
 
         Parameters
@@ -210,7 +212,7 @@ class Image:
             if stdin.isatty():
                 docker_args += " --tty"
         bash_args = self.bash_args if interactive else ""
-        command = f"docker run {docker_args} --network=host --rm" + \
+        command = f"docker run {docker_args} --network=host --rm " + \
             f"{self._id} bash{bash_args} '{cmd}'"
         process = run(
             split(command),

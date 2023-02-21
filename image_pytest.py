@@ -78,7 +78,7 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
     """Tests that the build_from_dockerfile method can from a dockerfile in a
     different location than the context root directory."""
     img = Image.build_from_dockerfile(
-        ".", "test", dockerfile_location="test/Dockerfile"
+        ".", "test", dockerfile_loc="test/Dockerfile"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -95,7 +95,7 @@ def test_build_from_dockerfile_context_in_different_location():
     """Tests that the build_from_dockerfile method can build when the context
     is set to a different directory."""
     img = Image.build_from_dockerfile(
-        "./test", "test", dockerfile_location="Dockerfile"
+        "./test", "test", dockerfile_loc="Dockerfile"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -116,7 +116,7 @@ def test_build_from_dockerfile_in_malformed_location():
         img = Image.build_from_dockerfile(
             ".",
             "test",
-            dockerfile_location="non_existant_directory/Dockerfile")
+            dockerfile_loc="non_existant_directory/Dockerfile")
     assert img is None
 
 
