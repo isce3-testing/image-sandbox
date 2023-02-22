@@ -275,7 +275,7 @@ def test_tags():
         text=True,
         check=True,
     )
-    tags = inspect_process.stdout.strip()
+    tags = inspect_process.stdout.strip('][\n').split(', ')
 
     img: Image = Image("test")
     assert img.tags == tags
@@ -361,7 +361,7 @@ def test_repr():
         text=True,
         check=True,
     )
-    tags = inspect_process.stdout.strip()
+    tags = inspect_process.stdout.strip('][\n').split(", ")
 
     img = Image(id)
     representation = repr(img)

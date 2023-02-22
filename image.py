@@ -275,16 +275,15 @@ class Image:
 
         Returns
         -------
-        str
-            A string containing the repo tags returned by a docker inspect
-            command on this image
+        list[str]
+            A list containing the set of tags associated with this docker Image
 
         Raises
         -------
         CalledProcessError
             See _inspect method
         """
-        return self._inspect(format="{{.RepoTags}}").strip()
+        return self._inspect(format="{{.RepoTags}}").strip('][\n').split(', ')
 
     @property
     def id(self):
