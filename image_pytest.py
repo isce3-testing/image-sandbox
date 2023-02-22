@@ -4,6 +4,7 @@ from subprocess import CalledProcessError, run
 
 import pytest
 
+from exceptions import CommandNotFoundOnImageError
 from image import Image, get_image_id
 
 
@@ -215,6 +216,18 @@ def test_run_interactive():
     run(split("docker image remove test"))
 
 
+def test_run_noninteractive():
+    """Tests that the run method correctly performs a simple action on a docker
+    container when called."""
+    run(split("docker build . -t test"))
+    img: Image = Image("test")
+
+    retval = img.run('echo "Hello, World!"', interactive=False)
+    assert retval == "Hello, World!\n"
+
+    run(split("docker image remove test"))
+
+
 def test_run_interactive_print_to_file():
     """Tests that the run method correctly performs a simple action on a docker
     container when called."""
@@ -283,6 +296,49 @@ def test_id():
 
     img = Image("test")
     assert img.id == id
+
+    run(split("docker image remove test"))
+
+
+def test_check_command_availability():
+    """Tests that a check_command_availability properly returns the set of
+    commands that exist on a given docker image and doesn't return commands
+    that don't exist on that image.
+    """
+    check_me = [
+        "apk", "apt-get", "yum", "curl", "wget", "python", "sh", "bash"
+    ]
+    check_me_2 = ["apt-get"]
+
+    run(split("docker build . -t test"))
+    img = Image("test")
+    retvals_1 = img.check_command_availability(check_me)
+    run(split("docker image remove test"))
+
+    run(split("docker build ./test/ -t test_2"))
+    img = Image("test_2")
+    retvals_2 = img.check_command_availability(check_me)
+    retvals_3 = img.check_command_availability(check_me_2)
+    run(split("docker image remove test_2"))
+
+    assert retvals_1 == ['apt-get', 'sh', 'bash']
+    assert retvals_2 == ['apk', 'wget', 'sh', 'bash']
+    assert not retvals_3
+
+
+def test_check_command_availability_no_bash_exception():
+    """Tests that a check_command_availability throws the
+    CommandNotFoundOnImageError when called on an image that doesn't have
+    bash installed.
+    """
+    check_me = [
+        "apk"
+    ]
+
+    run(split("docker build ./test_err -t test"))
+    img = Image("test")
+    with pytest.raises(CommandNotFoundOnImageError):
+        img.check_command_availability(check_me)
 
     run(split("docker image remove test"))
 

@@ -1,8 +1,10 @@
 import io
 from shlex import split
-from subprocess import run
+from subprocess import CalledProcessError, run
 from sys import stdin
 from typing import Union
+
+from exceptions import CommandNotFoundOnImageError
 
 
 class Image:
@@ -18,6 +20,9 @@ class Image:
     -   All docker build and run methods on the class can recive a file-like
         object, (io.TextIOBase or some subclass of it,) and they will write the
         outputs from docker into the file to enable logging.
+
+    NOTE: This class does not work correctly if the image built does not have
+        bash installed.
     """
 
     def __init__(self, name_or_id: str):
@@ -28,8 +33,6 @@ class Image:
         name_or_id : str
             A name or ID by which to find this image using docker inspect.
         """
-        self.docker_args = " -i"
-        self.bash_args = " -ci"
         self._id = get_image_id(name_or_id)
 
     @classmethod
@@ -208,23 +211,63 @@ class Image:
         """
         docker_args = ""
         if interactive:
-            docker_args = self.docker_args
+            docker_args += " -i"
             if stdin.isatty():
                 docker_args += " --tty"
-        bash_args = self.bash_args if interactive else ""
+        bash_args = " -ci" if interactive else " -c"
         command = f"docker run {docker_args} --network=host --rm " + \
             f"{self._id} bash{bash_args} '{cmd}'"
-        process = run(
-            split(command),
-            check=True,
-            capture_output=True,
-            text=True)
+        try:
+            process = run(
+                split(command),
+                check=True,
+                capture_output=True,
+                text=True)
+        except CalledProcessError as err:
+            if err.returncode == 127:
+                raise CommandNotFoundOnImageError(err, cmd.split()[0])
+            else:
+                raise err
         output_text = process.stdout
 
         if output_file is not None and isinstance(output_file, io.TextIOBase):
             output_file.write(output_text)
 
         return output_text
+
+    def check_command_availability(self, cmd_list: list) -> list:
+        """Determines which of the commands in a list are present on the image.
+
+        Parameters
+        ----------
+        cmd_list : list
+            A list of strings containing the names of commands to be
+            checked for.
+
+        Returns
+        -------
+        list[str]
+            The names of all commands in cmd_list that were present on the
+            image.
+        """
+        command = ""
+        found_commands = []
+        for command_name in cmd_list:
+            try:
+                command = self.run(f"command -v {command_name}")
+                if command_name in command and \
+                        command_name not in found_commands:
+                    found_commands.append(command_name)
+            except CalledProcessError as err:
+                # "command -v {cmd}" returns 0 if the command is found, else 1.
+                # Thus, the CalledProcessError exception can be ignored
+                # if err.returncode == 1.
+                # In other cases, the error still needs to be thrown.
+                if err.returncode == 1:
+                    pass
+                else:
+                    raise err
+        return found_commands
 
     @property
     def tags(self):
