@@ -4,29 +4,34 @@ from subprocess import CalledProcessError, run
 
 import pytest
 
-from exceptions import CommandNotFoundOnImageError
-from image import Image, get_image_id
+from docker_cli.exceptions import CommandNotFoundOnImageError
+from docker_cli.image import Image, get_image_id
 
 
-def test_init():
-    """Tests that the __init__ function on the Image class is correctly
-    receiving and remembering the ID of a docker image."""
-    run(split("docker build . -t test"))
+@pytest.fixture
+def test_image_id():
+    run(split("docker build ./ -t test"))
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         capture_output=True,
         text=True,
         check=True,
     )
-    id = inspect_process.stdout.strip()
+    return inspect_process.stdout.strip()
 
+
+def test_init(test_image_id):
+    """Tests that the __init__ function on the Image class is correctly
+    receiving and remembering the ID of a docker image."""
+    id = test_image_id
+    print("ID: " + id)
     img = Image("test")
 
     assert img is not None
-    assert img._id == id
+    assert img.id == id
 
     img_2 = Image(id)
-    assert img_2._id == id
+    assert img_2.id == id
 
     run(split("docker image remove test"))
 
@@ -51,8 +56,7 @@ def test_build_from_dockerfile():
     id = inspect_process.stdout.strip()
 
     assert img is not None
-    assert img._id == id
-
+    assert img.id == id
     run(split("docker image remove test"))
 
 
@@ -69,9 +73,10 @@ def test_build_from_dockerfile_output_to_file():
     file.close()
 
     assert img is not None
-    assert img._id == id
+    assert img.id == id
     assert os.stat("testfile.txt").st_size > 0
 
+    os.remove("testfile.txt")
     run(split("docker image remove test"))
 
 
@@ -79,7 +84,7 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
     """Tests that the build_from_dockerfile method can from a dockerfile in a
     different location than the context root directory."""
     img = Image.build_from_dockerfile(
-        ".", "test", dockerfile_loc="test/Dockerfile"
+        ".", "test", dockerfile_loc="dockerfiles/alpine_functional"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -88,7 +93,7 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
     id = inspect_process.stdout.strip()
 
     assert img is not None
-    assert img._id == id
+    assert img.id == id
     run(split("docker image remove test"))
 
 
@@ -96,7 +101,9 @@ def test_build_from_dockerfile_context_in_different_location():
     """Tests that the build_from_dockerfile method can build when the context
     is set to a different directory."""
     img = Image.build_from_dockerfile(
-        "./test", "test", dockerfile_loc="Dockerfile"
+        "./dockerfiles",
+        "test",
+        dockerfile_loc="./dockerfiles/alpine_functional"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -105,7 +112,7 @@ def test_build_from_dockerfile_context_in_different_location():
     id = inspect_process.stdout.strip()
 
     assert img is not None
-    assert img._id == id
+    assert img.id == id
     run(split("docker image remove test"))
 
 
@@ -136,7 +143,7 @@ def test_build_from_string():
     id = inspect_process.stdout.strip()
 
     assert img is not None
-    assert img._id == id
+    assert img.id == id
     run(split("docker image remove test"))
 
 
@@ -157,7 +164,7 @@ def test_build_from_string_output_to_file():
     file.close()
 
     assert img is not None
-    assert img._id == id
+    assert img.id == id
     assert os.stat("testfile.txt").st_size > 0
 
     run(split("docker image remove test"))
@@ -173,42 +180,10 @@ def test_build_from_malformed_string():
     assert img is None
 
 
-def test_inspect():
-    """Tests that the _inspect method correctly retrieves data from the docker
-    image."""
-    run(split("docker build . -t test"))
-    inspect_process = run(
-        split("docker inspect -f='{{.RepoTags}}' test"),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    tags = inspect_process.stdout.strip()
-
-    img: Image = Image("test")
-    img_tags = img._inspect(format="{{.RepoTags}}").strip()
-    assert img_tags == tags
-
-    run(split("docker image remove test"))
-
-
-def test_inspect_malformed():
-    """Tests that the _inspect method correctly raises a CalledProcessError
-    when a malformed string is passed to it"""
-    run(split("docker build . -t test"))
-
-    img: Image = Image("test")
-    with pytest.raises(CalledProcessError):
-        img._inspect(format="{{.MalformedInspect}}").strip()
-
-    run(split("docker image remove test"))
-
-
-def test_run_interactive():
+def test_run_interactive(test_image_id):
     """Tests that the run method correctly performs a simple action on a docker
     container when called."""
-    run(split("docker build . -t test"))
-    img: Image = Image("test")
+    img: Image = Image(test_image_id)
 
     retval = img.run('echo "Hello, World!"', interactive=True)
     assert retval == "Hello, World!\n"
@@ -216,11 +191,10 @@ def test_run_interactive():
     run(split("docker image remove test"))
 
 
-def test_run_noninteractive():
+def test_run_noninteractive(test_image_id):
     """Tests that the run method correctly performs a simple action on a docker
     container when called."""
-    run(split("docker build . -t test"))
-    img: Image = Image("test")
+    img: Image = Image(test_image_id)
 
     retval = img.run('echo "Hello, World!"', interactive=False)
     assert retval == "Hello, World!\n"
@@ -228,11 +202,10 @@ def test_run_noninteractive():
     run(split("docker image remove test"))
 
 
-def test_run_interactive_print_to_file():
+def test_run_interactive_print_to_file(test_image_id):
     """Tests that the run method correctly performs a simple action on a docker
     container when called."""
-    run(split("docker build . -t test"))
-    img: Image = Image("test")
+    img: Image = Image(test_image_id)
 
     file = open("testfile.txt", "w")
 
@@ -253,11 +226,10 @@ def test_run_interactive_print_to_file():
     run(split("docker image remove test"))
 
 
-def test_run_interactive_malformed_command_exception():
+def test_run_interactive_malformed_command_exception(test_image_id):
     """Tests that the run method correctly raises a CalledProcessError when
     given a malformed command."""
-    run(split("docker build . -t test"))
-    img: Image = Image("test")
+    img: Image = Image(test_image_id)
 
     with pytest.raises(CalledProcessError):
         img.run("malformedcommand", interactive=True)
@@ -265,10 +237,11 @@ def test_run_interactive_malformed_command_exception():
     run(split("docker image remove test"))
 
 
-def test_tags():
+def test_tags(test_image_id):
     """Tests that an Image.tag call returns the same .RepoTags value as a
     typical docker inspect call."""
-    run(split("docker build . -t test"))
+    img: Image = Image(test_image_id)
+
     inspect_process = run(
         split("docker inspect -f='{{.RepoTags}}' test"),
         capture_output=True,
@@ -277,15 +250,15 @@ def test_tags():
     )
     tags = inspect_process.stdout.strip('][\n').split(', ')
 
-    img: Image = Image("test")
     assert img.tags == tags
     run(split("docker image remove test"))
 
 
-def test_id():
+def test_id(test_image_id):
     """Tests that an Image.id call correctly returns the same ID value as given
     by a docker inspect call."""
-    run(split("docker build . -t test"))
+    img = Image(test_image_id)
+
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         capture_output=True,
@@ -294,13 +267,12 @@ def test_id():
     )
     id = inspect_process.stdout.strip()
 
-    img = Image("test")
     assert img.id == id
 
     run(split("docker image remove test"))
 
 
-def test_check_command_availability():
+def test_check_command_availability(test_image_id):
     """Tests that a check_command_availability properly returns the set of
     commands that exist on a given docker image and doesn't return commands
     that don't exist on that image.
@@ -310,12 +282,14 @@ def test_check_command_availability():
     ]
     check_me_2 = ["apt-get"]
 
-    run(split("docker build . -t test"))
-    img = Image("test")
+    img = Image(test_image_id)
     retvals_1 = img.check_command_availability(check_me)
     run(split("docker image remove test"))
 
-    run(split("docker build ./test/ -t test_2"))
+    run(split(
+        "docker build . --file=./dockerfiles/alpine_functional " +
+        "-t test_2")
+        )
     img = Image("test_2")
     retvals_2 = img.check_command_availability(check_me)
     retvals_3 = img.check_command_availability(check_me_2)
@@ -335,7 +309,10 @@ def test_check_command_availability_no_bash_exception():
         "apk"
     ]
 
-    run(split("docker build ./test_err -t test"))
+    run(split(
+        "docker build ./ --file=./dockerfiles/alpine_broken " +
+        "-t test")
+        )
     img = Image("test")
     with pytest.raises(CommandNotFoundOnImageError):
         img.check_command_availability(check_me)
@@ -343,17 +320,10 @@ def test_check_command_availability_no_bash_exception():
     run(split("docker image remove test"))
 
 
-def test_repr():
+def test_repr(test_image_id):
     """Tests that the __repr__() method of the Image class correctly produces
     representation strings"""
-    run(split("docker build . -t test"))
-    inspect_process = run(
-        split("docker inspect -f='{{.Id}}' test"),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    id = inspect_process.stdout.strip()
+    id = test_image_id
 
     inspect_process = run(
         split("docker inspect -f='{{.RepoTags}}' test"),
@@ -370,49 +340,40 @@ def test_repr():
     run(split("docker image remove test"))
 
 
-def test_eq():
+def test_eq(test_image_id):
     """Tests that the __eq__() method of the Image class correctly compares
     Images with other Images and strings"""
-    img = Image.build_from_dockerfile(".", "test")
-    inspect_process = run(
-        split("docker inspect -f='{{.Id}}' test"),
-        text=True,
-        capture_output=True)
-    id = inspect_process.stdout.strip()
+    img = Image(test_image_id)
 
-    img_2 = Image(id)
+    img_2 = Image("test")
 
     assert img == img_2
 
     run(split("docker image remove test"))
 
 
-def test_neq():
+def test_neq(test_image_id):
     """Tests that the internal __ne__() method of the Image class correctly
     compares Images with other nonequal Images and strings"""
-    img = Image.build_from_dockerfile(".", "a")
+    img = Image(test_image_id)
 
-    img_2 = Image.build_from_dockerfile("./test", "b")
+    img_2 = Image.build_from_dockerfile(
+        ".",
+        "b",
+        dockerfile_loc="./dockerfiles/alpine_functional")
 
     assert img != "String"
     assert img != 0
     assert img != img_2
 
-    run(split("docker image remove a"))
+    run(split("docker image remove test"))
     run(split("docker image remove b"))
 
 
-def test_get_image_id():
+def test_get_image_id(test_image_id):
     """Tests that the get_image_id method returns the correct ID when given a
     properly-formed ID or docker image name."""
-    run(split("docker build . -t test"))
-    inspect_process = run(
-        split("docker inspect -f='{{.Id}}' test"),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    id = inspect_process.stdout.strip()
+    id = test_image_id
 
     id_test = get_image_id("test")
     assert id_test == id

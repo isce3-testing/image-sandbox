@@ -1,5 +1,3 @@
-FROM alpine:3.14
-
-RUN apk add bash
+FROM ubuntu
 
 RUN echo "Hello, World!"

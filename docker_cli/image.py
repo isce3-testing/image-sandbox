@@ -4,7 +4,7 @@ from subprocess import CalledProcessError, run
 from sys import stdin
 from typing import Union
 
-from exceptions import CommandNotFoundOnImageError
+from .exceptions import CommandNotFoundOnImageError
 
 
 class Image:
