@@ -1,8 +1,11 @@
 import io
+import os
 from shlex import split
 from subprocess import CalledProcessError, run
 from sys import stdin
-from typing import Union
+from typing import Any, List, Optional, Sequence
+
+from typing_extensions import Self
 
 from .exceptions import CommandNotFoundOnImageError
 
@@ -38,11 +41,13 @@ class Image:
     @classmethod
     def build_from_dockerfile(
         cls,
-        context: str,
+        context: os.PathLike[str],
         tag: str,
-        output_file: Union[io.TextIOBase, None] = None,
-        dockerfile_loc: str = ""
-    ):
+        *,
+        output_file: Optional[io.TextIOBase] = None,
+        dockerfile: Optional[os.PathLike[str]] = None,
+        network: str = "host"
+    ) -> Self:
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
 
@@ -52,21 +57,24 @@ class Image:
             The path to the file containing the Dockerfile
         tag : str
             A name for the image
-        output_file : io.TextIOBase or None
+        output_file : io.TextIOBase, optional
             A file-like object that the sterr output of the docker build
             program will be written to. If None, the method will not output to
             a file. Defaults to None.
-        dockerfile_loc : str
+        dockerfile : os.PathLike, optional
             The location of the Dockerfile to build, relative to the position
             held at the context argument described above. If empty, the command
             is called assuming that the dockerfile is held at the context root
-            folder. Defaults to "".
+            folder. Defaults to None.
+        network : str
+            The name of the network associated with the docker image to be
+            built. Defaults to "host"
 
         Returns
         -------
         Image
             An Image class instance that references a Docker image built from
-            the Dockerfile at context/dockerfile_loc
+            the Dockerfile at context/dockerfile
 
         Raises
         -------
@@ -74,33 +82,32 @@ class Image:
             Raised if the docker build command fails. Holds the value returned
             by the docker build command in its returncode attribute, if not 0.
         """
-
-        if dockerfile_loc:
-            dockerfile_arg = f" --file='{dockerfile_loc}'"
-        else:
-            dockerfile_arg = ""
-
-        command = "docker build --network=host " + \
-            f"{context}{dockerfile_arg} -t {tag}"
-        process = run(
-            split(command),
+        context_str = os.fspath(context)
+        cmd = ["docker", "build", f"--network={network}", context_str]
+        cmd.extend(["-t", tag])
+        if dockerfile:
+            cmd += [f"--file={os.fspath(dockerfile)}"]
+        build_result = run(
+            cmd,
             check=True,
             text=True,
             capture_output=True)
 
         if output_file is not None and isinstance(output_file, io.TextIOBase):
-            output_file.write(process.stderr)
+            output_file.write(build_result.stderr)
 
         return cls(tag)
 
     @classmethod
     def build_from_string(
         cls,
-        context: str,
-        tag: str,
+        context: os.PathLike[str],
         dockerfile_string: str,
-        output_file: Union[io.TextIOBase, None] = None
-    ):
+        tag: str,
+        *,
+        output_file: Optional[io.TextIOBase] = None,
+        network: str = "host"
+    ) -> Self:
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
 
@@ -108,15 +115,18 @@ class Image:
         ----------
         context : str
             The path to the file containing the Dockerfile
-        tag : str
-            A name for the image
         dockerfile_string : str
             A Dockerfile-formatted string containing the information necessary
             to build the desired image.
-        output_file : io.TextIOBase or None
+        tag : str
+            A name for the image
+        output_file : io.TextIOBase, optional
             A file-like object that the sterr output of the docker build
             program will be written to. If None, the method will not output to
             a file. Defaults to None.
+        network : str
+            The name of the network associated with the docker image to be
+            built. Defaults to "host"
 
         Returns
         -------
@@ -130,20 +140,23 @@ class Image:
             Raised if the docker build command fails. Holds the value returned
             by the docker build command in its returncode attribute, if not 0.
         """
-        command = f"docker build --network=host -f- -t {tag} {context}"
-        process = run(
-            split(command),
+        context_str = os.fspath(context)
+        cmd = ["docker", "build", f"--network={network}", "-f-"]
+        cmd.extend(["-t", tag])
+        cmd += [context_str]
+        build_result = run(
+            cmd,
             input=dockerfile_string,
             text=True,
             capture_output=True,
             check=True)
 
         if output_file is not None and isinstance(output_file, io.TextIOBase):
-            output_file.write(process.stderr)
+            output_file.write(build_result.stderr)
 
         return cls(tag)
 
-    def _inspect(self, format: str = ""):
+    def _inspect(self, format: Optional[str] = None) -> str:
         """Private method. Use 'docker inspect' to retrieve a piece of
         information about the Docker image referenced by this instance.
 
@@ -166,11 +179,12 @@ class Image:
             returned by the docker inspect command in its returncode attribute,
             if not 0.
         """
-        format_block = f" -f={format}" if format else ""
-        command = f"docker inspect{format_block} {self._id}"
-
+        cmd = ["docker", "inspect"]
+        if format:
+            cmd += [f"-f={format}"]
+        cmd += [self._id]
         process = run(
-            split(command),
+            cmd,
             capture_output=True,
             text=True,
             check=True)
@@ -179,10 +193,12 @@ class Image:
 
     def run(
         self,
-        cmd: str,
-        output_file: Union[io.TextIOBase, None] = None,
-        interactive: bool = True
-    ):
+        command: str,
+        *,
+        output_file: Optional[io.TextIOBase] = None,
+        interactive: bool = True,
+        network: str = "host"
+    ) -> str:
         """Run the given command on a container spun up on this image.
 
         Parameters
@@ -197,6 +213,9 @@ class Image:
             A boolean describing whether or not to run this command in
             interactive mode or not. True for interactive, False for
             non-interactive. Defaults to True.
+        network : str
+            The name of the network associated with the docker command to be
+            run. Defaults to "host"
 
         Returns
         -------
@@ -209,23 +228,23 @@ class Image:
             Raised if the docker run command fails. Holds the value returned by
             the docker run command in its returncode attribute.
         """
-        docker_args = ""
+        cmd = ["docker", "run", f"--network={network}", "--rm"]
         if interactive:
-            docker_args += " -i"
+            cmd += ["-i"]
             if stdin.isatty():
-                docker_args += " --tty"
-        bash_args = " -ci" if interactive else " -c"
-        command = f"docker run {docker_args} --network=host --rm " + \
-            f"{self._id} bash{bash_args} '{cmd}'"
+                cmd += ["--tty"]
+        cmd += [self._id, "bash"]
+        cmd += ["-ci"] if interactive else ["-c"]
+        cmd += split(f"'{command}'")
         try:
             process = run(
-                split(command),
+                cmd,
                 check=True,
                 capture_output=True,
                 text=True)
         except CalledProcessError as err:
             if err.returncode == 127:
-                raise CommandNotFoundOnImageError(err, cmd.split()[0])
+                raise CommandNotFoundOnImageError(err, command.split()[0])
             else:
                 raise err
         output_text = process.stdout
@@ -235,29 +254,28 @@ class Image:
 
         return output_text
 
-    def check_command_availability(self, cmd_list: list) -> list:
+    def check_command_availability(self, commands: Sequence[str]) -> List[str]:
         """Determines which of the commands in a list are present on the image.
 
         Parameters
         ----------
-        cmd_list : list
-            A list of strings containing the names of commands to be
+        commands : Sequence[str]
+            A sequence of strings containing the names of commands to be
             checked for.
 
         Returns
         -------
-        list[str]
+        List[str]
             The names of all commands in cmd_list that were present on the
             image.
         """
-        command = ""
         found_commands = []
-        for command_name in cmd_list:
+        for command_name in commands:
             try:
                 command = self.run(f"command -v {command_name}")
                 if command_name in command and \
                         command_name not in found_commands:
-                    found_commands.append(command_name)
+                    found_commands += [command_name]
             except CalledProcessError as err:
                 # "command -v {cmd}" returns 0 if the command is found, else 1.
                 # Thus, the CalledProcessError exception can be ignored
@@ -270,12 +288,12 @@ class Image:
         return found_commands
 
     @property
-    def tags(self):
+    def tags(self) -> List[str]:
         """Returns the Repo Tags held on this docker image
 
         Returns
         -------
-        list[str]
+        List[str]
             A list containing the set of tags associated with this docker Image
 
         Raises
@@ -286,7 +304,7 @@ class Image:
         return self._inspect(format="{{.RepoTags}}").strip('][\n').split(', ')
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Returns this image's ID
 
         Returns
@@ -296,7 +314,7 @@ class Image:
         """
         return self._id
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Returns a string representation of the Image formatted as
         "Image(id=_id, tags=tags)".
 
@@ -307,7 +325,7 @@ class Image:
         """
         return f"Image(id={self._id}, tags={self.tags})"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Evaluates equality of an Image with another object.
         Two Images are the same if and only if their ID's are the same.
         Any other object will evaluate as False.
@@ -329,7 +347,7 @@ class Image:
         return self._id == other._id
 
 
-def get_image_id(name_or_id: str):
+def get_image_id(name_or_id: str) -> str:
     """Acquires the ID of a docker image with the given name or ID and returns
     it as a string
 

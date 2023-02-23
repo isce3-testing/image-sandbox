@@ -48,7 +48,7 @@ def test_init_CalledProcessError():
 def test_build_from_dockerfile():
     """Tests that the build_from_dockerfile method correctly constructs a
     docker image and returns a properly-formatted Image instance."""
-    img = Image.build_from_dockerfile(".", "test")
+    img = Image.build_from_dockerfile(".", tag="test")
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -64,7 +64,7 @@ def test_build_from_dockerfile_output_to_file():
     """Tests that the build_from_dockerfile method correctly constructs a
     docker image and returns a properly-formatted Image instance."""
     file = open("testfile.txt", "w")
-    img = Image.build_from_dockerfile(".", "test", output_file=file)
+    img = Image.build_from_dockerfile(".", tag="test", output_file=file)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -84,7 +84,7 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
     """Tests that the build_from_dockerfile method can from a dockerfile in a
     different location than the context root directory."""
     img = Image.build_from_dockerfile(
-        ".", "test", dockerfile_loc="dockerfiles/alpine_functional"
+        ".", tag="test", dockerfile="dockerfiles/alpine_functional"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -102,8 +102,8 @@ def test_build_from_dockerfile_context_in_different_location():
     is set to a different directory."""
     img = Image.build_from_dockerfile(
         "./dockerfiles",
-        "test",
-        dockerfile_loc="./dockerfiles/alpine_functional"
+        tag="test",
+        dockerfile="./dockerfiles/alpine_functional"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -123,8 +123,8 @@ def test_build_from_dockerfile_in_malformed_location():
     with pytest.raises(CalledProcessError):
         img = Image.build_from_dockerfile(
             ".",
-            "test",
-            dockerfile_loc="non_existant_directory/Dockerfile")
+            tag="test",
+            dockerfile="non_existant_directory/Dockerfile")
     assert img is None
 
 
@@ -135,7 +135,7 @@ def test_build_from_string():
         split("cat Dockerfile"),
         capture_output=True,
         text=True).stdout
-    img: Image = Image.build_from_string(".", "test", stdout)
+    img: Image = Image.build_from_string(".", stdout, tag="test")
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -155,7 +155,11 @@ def test_build_from_string_output_to_file():
         split("cat Dockerfile"),
         capture_output=True,
         text=True).stdout
-    img: Image = Image.build_from_string(".", "test", stdout, output_file=file)
+    img: Image = Image.build_from_string(
+        ".",
+        stdout,
+        tag="test",
+        output_file=file)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -176,7 +180,7 @@ def test_build_from_malformed_string():
     malformed_string: str = "qwerty"
     img = None
     with pytest.raises(CalledProcessError):
-        Image.build_from_string(".", "test", malformed_string)
+        Image.build_from_string(".", malformed_string, tag="test")
     assert img is None
 
 
@@ -359,8 +363,9 @@ def test_neq(test_image_id):
 
     img_2 = Image.build_from_dockerfile(
         ".",
-        "b",
-        dockerfile_loc="./dockerfiles/alpine_functional")
+        tag="b",
+        dockerfile="./dockerfiles/alpine_functional"
+    )
 
     assert img != "String"
     assert img != 0
