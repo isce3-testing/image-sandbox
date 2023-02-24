@@ -189,8 +189,11 @@ def test_run_interactive(test_image_id):
     container when called."""
     img: Image = Image(test_image_id)
 
-    retval = img.run('echo "Hello, World!"', interactive=True)
-    assert retval == "Hello, World!\n"
+    retval = img.run(
+        'echo "Hello, World!"',
+        interactive=True
+    )
+    assert "Hello, World!\n" in retval
 
     run(split("docker image remove test"))
 
@@ -200,8 +203,11 @@ def test_run_noninteractive(test_image_id):
     container when called."""
     img: Image = Image(test_image_id)
 
-    retval = img.run('echo "Hello, World!"', interactive=False)
-    assert retval == "Hello, World!\n"
+    retval = img.run(
+        'echo "Hello, World!"',
+        interactive=False
+    )
+    assert "Hello, World!\n" in retval
 
     run(split("docker image remove test"))
 
@@ -216,8 +222,9 @@ def test_run_interactive_print_to_file(test_image_id):
     retval = img.run(
         'echo "Hello, World!"',
         interactive=True,
-        output_file=file)
-    assert retval == "Hello, World!\n"
+        output_file=file
+    )
+    assert "Hello, World!\n" in retval
 
     file.close()
     file = open("testfile.txt", "r")
