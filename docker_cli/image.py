@@ -315,6 +315,10 @@ class Image:
         CalledProcessError
             Raised if the docker run command fails. Holds the value returned by
             the docker run command in its returncode attribute.
+        CommandNotFoundOnImageError:
+            A subclass of CalledProcessError. Is thrown when this method
+            attempts to run a command on a docker image and that command
+            does not exist within the image.
         """
         cmd = ["docker", "run", f"--network={network}", "--rm"]
         if interactive:
