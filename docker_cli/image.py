@@ -268,7 +268,6 @@ class Image:
         cmd += split(f"'{command}'")
 
         if stdout is not None:
-            print(type(stdout))
             run_stdout = stdout
         else:
             run_stdout = PIPE
