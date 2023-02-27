@@ -1,6 +1,6 @@
 import os
 from shlex import split
-from subprocess import CalledProcessError, run
+from subprocess import DEVNULL, PIPE, CalledProcessError, run
 
 import pytest
 
@@ -46,9 +46,10 @@ def test_init_CalledProcessError():
 
 
 def test_build_from_dockerfile():
-    """Tests that the build_from_dockerfile method correctly constructs a
-    docker image and returns a properly-formatted Image instance."""
-    img = Image.build_from_dockerfile(".", tag="test")
+    """Tests that the build method correctly constructs a
+    docker image and returns a properly-formatted Image instance when using
+    a dockerfile as its basis."""
+    img = Image.build(".", tag="test", dockerfile="./Dockerfile")
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -61,10 +62,16 @@ def test_build_from_dockerfile():
 
 
 def test_build_from_dockerfile_output_to_file():
-    """Tests that the build_from_dockerfile method correctly constructs a
-    docker image and returns a properly-formatted Image instance."""
+    """Tests that the build method correctly constructs a docker image and
+    returns a properly-formatted Image instance when using a dockerfile as
+    its basis."""
     file = open("testfile.txt", "w")
-    img = Image.build_from_dockerfile(".", tag="test", output_file=file)
+    img = Image.build(
+        ".",
+        tag="test",
+        dockerfile="./Dockerfile",
+        output_file=file
+    )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -81,9 +88,9 @@ def test_build_from_dockerfile_output_to_file():
 
 
 def test_build_from_dockerfile_dockerfile_in_different_location():
-    """Tests that the build_from_dockerfile method can from a dockerfile in a
+    """Tests that the build method can build an image from a dockerfile in a
     different location than the context root directory."""
-    img = Image.build_from_dockerfile(
+    img = Image.build(
         ".", tag="test", dockerfile="dockerfiles/alpine_functional"
     )
     inspect_process = run(
@@ -98,9 +105,10 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
 
 
 def test_build_from_dockerfile_context_in_different_location():
-    """Tests that the build_from_dockerfile method can build when the context
-    is set to a different directory."""
-    img = Image.build_from_dockerfile(
+    """Tests that the build method can build when the context
+    is set to a different directory and a dockerfile is used as its
+    basis."""
+    img = Image.build(
         "./dockerfiles",
         tag="test",
         dockerfile="./dockerfiles/alpine_functional"
@@ -117,11 +125,11 @@ def test_build_from_dockerfile_context_in_different_location():
 
 
 def test_build_from_dockerfile_in_malformed_location():
-    """Tests that the build_from_dockerfile method correctly raises a
-    CalledProcessError when a malformed location is passed in."""
+    """Tests that the build method correctly raises a CalledProcessError when a
+    malformed dockerfile location is passed in."""
     img = None
     with pytest.raises(CalledProcessError):
-        img = Image.build_from_dockerfile(
+        img = Image.build(
             ".",
             tag="test",
             dockerfile="non_existant_directory/Dockerfile")
@@ -129,13 +137,16 @@ def test_build_from_dockerfile_in_malformed_location():
 
 
 def test_build_from_string():
-    """Tests that the build_from_string method correctly builds and returns an
+    """Tests that the build method correctly builds and returns an
     Image when given a dockerfile-formatted string."""
     stdout: str = run(
         split("cat Dockerfile"),
         capture_output=True,
         text=True).stdout
-    img: Image = Image.build_from_string(".", stdout, tag="test")
+    img: Image = Image.build(
+        ".",
+        tag="test",
+        dockerfile_string=stdout)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -148,17 +159,18 @@ def test_build_from_string():
 
 
 def test_build_from_string_output_to_file():
-    """Tests that the build_from_dockerfile method correctly constructs a
-    docker image and returns a properly-formatted Image instance."""
+    """Tests that the build method correctly constructs a docker image from a
+    dockerfile-formatted string and returns a properly-formatted Image
+    instance."""
     file = open("testfile.txt", "w")
     stdout: str = run(
         split("cat Dockerfile"),
         capture_output=True,
         text=True).stdout
-    img: Image = Image.build_from_string(
+    img: Image = Image.build(
         ".",
-        stdout,
         tag="test",
+        dockerfile_string=stdout,
         output_file=file)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -175,12 +187,12 @@ def test_build_from_string_output_to_file():
 
 
 def test_build_from_malformed_string():
-    """Tests that the build_from_string method correctly raises a
-    CalledProcessError when a malformed string is passed to it."""
+    """Tests that the build method correctly raises a CalledProcessError when a
+    malformed dockerfile string is passed to it."""
     malformed_string: str = "qwerty"
     img = None
     with pytest.raises(CalledProcessError):
-        Image.build_from_string(".", malformed_string, tag="test")
+        Image.build(".", tag="test", dockerfile_string=malformed_string)
     assert img is None
 
 
@@ -212,6 +224,22 @@ def test_run_noninteractive(test_image_id):
     run(split("docker image remove test"))
 
 
+def test_run_noninteractive_output_redirect(test_image_id):
+    """Tests that the run method returns only the value of stdout when the
+    value of stderr is written to None."""
+    img: Image = Image(test_image_id)
+
+    retval = img.run(
+        'echo "Hello, World!"',
+        interactive=True,
+        stdout=PIPE,
+        stderr=DEVNULL
+    )
+    assert retval == "Hello, World!\n"
+
+    run(split("docker image remove test"))
+
+
 def test_run_interactive_print_to_file(test_image_id):
     """Tests that the run method correctly performs a simple action on a docker
     container when called."""
@@ -219,18 +247,18 @@ def test_run_interactive_print_to_file(test_image_id):
 
     file = open("testfile.txt", "w")
 
-    retval = img.run(
+    img.run(
         'echo "Hello, World!"',
         interactive=True,
-        output_file=file
+        stdout=file,
+        stderr=file
     )
-    assert "Hello, World!\n" in retval
 
     file.close()
     file = open("testfile.txt", "r")
     file_txt = file.read()
 
-    assert file_txt == retval
+    assert "Hello, World!\n" in file_txt
 
     file.close()
 
@@ -368,7 +396,7 @@ def test_neq(test_image_id):
     compares Images with other nonequal Images and strings"""
     img = Image(test_image_id)
 
-    img_2 = Image.build_from_dockerfile(
+    img_2 = Image.build(
         ".",
         tag="b",
         dockerfile="./dockerfiles/alpine_functional"

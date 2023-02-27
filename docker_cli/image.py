@@ -1,9 +1,10 @@
 import io
 import os
 from shlex import split
-from subprocess import PIPE, STDOUT, CalledProcessError, Popen, run
+from subprocess import PIPE, STDOUT, CalledProcessError, run
 from sys import stdin
-from typing import Any, List, Optional, Sequence, Type, TypeVar
+from typing import (Any, List, Optional, Sequence, Type, TypeVar, Union,
+                    overload)
 
 from .exceptions import CommandNotFoundOnImageError
 
@@ -37,17 +38,17 @@ class Image:
         """
         self._id = get_image_id(name_or_id)
 
+    @overload
     @classmethod
-    def build_from_dockerfile(
+    def build(
         cls: Type[Self],
         context: os.PathLike[str],
         tag: str,
         *,
-        output_file: Optional[io.TextIOBase] = None,
-        dockerfile: Optional[os.PathLike[str]] = None,
-        network: str = "host",
-        print_output: bool = False
-    ) -> Self:
+        dockerfile: os.PathLike[str],
+        output_file: Optional[io.TextIOBase],
+        network: str
+    ):
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
 
@@ -57,21 +58,16 @@ class Image:
             The path to the file containing the Dockerfile
         tag : str
             A name for the image
+        dockerfile : os.PathLike, optional
+            The location of the Dockerfile to build, relative to the position
+            held at the context argument described above.
         output_file : io.TextIOBase, optional
             A file-like object that the stderr output of the docker build
             program will be written to. If None, the method will not output to
             a file. Defaults to None.
-        dockerfile : os.PathLike, optional
-            The location of the Dockerfile to build, relative to the position
-            held at the context argument described above. If empty, the command
-            is called assuming that the dockerfile is held at the context root
-            folder. Defaults to None.
         network : str
             The name of the network associated with the docker image to be
             built. Defaults to "host"
-        print_output : bool
-            A boolean indicating whether or not the output of the command
-            should be printed to stdout.
 
         Returns
         -------
@@ -85,31 +81,19 @@ class Image:
             Raised if the docker build command fails. Holds the value returned
             by the docker build command in its returncode attribute, if not 0.
         """
-        context_str = os.fspath(context)
-        cmd = ["docker", "build", f"--network={network}", context_str]
-        cmd.extend(["-t", tag])
-        if dockerfile:
-            cmd += [f"--file={os.fspath(dockerfile)}"]
+        ...
 
-        Image._run_process(
-            cmd,
-            print_output=print_output,
-            output_file=output_file
-        )
-
-        return cls(tag)
-
+    @overload
     @classmethod
-    def build_from_string(
+    def build(
         cls: Type[Self],
         context: os.PathLike[str],
-        dockerfile_string: str,
         tag: str,
         *,
-        output_file: Optional[io.TextIOBase] = None,
-        network: str = "host",
-        print_output: bool = False
-    ) -> Self:
+        dockerfile_string: str,
+        output_file: Optional[io.TextIOBase],
+        network: str
+    ):
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
 
@@ -117,11 +101,11 @@ class Image:
         ----------
         context : str
             The path to the file containing the Dockerfile
+        tag : str
+            A name for the image
         dockerfile_string : str
             A Dockerfile-formatted string containing the information necessary
             to build the desired image.
-        tag : str
-            A name for the image
         output_file : io.TextIOBase, optional
             A file-like object that the stderr output of the docker build
             program will be written to. If None, the method will not output to
@@ -129,9 +113,6 @@ class Image:
         network : str
             The name of the network associated with the docker image to be
             built. Defaults to "host"
-        print_output : bool
-            A boolean indicating whether or not the output of the command
-            should be printed to stdout.
 
         Returns
         -------
@@ -145,100 +126,52 @@ class Image:
             Raised if the docker build command fails. Holds the value returned
             by the docker build command in its returncode attribute, if not 0.
         """
-        context_str = os.fspath(context)
-        cmd = ["docker", "build", f"--network={network}", "-f-"]
-        cmd.extend(["-t", tag])
-        cmd += [context_str]
+        ...
 
-        Image._run_process(
+    @classmethod
+    def build(
+        cls,
+        context,
+        tag,
+        *,
+        dockerfile=None,
+        dockerfile_string=None,
+        output_file=None,
+        network="host"
+    ):
+        if dockerfile is not None:
+            dockerfile_build = True
+        elif dockerfile_string is not None:
+            dockerfile_build = False
+        else:
+            return ValueError("Image.build: either dockerfile or " +
+                              "dockerfile_string must be defined.")
+
+        if output_file is not None:
+            run_stdout = output_file
+        else:
+            run_stdout = PIPE
+
+        context_str = os.fspath(context)
+        cmd = ["docker", "build", f"--network={network}", context_str]
+        cmd += ["-t", tag]
+
+        if dockerfile_build:
+            cmd += [f"--file={os.fspath(dockerfile)}"]
+            stdin_input = None
+        else:
+            cmd += ["-f-"]
+            stdin_input = dockerfile_string
+
+        run(
             cmd,
-            print_output=print_output,
-            output_file=output_file,
-            input=dockerfile_string
+            text=True,
+            stdout=run_stdout,  # type: ignore
+            stderr=STDOUT,
+            input=stdin_input
         )
 
         return cls(tag)
-
-    @staticmethod
-    def _run_process(
-        cmd: Sequence[str],
-        *,
-        print_output: bool = False,
-        output_file: Optional[io.TextIOBase] = None,
-        input: Optional[str] = None
-    ) -> str:
-        """An internal function which receives a command as a Sequence of
-        strings each describing part of a UNIX command (as would be generated
-        by running shlex.split() on a string containing a Linux command). The
-        function attempts to run the command and raises a CalledProcessError
-        if the return value is non-zero.
-
-        Parameters
-        ----------
-        cmd : Sequence[str]
-            A sequence of strings which, in order, make up a UNIX command.
-        print_output : bool, optional
-            A boolean that, when true, causes all output from the command to be
-            printed to stdout; by default False
-        output_file : Optional[io.TextIOBase], optional
-            A file-like object to which the output of the command can be
-            written, by default None
-        input : Optional[str], optional
-            A string input to pass into the command's stdin. By default None
-
-        Returns
-        -------
-        str
-            The complete stdout and stderr output resulting from the command
-            execution.
-
-        Raises
-        ------
-        CalledProcessError
-            An error that contains the return value, complete command, and
-            output from a command that returned a non-zero value.
-        """
-        output_text = ""
-        stdin_val = PIPE if (input is not None) else None
-        process = Popen(
-            cmd,
-            stdin=stdin_val,
-            stdout=PIPE,
-            stderr=STDOUT
-        )
-
-        # Pass the input to the open stdin pipe, then close it.
-        if process.stdin is not None and isinstance(input, str):
-            process.stdin.write(input.encode())
-            process.stdin.close()
-
-        # Read all output from the program until it completes, line-by-line.
-        while True:
-            assert process.stdout is not None
-            line = process.stdout.readline()
-            if not line and process.poll() is not None:
-                process_return = process.poll()
-                try:
-                    assert process_return == 0
-                except AssertionError:
-                    assert isinstance(process_return, int)
-                    raise CalledProcessError(
-                        process_return,
-                        cmd,
-                        output=output_text
-                    )
-                break
-            line_str = line.decode()
-            output_text += line_str
-            if print_output:
-                print(line_str, end='')
-            if output_file is not None and isinstance(
-                output_file,
-                io.TextIOBase
-            ):
-                output_file.write(line.decode())
-
-        return output_text
 
     def _inspect(self, format: Optional[str] = None) -> str:
         """Private method. Use 'docker inspect' to retrieve a piece of
@@ -279,21 +212,28 @@ class Image:
         self,
         command: str,
         *,
-        output_file: Optional[io.TextIOBase] = None,
-        interactive: bool = True,
-        network: str = "host",
-        print_output: bool = False
-    ) -> str:
-        """Run the given command on a container spun up on this image.
+        stdout: Union[io.TextIOBase, int] = PIPE,
+        stderr: Union[io.TextIOBase, int] = STDOUT,
+        interactive: bool = False,
+        network: str = "host"
+    ):
+        """Run the given command on a container spun up on this image. Redirect
+        stdout and stderr to given file-like objects or subprocess locations
 
         Parameters
         ----------
         cmd : str
             The desired command, in linux command format.
-        output_file : io.TextIOBase or None
-            A file-like object that the stdout output of the docker run program
-            will be written to. If None, the method will not output to a file.
-            Defaults to None.
+        stdout : io.TextIOBase or subprocess.PIPE
+            The location to send the process stdout output to. If set to
+            subprocess.PIPE, this method will return a string containing
+            the stdout output. Defaults to subprocess.PIPE
+        stderr : io.TextIOBase or subprocess special value or None
+            The location (file-like object or pipe) to send the process stderr
+            output to. If set to subprocess.DEVNULL or None, error messages
+            will be discarded. If set to subprocess.STDOUT, the output of this
+            run's stderr will be interleaved with stdout. Defaults to
+            subprocess.STDOUT
         interactive : bool, optional
             A boolean describing whether or not to run this command in
             interactive mode or not. True for interactive, False for
@@ -301,14 +241,12 @@ class Image:
         network : str
             The name of the network associated with the docker command to be
             run. Defaults to "host"
-        print_output : bool
-            A boolean indicating whether or not the output of the command
-            should be printed to stdout.
 
         Returns
         -------
-        str
-            The stdout of the process run on the container.
+        str, optional
+            The stdout of the process run on the container, if stdout was set
+            to PIPE
 
         Raises
         -------
@@ -329,19 +267,32 @@ class Image:
         cmd += ["-ci"] if interactive else ["-c"]
         cmd += split(f"'{command}'")
 
-        output_text = ""
+        if stdout is not None:
+            print(type(stdout))
+            run_stdout = stdout
+        else:
+            run_stdout = PIPE
+
+        if stderr is not None:
+            run_stderr = stderr
+        else:
+            run_stderr = STDOUT
+
         try:
-            output_text = Image._run_process(
+            result = run(
                 cmd,
-                print_output=print_output,
-                output_file=output_file
+                text=True,
+                stdout=run_stdout,  # type: ignore
+                stderr=run_stderr,  # type: ignore
+                check=True
             )
+            retval = result.stdout
         except CalledProcessError as err:
             if err.returncode == 127:
                 raise CommandNotFoundOnImageError(err, split(command)[0])
             else:
                 raise err
-        return output_text
+        return retval
 
     def check_command_availability(self, commands: Sequence[str]) -> List[str]:
         """Determines which of the commands in a list are present on the image.
