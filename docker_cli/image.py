@@ -47,7 +47,8 @@ class Image:
         *,
         dockerfile: os.PathLike[str],
         output_file: Optional[io.TextIOBase],
-        network: str
+        network: str,
+        no_cache: bool
     ):
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
@@ -68,6 +69,9 @@ class Image:
         network : str
             The name of the network associated with the docker image to be
             built. Defaults to "host"
+        no-cache: bool
+            A boolean designating whether or not the docker build should use
+            the cache
 
         Returns
         -------
@@ -92,7 +96,8 @@ class Image:
         *,
         dockerfile_string: str,
         output_file: Optional[io.TextIOBase],
-        network: str
+        network: str,
+        no_cache: bool
     ):
         """Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
@@ -113,6 +118,9 @@ class Image:
         network : str
             The name of the network associated with the docker image to be
             built. Defaults to "host"
+        no-cache: bool
+            A boolean designating whether or not the docker build should use
+            the cache
 
         Returns
         -------
@@ -137,7 +145,8 @@ class Image:
         dockerfile=None,
         dockerfile_string=None,
         output_file=None,
-        network="host"
+        network="host",
+        no_cache=True
     ):
         if dockerfile is not None:
             dockerfile_build = True
@@ -153,8 +162,17 @@ class Image:
             run_stdout = PIPE
 
         context_str = os.fspath(context)
-        cmd = ["docker", "build", f"--network={network}", context_str]
-        cmd += ["-t", tag]
+        cmd = [
+            "docker",
+            "build",
+            f"--network={network}",
+            context_str,
+            "-t",
+            tag
+        ]
+
+        if no_cache:
+            cmd += ["--no-cache"]
 
         if dockerfile_build:
             cmd += [f"--file={os.fspath(dockerfile)}"]
