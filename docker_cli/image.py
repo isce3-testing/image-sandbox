@@ -47,8 +47,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
-        context: Optional[os.PathLike[str]],
         dockerfile: Optional[os.PathLike[str]],
+        context: Optional[os.PathLike[str]],
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
         network: str,
@@ -64,11 +64,11 @@ class Image:
         ----------
         tag : str
             A name for the image.
-        context : os.PathLike or None, optional
-            The build context. Defaults to ".".
-        dockerfile : os.PathLike, optional
+        dockerfile : os.PathLike or None, optional
             The path of the Dockerfile to build, relative to the `context`
             directory. Defaults to None.
+        context : os.PathLike or None, optional
+            The build context. Defaults to ".".
         stdout : io.TextIOBase or None, optional
             A file-like object that the stdout output of the docker build
             program will be redirected to. If None, no redirection will occur.
@@ -104,8 +104,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
-        context: Optional[os.PathLike[str]],
         dockerfile_string: str,
+        context: Optional[os.PathLike[str]],
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
         network: str,
@@ -118,10 +118,10 @@ class Image:
         ----------
         tag : str
             A name for the image.
-        context : os.PathLike or None, optional
-            The build context. Defaults to ".".
         dockerfile_string : str
             A Dockerfile-formatted string.
+        context : os.PathLike or None, optional
+            The build context. Defaults to ".".
         stdout : io.TextIOBase or None, optional
             A file-like object that the stderr output of the docker build
             program will be redirected to to. If None, no redirection will
@@ -156,9 +156,9 @@ class Image:
         cls,
         tag,
         *,
-        context=".",
         dockerfile=None,
         dockerfile_string=None,
+        context=".",
         stdout=None,
         stderr=None,
         network="host",
