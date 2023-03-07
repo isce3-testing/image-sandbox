@@ -69,18 +69,18 @@ class Image:
         dockerfile : os.PathLike, optional
             The path of the Dockerfile to build, relative to the `context`
             directory. Defaults to None.
-        stdout : io.TextIOBase or None
+        stdout : io.TextIOBase or None, optional
             A file-like object that the stdout output of the docker build
             program will be redirected to. If None, no redirection will occur.
             Defaults to None.
-        stderr : io.TextIOBase or None
+        stderr : io.TextIOBase or None, optional
             A file-like object that the stderr output of the docker build
             program will be redirected to. If None, no redirection will occur.
             It should be noted that docker build primarily outputs to stderr.
             Defaults to None.
         network : str, optional
             The name of the network. Defaults to "host".
-        no-cache : bool, optional
+        no_cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache.
 
@@ -133,7 +133,7 @@ class Image:
             Defaults to None.
         network : str, optional
             The name of the network. Defaults to "host".
-        no-cache : bool, optional
+        no_cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache.
 
@@ -253,6 +253,12 @@ class Image:
         """
         Run the given command on a container.
 
+            .. note::
+        For stderr special values to pass into `stdout` and `stdin`, review
+        values passable into the same arguments in the :func:`~subprocess.run`
+        function:
+        https://docs.python.org/3/library/subprocess.html#subprocess.run
+
             .. warning::
         This method does not work correctly if the image built does not have
         bash installed.
@@ -261,15 +267,11 @@ class Image:
         ----------
         cmd : str
             The desired command, in linux command format.
-        stdout : io.TextIOBase or subprocess.PIPE or None, optional
-            The location to send the process stdout output to. If set to
-            subprocess.PIPE, this method will return a string containing
-            the stdout output. Defaults to None.
-        stderr : io.TextIOBase or subprocess special value or None
-            The location to send the process stderr output to. If set to
-            subprocess.DEVNULL or None, error messages will be discarded. If
-            set to subprocess.STDOUT, the output of this run's stderr will be
-            interleaved with `stdout`. Defaults to None.
+        stdout : io.TextIOBase or subprocess special value or None, optional
+            The location to send the process stdout output to.Defaults to None.
+        stderr : io.TextIOBase or subprocess special value or None, optional
+            The location to send the process stderr output to.
+            Defaults to None.
         interactive : bool, optional
             A boolean describing whether or not to run this command in
             interactive mode or not. Defaults to True.
