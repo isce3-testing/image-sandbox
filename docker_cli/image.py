@@ -131,9 +131,9 @@ class Image:
             program will be redirected to. If None, no redirection will occur.
             It should be noted that docker build primarily outputs to stderr.
             Defaults to None.
-        network : str
+        network : str, optional
             The name of the network. Defaults to "host".
-        no-cache : bool
+        no-cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache.
 
@@ -273,7 +273,7 @@ class Image:
         interactive : bool, optional
             A boolean describing whether or not to run this command in
             interactive mode or not. Defaults to True.
-        network : str
+        network : str, optional
             The name of the network. Defaults to "host".
 
         Returns
