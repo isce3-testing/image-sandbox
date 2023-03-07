@@ -1,6 +1,6 @@
 import os
 from shlex import split
-from subprocess import DEVNULL, PIPE, CalledProcessError, run
+from subprocess import PIPE, CalledProcessError, run
 
 import pytest
 
@@ -10,6 +10,9 @@ from docker_cli.image import Image, get_image_id
 
 @pytest.fixture
 def test_image_id():
+    """
+    Builds an image for testing and returns its ID.
+    """
     run(split("docker build ./ -t test"))
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -21,8 +24,10 @@ def test_image_id():
 
 
 def test_init(test_image_id):
-    """Tests that the __init__ function on the Image class is correctly
-    receiving and remembering the ID of a docker image."""
+    """
+    Tests that the __init__ function on the Image class is correctly
+    receiving and remembering the ID of a docker image.
+    """
     id = test_image_id
     print("ID: " + id)
     img = Image("test")
@@ -37,8 +42,9 @@ def test_init(test_image_id):
 
 
 def test_init_CalledProcessError():
-    """Tests that the __init__ function on the Image class is correctly
-    returning a CalledProcessError when given a malformed name."""
+    """
+    Tests that the __init__ function on the Image class raises a
+    CalledProcessError when given a malformed name."""
     img = None
     with pytest.raises(CalledProcessError):
         img = Image("malformed_image_name_or_id")
@@ -46,10 +52,11 @@ def test_init_CalledProcessError():
 
 
 def test_build_from_dockerfile():
-    """Tests that the build method correctly constructs a
-    docker image and returns a properly-formatted Image instance when using
-    a dockerfile as its basis."""
-    img = Image.build(".", tag="test", dockerfile="./Dockerfile")
+    """
+    Tests that the build method constructs and returns an Imagemage when
+    given a Dockerfile.
+    """
+    img = Image.build(".", tag="test")
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -62,15 +69,17 @@ def test_build_from_dockerfile():
 
 
 def test_build_from_dockerfile_output_to_file():
-    """Tests that the build method correctly constructs a docker image and
-    returns a properly-formatted Image instance when using a dockerfile as
-    its basis."""
+    """
+    Tests that the build method writes to a file when configured to
+    do so.
+    """
     file = open("testfile.txt", "w")
     img = Image.build(
         ".",
         tag="test",
         dockerfile="./Dockerfile",
-        output_file=file
+        stdout=file,
+        stderr=file
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -88,10 +97,12 @@ def test_build_from_dockerfile_output_to_file():
 
 
 def test_build_from_dockerfile_dockerfile_in_different_location():
-    """Tests that the build method can build an image from a dockerfile in a
-    different location than the context root directory."""
+    """
+    Tests that the build method can build an image from a dockerfile in a
+    different location than the context root directory.
+    """
     img = Image.build(
-        ".", tag="test", dockerfile="dockerfiles/alpine_functional"
+        ".", tag="test", dockerfile="dockerfiles/alpine_functional.dockerfile"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -105,13 +116,14 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
 
 
 def test_build_from_dockerfile_context_in_different_location():
-    """Tests that the build method can build when the context
-    is set to a different directory and a dockerfile is used as its
-    basis."""
+    """
+    Tests that the build method can build when the context is set to a
+    different directory.
+    """
     img = Image.build(
         "./dockerfiles",
         tag="test",
-        dockerfile="./dockerfiles/alpine_functional"
+        dockerfile="./dockerfiles/alpine_functional.dockerfile"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -125,8 +137,10 @@ def test_build_from_dockerfile_context_in_different_location():
 
 
 def test_build_from_dockerfile_in_malformed_location():
-    """Tests that the build method correctly raises a CalledProcessError when a
-    malformed dockerfile location is passed in."""
+    """
+    Tests that the build method raises a CalledProcessError when a malformed
+    dockerfile location is given.
+    """
     img = None
     with pytest.raises(CalledProcessError):
         img = Image.build(
@@ -137,8 +151,8 @@ def test_build_from_dockerfile_in_malformed_location():
 
 
 def test_build_from_string():
-    """Tests that the build method correctly builds and returns an
-    Image when given a dockerfile-formatted string."""
+    """Tests that the build method builds and returns an Image when given a
+    dockerfile-formatted string."""
     stdout: str = run(
         split("cat Dockerfile"),
         capture_output=True,
@@ -159,9 +173,10 @@ def test_build_from_string():
 
 
 def test_build_from_string_output_to_file():
-    """Tests that the build method correctly constructs a docker image from a
-    dockerfile-formatted string and returns a properly-formatted Image
-    instance."""
+    """
+    Tests that the build method writes to a file when formatted to do so and
+    given a dockerfile string.
+    """
     file = open("testfile.txt", "w")
     stdout: str = run(
         split("cat Dockerfile"),
@@ -171,7 +186,8 @@ def test_build_from_string_output_to_file():
         ".",
         tag="test",
         dockerfile_string=stdout,
-        output_file=file)
+        stdout=file,
+        stderr=file)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -187,8 +203,10 @@ def test_build_from_string_output_to_file():
 
 
 def test_build_from_malformed_string():
-    """Tests that the build method correctly raises a CalledProcessError when a
-    malformed dockerfile string is passed to it."""
+    """
+    Tests that the build method raises a CalledProcessError when a malformed
+    dockerfile string is passed to it.
+    """
     malformed_string: str = "qwerty"
     img = None
     with pytest.raises(CalledProcessError):
@@ -197,13 +215,16 @@ def test_build_from_malformed_string():
 
 
 def test_run_interactive(test_image_id):
-    """Tests that the run method correctly performs a simple action on a docker
-    container when called."""
+    """
+    Tests that the run method performs a simple action on a docker container
+    when called with interactive = True.
+    """
     img: Image = Image(test_image_id)
 
     retval = img.run(
         'echo "Hello, World!"',
-        interactive=True
+        interactive=True,
+        stdout=PIPE
     )
     assert "Hello, World!\n" in retval
 
@@ -211,13 +232,16 @@ def test_run_interactive(test_image_id):
 
 
 def test_run_noninteractive(test_image_id):
-    """Tests that the run method correctly performs a simple action on a docker
-    container when called."""
+    """
+    Tests that the run method performs a simple action on a docker container
+    when called with interactive = False.
+    """
     img: Image = Image(test_image_id)
 
     retval = img.run(
         'echo "Hello, World!"',
-        interactive=False
+        interactive=False,
+        stdout=PIPE
     )
     assert "Hello, World!\n" in retval
 
@@ -225,15 +249,17 @@ def test_run_noninteractive(test_image_id):
 
 
 def test_run_noninteractive_output_redirect(test_image_id):
-    """Tests that the run method returns only the value of stdout when the
-    value of stderr is written to None."""
+    """
+    Tests that the run method returns only the value of stdout when the
+    value of stderr is written to None and stdout is written to PIPE.
+    """
     img: Image = Image(test_image_id)
 
     retval = img.run(
         'echo "Hello, World!"',
         interactive=True,
         stdout=PIPE,
-        stderr=DEVNULL
+        stderr=None
     )
     assert retval == "Hello, World!\n"
 
@@ -241,8 +267,9 @@ def test_run_noninteractive_output_redirect(test_image_id):
 
 
 def test_run_interactive_print_to_file(test_image_id):
-    """Tests that the run method correctly performs a simple action on a docker
-    container when called."""
+    """
+    Tests that the run method prints to a file when interactive = True.
+    """
     img: Image = Image(test_image_id)
 
     file = open("testfile.txt", "w")
@@ -266,8 +293,10 @@ def test_run_interactive_print_to_file(test_image_id):
 
 
 def test_run_interactive_malformed_command_exception(test_image_id):
-    """Tests that the run method correctly raises a CalledProcessError when
-    given a malformed command."""
+    """
+    Tests that the run method raises a CalledProcessError when given a
+    malformed command.
+    """
     img: Image = Image(test_image_id)
 
     with pytest.raises(CalledProcessError):
@@ -277,8 +306,10 @@ def test_run_interactive_malformed_command_exception(test_image_id):
 
 
 def test_tags(test_image_id):
-    """Tests that an Image.tag call returns the same .RepoTags value as a
-    typical docker inspect call."""
+    """
+    Tests that an Image.tag call returns the same .RepoTags value as a
+    typical docker inspect call.
+    """
     img: Image = Image(test_image_id)
 
     inspect_process = run(
@@ -294,8 +325,10 @@ def test_tags(test_image_id):
 
 
 def test_id(test_image_id):
-    """Tests that an Image.id call correctly returns the same ID value as given
-    by a docker inspect call."""
+    """
+    Tests that an Image.id call returns the same ID value as given by a docker
+    inspect call.
+    """
     img = Image(test_image_id)
 
     inspect_process = run(
@@ -312,9 +345,9 @@ def test_id(test_image_id):
 
 
 def test_check_command_availability(test_image_id):
-    """Tests that a check_command_availability properly returns the set of
-    commands that exist on a given docker image and doesn't return commands
-    that don't exist on that image.
+    """
+    Tests that a check_command_availability properly returns the set of
+    commands that exist on an Image and not ones that don't.
     """
     check_me = [
         "apk", "apt-get", "yum", "curl", "wget", "python", "sh", "bash"
@@ -326,7 +359,7 @@ def test_check_command_availability(test_image_id):
     run(split("docker image remove test"))
 
     run(split(
-        "docker build . --file=./dockerfiles/alpine_functional " +
+        "docker build . --file=./dockerfiles/alpine_functional.dockerfile " +
         "-t test_2")
         )
     img = Image("test_2")
@@ -340,7 +373,8 @@ def test_check_command_availability(test_image_id):
 
 
 def test_check_command_availability_no_bash_exception():
-    """Tests that a check_command_availability throws the
+    """
+    Validates that a check_command_availability throws the
     CommandNotFoundOnImageError when called on an image that doesn't have
     bash installed.
     """
@@ -349,7 +383,7 @@ def test_check_command_availability_no_bash_exception():
     ]
 
     run(split(
-        "docker build ./ --file=./dockerfiles/alpine_broken " +
+        "docker build ./ --file=./dockerfiles/alpine_broken.dockerfile " +
         "-t test")
         )
     img = Image("test")
@@ -360,8 +394,10 @@ def test_check_command_availability_no_bash_exception():
 
 
 def test_repr(test_image_id):
-    """Tests that the __repr__() method of the Image class correctly produces
-    representation strings"""
+    """
+    Tests that the __repr__() method of the Image class correctly produces
+    representation strings.
+    """
     id = test_image_id
 
     inspect_process = run(
@@ -380,8 +416,10 @@ def test_repr(test_image_id):
 
 
 def test_eq(test_image_id):
-    """Tests that the __eq__() method of the Image class correctly compares
-    Images with other Images and strings"""
+    """
+    Tests that the __eq__() method of the Image class correctly compares
+    Images with other Images.
+    """
     img = Image(test_image_id)
 
     img_2 = Image("test")
@@ -392,14 +430,16 @@ def test_eq(test_image_id):
 
 
 def test_neq(test_image_id):
-    """Tests that the internal __ne__() method of the Image class correctly
-    compares Images with other nonequal Images and strings"""
+    """
+    Tests that the internal __ne__() method of the Image class correctly
+    compares Images with other nonequal Images and objects.
+    """
     img = Image(test_image_id)
 
     img_2 = Image.build(
         ".",
         tag="b",
-        dockerfile="./dockerfiles/alpine_functional"
+        dockerfile="./dockerfiles/alpine_functional.dockerfile"
     )
 
     assert img != "String"
@@ -411,8 +451,10 @@ def test_neq(test_image_id):
 
 
 def test_get_image_id(test_image_id):
-    """Tests that the get_image_id method returns the correct ID when given a
-    properly-formed ID or docker image name."""
+    """
+    Tests that the get_image_id method returns the correct ID when given a
+    properly-formed ID or docker image name.
+    """
     id = test_image_id
 
     id_test = get_image_id("test")
@@ -425,7 +467,9 @@ def test_get_image_id(test_image_id):
 
 
 def test_get_image_id_malformed_id_or_name():
-    """Tests that the get_image_id method correctly raises a CalledProcessError
-    when given a malformed name or ID."""
+    """
+    Validates that the get_image_id method raises a CalledProcessError when
+    given a malformed name or ID.
+    """
     with pytest.raises(CalledProcessError):
         get_image_id("malformed_name")
