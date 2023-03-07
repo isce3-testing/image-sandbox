@@ -45,9 +45,9 @@ class Image:
     @classmethod
     def build(
         cls: Type[Self],
-        context: os.PathLike[str],
         tag: str,
         *,
+        context: Optional[os.PathLike[str]],
         dockerfile: Optional[os.PathLike[str]],
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
@@ -62,10 +62,10 @@ class Image:
 
         Parameters
         ----------
-        context : str
-            The build context.
         tag : str
             A name for the image.
+        context : os.PathLike or None, optional
+            The build context. Defaults to ".".
         dockerfile : os.PathLike, optional
             The path of the Dockerfile to build, relative to the `context`
             directory. Defaults to None.
@@ -79,8 +79,7 @@ class Image:
             It should be noted that docker build primarily outputs to stderr.
             Defaults to None.
         network : str, optional
-            The name of the network associated with the docker image to be
-            built. Defaults to "host".
+            The name of the network. Defaults to "host".
         no-cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache.
@@ -95,7 +94,7 @@ class Image:
         CalledProcessError
             If the docker build command fails.
         ValueError
-            If both "dockerfile" and "dockerfile_string" are defined.
+            If both `dockerfile` and `dockerfile_string` are defined.
         """
         ...
 
@@ -103,9 +102,9 @@ class Image:
     @classmethod
     def build(
         cls: Type[Self],
-        context: os.PathLike[str],
         tag: str,
         *,
+        context: Optional[os.PathLike[str]],
         dockerfile_string: str,
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
@@ -117,14 +116,13 @@ class Image:
 
         Parameters
         ----------
-        context : str
-            The path to the file containing the Dockerfile
         tag : str
             A name for the image.
+        context : os.PathLike or None, optional
+            The build context. Defaults to ".".
         dockerfile_string : str
-            A Dockerfile-formatted string containing the information necessary
-            to build the desired image.
-        stdout : io.TextIOBase, optional
+            A Dockerfile-formatted string.
+        stdout : io.TextIOBase or None, optional
             A file-like object that the stderr output of the docker build
             program will be written to. If None, the method will not output to
             a file. Defaults to None.
@@ -134,8 +132,7 @@ class Image:
             It should be noted that docker build primarily outputs to stderr.
             Defaults to None.
         network : str
-            The name of the network associated with the docker image to be
-            built. Defaults to "host".
+            The name of the network. Defaults to "host".
         no-cache : bool
             A boolean designating whether or not the docker build should use
             the cache.
@@ -143,24 +140,23 @@ class Image:
         Returns
         -------
         Image
-            An Image class instance that references a Docker image built from
-            the Dockerfile-formatted string at context/dockerfile_loc
+            The created Image.
 
         Raises
         -------
         CalledProcessError
             If the docker build command fails.
         ValueError
-            If both "dockerfile" and "dockerfile_string" are defined.
+            If both `dockerfile` and `dockerfile_string` are defined.
         """
         ...
 
     @classmethod
     def build(
         cls,
-        context,
         tag,
         *,
+        context=".",
         dockerfile=None,
         dockerfile_string=None,
         stdout=None,
@@ -176,7 +172,7 @@ class Image:
         # Build with dockerfile if dockerfile_string is None
         dockerfile_build = dockerfile_string is None
 
-        context_str = os.fspath(context)
+        context_str = os.fspath(".") if context is None else os.fspath(context)
         cmd = [
             "docker",
             "build",
@@ -217,9 +213,8 @@ class Image:
         Parameters
         ----------
         format : str, optional
-            The value to be requested by the --format argument of docker
-            inspect, or None. If this string exists, the docker inspect
-            command will be called with f"-f={format}". Defaults to None.
+            The value to be requested by the --format argument, or None.
+            Defaults to None.
 
         Returns
         -------
@@ -274,21 +269,17 @@ class Image:
             The location to send the process stderr output to. If set to
             subprocess.DEVNULL or None, error messages will be discarded. If
             set to subprocess.STDOUT, the output of this run's stderr will be
-            interleaved with stdout. Defaults to None.
+            interleaved with `stdout`. Defaults to None.
         interactive : bool, optional
             A boolean describing whether or not to run this command in
-            interactive mode or not. True for interactive, False for
-            non-interactive. Defaults to True.
+            interactive mode or not. Defaults to True.
         network : str
-            The name of the network associated with the docker command to be
-            run. Defaults to "host".
+            The name of the network. Defaults to "host".
 
         Returns
         -------
         str, optional
-            The stdout of the process run on the container, if stdout was set
-            to PIPE. May also contain stderr if stdout == PIPE and
-            stderr == STDOUT.
+            The output of the process, if `stdout` == PIPE.
 
         Raises
         -------
@@ -335,7 +326,7 @@ class Image:
         Returns
         -------
         List[str]
-            The names of all commands in cmd_list that were present on the
+            The names of all commands in `commands` that were present on the
             image.
 
         Raises
@@ -372,7 +363,7 @@ class Image:
         Returns
         -------
         List[str]
-            A list containing the set of tags associated with this Image.
+            The set of tags associated with this Image.
 
         Raises
         -------
@@ -413,9 +404,6 @@ class Image:
         """
         Evaluates equality of an Image with another object.
 
-        Two Images are the same if and only if their ID's are the same.
-        Any other object will evaluate as False.
-
         Parameters
         ----------
         other : any
@@ -439,19 +427,19 @@ def get_image_id(name_or_id: str) -> str:
     Parameters
     ----------
     name_or_id : str
-        A name or ID by which to find the docker image.
+        The image name or ID.
 
     Returns
     -------
     str
-        A string containing the ID of the given docker image.
+        The ID of the given docker image.
 
     Raises
     -------
     CalledProcessError
         If the docker inspect command fails.
     ValueError
-        If name_or_id is not a string
+        If `name_or_id` is not a string
     """
     if not isinstance(name_or_id, str):
         raise ValueError(

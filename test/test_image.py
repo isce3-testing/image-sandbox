@@ -56,7 +56,7 @@ def test_build_from_dockerfile():
     Tests that the build method constructs and returns an Imagemage when
     given a Dockerfile.
     """
-    img = Image.build(".", tag="test")
+    img = Image.build(tag="test")
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -75,7 +75,6 @@ def test_build_from_dockerfile_output_to_file():
     """
     file = open("testfile.txt", "w")
     img = Image.build(
-        ".",
         tag="test",
         dockerfile="./Dockerfile",
         stdout=file,
@@ -102,7 +101,7 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
     different location than the context root directory.
     """
     img = Image.build(
-        ".", tag="test", dockerfile="dockerfiles/alpine_functional.dockerfile"
+        tag="test", dockerfile="dockerfiles/alpine_functional.dockerfile"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -121,7 +120,7 @@ def test_build_from_dockerfile_context_in_different_location():
     different directory.
     """
     img = Image.build(
-        "./dockerfiles",
+        context="./dockerfiles",
         tag="test",
         dockerfile="./dockerfiles/alpine_functional.dockerfile"
     )
@@ -144,7 +143,6 @@ def test_build_from_dockerfile_in_malformed_location():
     img = None
     with pytest.raises(CalledProcessError):
         img = Image.build(
-            ".",
             tag="test",
             dockerfile="non_existant_directory/Dockerfile")
     assert img is None
@@ -158,7 +156,6 @@ def test_build_from_string():
         capture_output=True,
         text=True).stdout
     img: Image = Image.build(
-        ".",
         tag="test",
         dockerfile_string=stdout)
     inspect_process = run(
@@ -183,7 +180,6 @@ def test_build_from_string_output_to_file():
         capture_output=True,
         text=True).stdout
     img: Image = Image.build(
-        ".",
         tag="test",
         dockerfile_string=stdout,
         stdout=file,
@@ -210,7 +206,10 @@ def test_build_from_malformed_string():
     malformed_string: str = "qwerty"
     img = None
     with pytest.raises(CalledProcessError):
-        Image.build(".", tag="test", dockerfile_string=malformed_string)
+        Image.build(
+            tag="test",
+            dockerfile_string=malformed_string
+        )
     assert img is None
 
 
@@ -437,7 +436,6 @@ def test_neq(test_image_id):
     img = Image(test_image_id)
 
     img_2 = Image.build(
-        ".",
         tag="b",
         dockerfile="./dockerfiles/alpine_functional.dockerfile"
     )
