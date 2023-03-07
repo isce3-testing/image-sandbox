@@ -124,8 +124,8 @@ class Image:
             A Dockerfile-formatted string.
         stdout : io.TextIOBase or None, optional
             A file-like object that the stderr output of the docker build
-            program will be written to. If None, the method will not output to
-            a file. Defaults to None.
+            program will be redirected to to. If None, no redirection will
+            occur. Defaults to None.
         stderr : io.TextIOBase or None, optional
             A file-like object that the stderr output of the docker build
             program will be redirected to. If None, no redirection will occur.
