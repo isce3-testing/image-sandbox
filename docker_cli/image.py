@@ -273,7 +273,7 @@ class Image:
             Defaults to None.
         interactive : bool, optional
             A boolean describing whether or not to run this command in
-            interactive mode or not. Defaults to True.
+            interactive mode or not. Defaults to False.
         network : str, optional
             The name of the network. Defaults to "host".
 
