@@ -255,7 +255,7 @@ class Image:
 
             .. note::
         For stderr special values to pass into `stdout` and `stdin`, review
-        values passable into the same arguments in the :func:`~subprocess.run`
+        values passable into the same arguments in the :func:`subprocess.run`
         function:
         https://docs.python.org/3/library/subprocess.html#subprocess.run
 
