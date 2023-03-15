@@ -267,7 +267,7 @@ class Image:
         cmd : str
             The desired command, in linux command format.
         stdout : io.TextIOBase or subprocess special value or None, optional
-            The location to send the process stdout output to.Defaults to None.
+            The location to send the process stdout output to. Defaults to None.
         stderr : io.TextIOBase or subprocess special value or None, optional
             The location to send the process stderr output to.
             Defaults to None.
