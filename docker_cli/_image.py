@@ -6,7 +6,8 @@ from sys import stdin
 from typing import (Any, Iterable, List, Optional, Type, TypeVar, Union,
                     overload)
 
-from . import CommandNotFoundError, DockerBuildError, ImageNotFoundError
+from ._exceptions import (CommandNotFoundError, DockerBuildError,
+                          ImageNotFoundError)
 
 
 class Image:
