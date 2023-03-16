@@ -1,12 +1,12 @@
 import io
 import os
 from shlex import split
-from subprocess import PIPE, CalledProcessError, run
+from subprocess import DEVNULL, PIPE, CalledProcessError, run
 from sys import stdin
-from typing import (Any, List, Optional, Sequence, Type, TypeVar, Union,
+from typing import (Any, Iterable, List, Optional, Type, TypeVar, Union,
                     overload)
 
-from .exceptions import CommandNotFoundOnImageError
+from . import CommandNotFoundError, DockerBuildError, ImageNotFoundError
 
 
 class Image:
@@ -47,8 +47,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
+        context: Union[str, os.PathLike[str]],
         dockerfile: Optional[os.PathLike[str]],
-        context: Optional[os.PathLike[str]],
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
         network: str,
@@ -64,23 +64,18 @@ class Image:
         ----------
         tag : str
             A name for the image.
-        dockerfile : os.PathLike or None, optional
+        context : os.PathLike, optional
+            The build context. Defaults to ".".
+        dockerfile : os.PathLike, optional
             The path of the Dockerfile to build, relative to the `context`
             directory. Defaults to None.
-        context : os.PathLike or None, optional
-            The build context. Defaults to ".".
-        stdout : io.TextIOBase or None, optional
-            A file-like object that the stdout output of the docker build
-            program will be redirected to. If None, no redirection will occur.
-            Defaults to None.
-        stderr : io.TextIOBase or None, optional
-            A file-like object that the stderr output of the docker build
-            program will be redirected to. If None, no redirection will occur.
-            It should be noted that docker build primarily outputs to stderr.
-            Defaults to None.
+        stdout : io.TextIOBase or special value, optional
+            For a description of valid values, see :func:`subprocess.run`.
+        stderr : io.TextIOBase or special value, optional
+            For a description of valid values, see :func:`subprocess.run`.
         network : str, optional
             The name of the network. Defaults to "host".
-        no_cache : bool, optional
+        no-cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache.
 
@@ -104,8 +99,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
+        context: Union[str, os.PathLike[str]],
         dockerfile_string: str,
-        context: Optional[os.PathLike[str]],
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
         network: str,
@@ -118,22 +113,17 @@ class Image:
         ----------
         tag : str
             A name for the image.
+        context : os.PathLike, optional
+            The build context. Defaults to ".".
         dockerfile_string : str
             A Dockerfile-formatted string.
-        context : os.PathLike or None, optional
-            The build context. Defaults to ".".
-        stdout : io.TextIOBase or None, optional
-            A file-like object that the stderr output of the docker build
-            program will be redirected to to. If None, no redirection will
-            occur. Defaults to None.
-        stderr : io.TextIOBase or None, optional
-            A file-like object that the stderr output of the docker build
-            program will be redirected to. If None, no redirection will occur.
-            It should be noted that docker build primarily outputs to stderr.
-            Defaults to None.
+        stdout : io.TextIOBase or special value, optional
+            For a description of valid values, see :func:`subprocess.run`.
+        stderr : io.TextIOBase or special value, optional
+            For a description of valid values, see :func:`subprocess.run`.
         network : str, optional
             The name of the network. Defaults to "host".
-        no_cache : bool, optional
+        no-cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache.
 
@@ -156,9 +146,9 @@ class Image:
         cls,
         tag,
         *,
+        context=".",
         dockerfile=None,
         dockerfile_string=None,
-        context=".",
         stdout=None,
         stderr=None,
         network="host",
@@ -178,7 +168,8 @@ class Image:
             "build",
             f"--network={network}",
             context_str,
-            f"-t={tag}"
+            "-t",
+            tag
         ]
 
         if no_cache:
@@ -194,13 +185,20 @@ class Image:
             cmd += ["-f-"]
             stdin = dockerfile_string
 
-        run(
-            cmd,
-            text=True,
-            stdout=stdout,  # type: ignore
-            stderr=stderr,  # type: ignore
-            input=stdin
-        )
+        try:
+            run(
+                cmd,
+                text=True,
+                stdout=stdout,  # type: ignore
+                stderr=stderr,  # type: ignore
+                input=stdin,
+                check=True
+            )
+        except CalledProcessError as err:
+            if dockerfile_build:
+                raise DockerBuildError(tag, dockerfile) from err
+            else:
+                raise DockerBuildError(tag, dockerfile_string) from err
 
         return cls(tag)
 
@@ -252,28 +250,21 @@ class Image:
         """
         Run the given command on a container.
 
-            .. note::
-        For stderr special values to pass into `stdout` and `stdin`, review
-        values passable into the same arguments in the :func:`subprocess.run`
-        function:
-        https://docs.python.org/3/library/subprocess.html#subprocess.run
-
-            .. warning::
-        This method does not work correctly if the image built does not have
-        bash installed.
+        .. warning::
+            This method does not work correctly if the image built does not have
+            bash installed.
 
         Parameters
         ----------
         cmd : str
             The desired command, in linux command format.
-        stdout : io.TextIOBase or subprocess special value or None, optional
-            The location to send the process stdout output to. Defaults to None.
-        stderr : io.TextIOBase or subprocess special value or None, optional
-            The location to send the process stderr output to.
-            Defaults to None.
+        stdout : io.TextIOBase or special value, optional
+            For a description of valid values, see :func:`subprocess.run`.
+        stderr : io.TextIOBase or special value, optional
+            For a description of valid values, see :func:`subprocess.run`.
         interactive : bool, optional
             A boolean describing whether or not to run this command in
-            interactive mode or not. Defaults to False.
+            interactive mode or not. Defaults to True.
         network : str, optional
             The name of the network. Defaults to "host".
 
@@ -285,7 +276,7 @@ class Image:
         Raises
         -------
         CalledProcessError
-            If the docker inspect command fails.
+            If the docker run command fails.
         CommandNotFoundOnImageError:
             When a command is attempted that is not recognized on the image.
         """
@@ -309,24 +300,66 @@ class Image:
             retval = result.stdout
         except CalledProcessError as err:
             if err.returncode == 127:
-                raise CommandNotFoundOnImageError(err, split(command)[0])
+                raise CommandNotFoundError(err, split(command)[0]) from err
             else:
-                raise err
+                raise err from err
         return retval
 
-    def check_command_availability(self, commands: Sequence[str]) -> List[str]:
+    def drop_in(
+            self,
+            network: str = "host"
+    ):
+        """
+        Start a drop-in session on a disposable container.
+
+        .. warning::
+            This method does not work correctly if the image built does not have
+            bash installed.
+
+        Parameters
+        ----------
+        network : str, optional
+            The name of the network. Defaults to "host".
+
+        Raises
+        -------
+        CalledProcessError
+            If the docker run command fails.
+        CommandNotFoundOnImageError:
+            When bash is not recognized on the image.
+        """
+        cmd = ["docker", "run", f"--network={network}", "--rm", "-i"]
+        if stdin.isatty():
+            cmd += ["--tty"]
+        cmd += [self._id, "bash"]
+
+        try:
+            run(
+                cmd,
+                text=True,
+                check=True
+            )
+        except CalledProcessError as err:
+            if err.returncode == 127:
+                raise CommandNotFoundError(err, "bash") from err
+            else:
+                print(f"Drop-in session exited with code {err.returncode}.")
+                return
+        print("Drop-in session exited with code 0.")
+
+    def check_command_availability(self, commands: Iterable[str]) -> List[str]:
         """
         Determines which of the commands in a list are present on the image.
 
         Parameters
         ----------
-        commands : Sequence[str]
-            A sequence of strings containing the names of commands to be
+        commands : Iterable[str]
+            An iterable of strings containing the names of commands to be
             checked for.
 
         Returns
         -------
-        List[str]
+        Iterable[str]
             The names of all commands in `commands` that were present on the
             image.
 
@@ -335,26 +368,46 @@ class Image:
         CalledProcessError
             If the docker inspect command fails with a return value != 1.
         """
-        found_commands = []
-        for command_name in commands:
-            try:
-                command = self.run(
-                    f"command -v {command_name}",
-                    stdout=PIPE
-                )
-                if command_name in command and \
-                        command_name not in found_commands:
-                    found_commands += [command_name]
-            except CalledProcessError as err:
-                # "command -v {cmd}" returns 0 if the command is found, else 1.
-                # Thus, the CalledProcessError exception can be ignored
-                # if err.returncode == 1.
-                # In other cases, the error still needs to be thrown.
-                if err.returncode == 1:
-                    pass
-                else:
-                    raise err
-        return found_commands
+        return list(filter(self.has_command, commands))
+
+    def has_command(self, command: str) -> bool:
+        """
+        Checks to see if the image has a command.
+
+        Parameters
+        ----------
+        command : str
+            The name of the command (e.g. "curl", "echo")
+
+        Returns
+        -------
+        bool
+            True if the command is present, False if not.
+
+        Raises
+        ------
+        CalledProcessError
+            When the command check returns with any value other than 0 or 1.
+        """
+        try:
+            result = self.run(
+                f"command -v {command}",
+                stdout=PIPE,
+                stderr=DEVNULL
+            )
+            if command in result:
+                return True
+            else:
+                return False
+        except CalledProcessError as err:
+            # "command -v {cmd}" returns 0 if the command is found, else 1.
+            # Thus, the CalledProcessError exception means return False
+            # if err.returncode == 1.
+            # In other cases, the error still needs to be thrown.
+            if err.returncode == 1:
+                return False
+            else:
+                raise err from err
 
     @property
     def tags(self) -> List[str]:
@@ -447,11 +500,14 @@ def get_image_id(name_or_id: str) -> str:
             f"name_or_id given as {type(name_or_id)}. Expected string."
         )
     command = "docker inspect -f={{.Id}} " + name_or_id
-    process = run(
-        split(command),
-        capture_output=True,
-        text=True,
-        check=True
-    )
+    try:
+        process = run(
+            split(command),
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except CalledProcessError as err:
+        raise ImageNotFoundError(tag_or_id=name_or_id) from err
     process_stdout = process.stdout.strip()
     return process_stdout

@@ -4,23 +4,9 @@ from subprocess import PIPE, CalledProcessError, run
 
 import pytest
 
-from docker_cli.exceptions import CommandNotFoundOnImageError
-from docker_cli.image import Image, get_image_id
-
-
-@pytest.fixture
-def test_image_id():
-    """
-    Builds an image for testing and returns its ID.
-    """
-    run(split("docker build ./ -t test"))
-    inspect_process = run(
-        split("docker inspect -f='{{.Id}}' test"),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return inspect_process.stdout.strip()
+from docker_cli import CommandNotFoundError, DockerBuildError, Image
+from docker_cli._exceptions import ImageNotFoundError
+from docker_cli._image import get_image_id
 
 
 def test_init(test_image_id):
@@ -46,7 +32,7 @@ def test_init_CalledProcessError():
     Tests that the __init__ function on the Image class raises a
     CalledProcessError when given a malformed name."""
     img = None
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(ImageNotFoundError):
         img = Image("malformed_image_name_or_id")
     assert img is None
 
@@ -56,7 +42,7 @@ def test_build_from_dockerfile():
     Tests that the build method constructs and returns an Imagemage when
     given a Dockerfile.
     """
-    img = Image.build(tag="test")
+    img = Image.build(tag="test", dockerfile="")
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
         text=True,
@@ -76,7 +62,7 @@ def test_build_from_dockerfile_output_to_file():
     file = open("testfile.txt", "w")
     img = Image.build(
         tag="test",
-        dockerfile="./Dockerfile",
+        dockerfile="",
         stdout=file,
         stderr=file
     )
@@ -120,9 +106,9 @@ def test_build_from_dockerfile_context_in_different_location():
     different directory.
     """
     img = Image.build(
-        context="./dockerfiles",
+        context="dockerfiles",
         tag="test",
-        dockerfile="./dockerfiles/alpine_functional.dockerfile"
+        dockerfile="dockerfiles/alpine_functional.dockerfile"
     )
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' test"),
@@ -137,22 +123,20 @@ def test_build_from_dockerfile_context_in_different_location():
 
 def test_build_from_dockerfile_in_malformed_location():
     """
-    Tests that the build method raises a CalledProcessError when a malformed
+    Tests that the build method raises a DockerBuildError when a malformed
     dockerfile location is given.
     """
     img = None
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(DockerBuildError):
         img = Image.build(
             tag="test",
-            dockerfile="non_existant_directory/Dockerfile")
+            dockerfile="non_existent_directory/Dockerfile")
     assert img is None
 
 
 def test_build_from_string():
-    """
-    Tests that the build method builds and returns an Image when given a
-    dockerfile-formatted string.
-    """
+    """Tests that the build method builds and returns an Image when given a
+    dockerfile-formatted string."""
     stdout: str = run(
         split("cat Dockerfile"),
         capture_output=True,
@@ -202,12 +186,12 @@ def test_build_from_string_output_to_file():
 
 def test_build_from_malformed_string():
     """
-    Tests that the build method raises a CalledProcessError when a malformed
+    Tests that the build method raises a DockerBuildError when a malformed
     dockerfile string is passed to it.
     """
     malformed_string: str = "qwerty"
     img = None
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(DockerBuildError):
         Image.build(
             tag="test",
             dockerfile_string=malformed_string
@@ -345,7 +329,7 @@ def test_id(test_image_id):
     run(split("docker image remove test"))
 
 
-def test_check_command_availability(test_image_id):
+def test_check_command_availability(test_image_id, ):
     """
     Tests that a check_command_availability properly returns the set of
     commands that exist on an Image and not ones that don't.
@@ -360,8 +344,7 @@ def test_check_command_availability(test_image_id):
     run(split("docker image remove test"))
 
     run(split(
-        "docker build . --file=./dockerfiles/alpine_functional.dockerfile " +
-        "-t test_2")
+        "docker build . --file=dockerfiles/alpine_functional.dockerfile -t test_2")
         )
     img = Image("test_2")
     retvals_2 = img.check_command_availability(check_me)
@@ -370,7 +353,7 @@ def test_check_command_availability(test_image_id):
 
     assert retvals_1 == ['apt-get', 'sh', 'bash']
     assert retvals_2 == ['apk', 'wget', 'sh', 'bash']
-    assert not retvals_3
+    assert len(retvals_3) == 0
 
 
 def test_check_command_availability_no_bash_exception():
@@ -384,11 +367,10 @@ def test_check_command_availability_no_bash_exception():
     ]
 
     run(split(
-        "docker build ./ --file=./dockerfiles/alpine_broken.dockerfile " +
-        "-t test")
+        "docker build ./ --file=dockerfiles/alpine_broken.dockerfile -t test")
         )
     img = Image("test")
-    with pytest.raises(CommandNotFoundOnImageError):
+    with pytest.raises(CommandNotFoundError):
         img.check_command_availability(check_me)
 
     run(split("docker image remove test"))
@@ -430,7 +412,7 @@ def test_eq(test_image_id):
     run(split("docker image remove test"))
 
 
-def test_neq(test_image_id):
+def test_neq(test_image_id, ):
     """
     Tests that the internal __ne__() method of the Image class correctly
     compares Images with other nonequal Images and objects.
@@ -439,7 +421,7 @@ def test_neq(test_image_id):
 
     img_2 = Image.build(
         tag="b",
-        dockerfile="./dockerfiles/alpine_functional.dockerfile"
+        dockerfile="dockerfiles/alpine_functional.dockerfile"
     )
 
     assert img != "String"
@@ -471,5 +453,5 @@ def test_get_image_id_malformed_id_or_name():
     Validates that the get_image_id method raises a CalledProcessError when
     given a malformed name or ID.
     """
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(ImageNotFoundError):
         get_image_id("malformed_name")
