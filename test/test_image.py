@@ -149,8 +149,10 @@ def test_build_from_dockerfile_in_malformed_location():
 
 
 def test_build_from_string():
-    """Tests that the build method builds and returns an Image when given a
-    dockerfile-formatted string."""
+    """
+    Tests that the build method builds and returns an Image when given a
+    dockerfile-formatted string.
+    """
     stdout: str = run(
         split("cat Dockerfile"),
         capture_output=True,
