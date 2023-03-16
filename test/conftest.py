@@ -8,7 +8,7 @@ from pytest import fixture
 
 
 @fixture
-def test_image_id():
+def image_id():
     """
     Builds an image for testing and returns its ID.
     """
@@ -19,18 +19,11 @@ def test_image_id():
         text=True,
         check=True,
     )
-    return inspect_process.stdout.strip()
+    id = inspect_process.stdout.strip()
+    yield id
+    run(split(f"docker image remove {id}"))
 
 
 def pytest_sessionstart(session):
     os.chdir(Path(__file__).parent)
     sys.path.insert(0, str(Path(__file__).parents[1]))
-
-
-def pytest_sessionfinish(session, exitstatus):
-    cwd = os.fspath(os.getcwd())
-    testfile_path = "testfile.txt"
-    if cwd.endswith("image_and_tests"):
-        testfile_path = "test/" + testfile_path
-    if os.path.isfile(testfile_path):
-        os.remove(testfile_path)

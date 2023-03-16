@@ -390,15 +390,12 @@ class Image:
             When the command check returns with any value other than 0 or 1.
         """
         try:
-            result = self.run(
+            self.run(
                 f"command -v {command}",
                 stdout=PIPE,
                 stderr=DEVNULL
             )
-            if command in result:
-                return True
-            else:
-                return False
+            return True
         except CalledProcessError as err:
             # "command -v {cmd}" returns 0 if the command is found, else 1.
             # Thus, the CalledProcessError exception means return False
@@ -411,36 +408,12 @@ class Image:
 
     @property
     def tags(self) -> List[str]:
-        """
-        The Repo Tags held on this docker image.
-
-        Returns
-        -------
-        List[str]
-            The set of tags associated with this Image.
-
-        Raises
-        -------
-        CalledProcessError
-            If the docker inspect command fails.
-        """
+        """List[str]: The Repo Tags held on this docker image."""
         return self._inspect(format="{{.RepoTags}}").strip('][\n').split(', ')
 
     @property
     def id(self) -> str:
-        """
-        This image's ID.
-
-        Returns
-        -------
-        str
-            This docker image's ID.
-
-        Raises
-        -------
-        CalledProcessError
-            If the docker inspect command fails.
-        """
+        """str: This image's ID."""
         return self._id
 
     def __repr__(self) -> str:
@@ -460,12 +433,12 @@ class Image:
 
         Parameters
         ----------
-        other : any
+        other : object
             Another object to which this image will be compared.
 
         Returns
         -------
-        boolean
+        bool
             True if other is an Image with the same ID as this one, False
             otherwise.
         """
