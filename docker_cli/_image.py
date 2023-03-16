@@ -33,11 +33,6 @@ class Image:
         ----------
         name_or_id : str
             A name or ID by which to find this image using docker inspect.
-
-        Raises
-        ----------
-        CalledProcessError
-            Via :func:`~docker_cli.get_image_id`.
         """
         self._id = get_image_id(name_or_id)
 
@@ -86,7 +81,7 @@ class Image:
 
         Raises
         -------
-        CalledProcessError
+        DockerBuildError
             If the docker build command fails.
         ValueError
             If both `dockerfile` and `dockerfile_string` are defined.
@@ -134,7 +129,7 @@ class Image:
 
         Raises
         -------
-        CalledProcessError
+        DockerBuildError
             If the docker build command fails.
         ValueError
             If both `dockerfile` and `dockerfile_string` are defined.
@@ -217,11 +212,6 @@ class Image:
         -------
         str
             The string returned by the docker inspect command.
-
-        Raises
-        -------
-        CalledProcessError
-            If the docker inspect command fails.
         """
         cmd = ["docker", "inspect"]
         if format:
@@ -275,8 +265,6 @@ class Image:
 
         Raises
         -------
-        CalledProcessError
-            If the docker run command fails.
         CommandNotFoundOnImageError:
             When a command is attempted that is not recognized on the image.
         """
@@ -323,8 +311,6 @@ class Image:
 
         Raises
         -------
-        CalledProcessError
-            If the docker run command fails.
         CommandNotFoundOnImageError:
             When bash is not recognized on the image.
         """
@@ -361,11 +347,6 @@ class Image:
         Iterable[str]
             The names of all commands in `commands` that were present on the
             image.
-
-        Raises
-        -------
-        CalledProcessError
-            If the docker inspect command fails with a return value != 1.
         """
         return list(filter(self.has_command, commands))
 
@@ -382,11 +363,6 @@ class Image:
         -------
         bool
             True if the command is present, False if not.
-
-        Raises
-        ------
-        CalledProcessError
-            When the command check returns with any value other than 0 or 1.
         """
         try:
             self.run(
@@ -463,8 +439,6 @@ def get_image_id(name_or_id: str) -> str:
 
     Raises
     -------
-    CalledProcessError
-        If the docker inspect command fails.
     ValueError
         If `name_or_id` is not a string
     """
