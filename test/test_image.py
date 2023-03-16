@@ -1,3 +1,4 @@
+from pathlib import Path
 from shlex import split
 from subprocess import PIPE, CalledProcessError, run
 from tempfile import NamedTemporaryFile
@@ -25,10 +26,11 @@ def test_init(image_id):
     assert img_2.id == id
 
 
-def test_init_CalledProcessError():
+def test_bad_init():
     """
     Tests that the __init__ function on the Image class raises a
-    CalledProcessError when given a malformed name."""
+    CalledProcessError when given a malformed name.
+    """
     img = None
     with pytest.raises(ImageNotFoundError):
         img = Image("malformed_image_name_or_id")
@@ -143,14 +145,11 @@ def test_build_from_dockerfile_in_malformed_location():
 def test_build_from_string():
     """Tests that the build method builds and returns an Image when given a
     dockerfile-formatted string."""
-    stdout: str = run(
-        split("cat Dockerfile"),
-        capture_output=True,
-        text=True).stdout
+    dockerfile = Path("dockerfile").read_text()
     try:
         img: Image = Image.build(
             tag="test",
-            dockerfile_string=stdout)
+            dockerfile_string=dockerfile)
         inspect_process = run(
             split("docker inspect -f='{{.Id}}' test"),
             text=True,
@@ -168,16 +167,13 @@ def test_build_from_string_output_to_file():
     Tests that the build method writes to a file when formatted to do so and
     given a dockerfile string.
     """
+    tmp = NamedTemporaryFile()
+    dockerfile: str = Path("dockerfile").read_text()
     try:
-        tmp = NamedTemporaryFile()
         with open(tmp.name, "w") as file:
-            stdout: str = run(
-                split("cat Dockerfile"),
-                capture_output=True,
-                text=True).stdout
             img: Image = Image.build(
                 tag="test",
-                dockerfile_string=stdout,
+                dockerfile_string=dockerfile,
                 stdout=file,
                 stderr=file)
         with open(tmp.name) as file:

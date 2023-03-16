@@ -354,8 +354,7 @@ class Image:
         Parameters
         ----------
         commands : Iterable[str]
-            An iterable of strings containing the names of commands to be
-            checked for.
+            The commands to be checked.
 
         Returns
         -------
@@ -395,7 +394,6 @@ class Image:
                 stdout=PIPE,
                 stderr=DEVNULL
             )
-            return True
         except CalledProcessError as err:
             # "command -v {cmd}" returns 0 if the command is found, else 1.
             # Thus, the CalledProcessError exception means return False
@@ -405,6 +403,8 @@ class Image:
                 return False
             else:
                 raise err from err
+        else:
+            return True
 
     @property
     def tags(self) -> List[str]:
