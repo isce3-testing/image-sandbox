@@ -12,9 +12,9 @@ def image_id():
     """
     Builds an image for testing and returns its ID.
     """
-    run(split("docker build . -t test"))
+    run(split("docker build . -t isce3_pytest_temp"))
     inspect_process = run(
-        split("docker inspect -f='{{.Id}}' test"),
+        split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
         capture_output=True,
         text=True,
         check=True,

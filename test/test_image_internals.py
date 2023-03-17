@@ -10,7 +10,7 @@ def test_inspect(image_id):
     """Tests that the _inspect method correctly retrieves data from the docker
     image."""
     inspect_process = run(
-        split("docker inspect -f='{{.RepoTags}}' test"),
+        split("docker inspect -f='{{.RepoTags}}' isce3_pytest_temp"),
         capture_output=True,
         text=True,
         check=True,
