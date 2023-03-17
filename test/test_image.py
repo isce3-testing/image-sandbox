@@ -146,7 +146,7 @@ def test_build_from_dockerfile_in_malformed_location():
 def test_build_from_string():
     """Tests that the build method builds and returns an Image when given a
     dockerfile-formatted string."""
-    dockerfile = Path("dockerfile").read_text()
+    dockerfile = Path("Dockerfile").read_text()
     try:
         img: Image = Image.build(
             tag="isce3_pytest_temp",
@@ -169,7 +169,7 @@ def test_build_from_string_output_to_file():
     given a dockerfile string.
     """
     tmp = NamedTemporaryFile()
-    dockerfile: str = Path("dockerfile").read_text()
+    dockerfile: str = Path("Dockerfile").read_text()
     try:
         with open(tmp.name, "w") as file:
             img: Image = Image.build(
