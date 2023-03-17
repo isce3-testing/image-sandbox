@@ -194,7 +194,11 @@ class Image:
             if dockerfile_build:
                 raise DockerBuildError(tag, dockerfile) from err
             else:
-                raise DockerBuildError(tag, dockerfile_string) from err
+                raise DockerBuildError(
+                    tag,
+                    dockerfile_string,
+                    f"String dockerfile {tag} failed to build."
+                ) from err
 
         return cls(tag)
 
@@ -289,9 +293,9 @@ class Image:
             retval = result.stdout
         except CalledProcessError as err:
             if err.returncode == 127:
-                raise CommandNotFoundError(err, split(command)[0]) from err
+                raise CommandNotFoundError(split(command)[0]) from err
             else:
-                raise err from err
+                raise
         return retval
 
     def drop_in(
@@ -328,7 +332,7 @@ class Image:
             )
         except CalledProcessError as err:
             if err.returncode == 127:
-                raise CommandNotFoundError(err, "bash") from err
+                raise CommandNotFoundError("bash") from err
             else:
                 print(f"Drop-in session exited with code {err.returncode}.")
                 return
@@ -379,7 +383,7 @@ class Image:
             if err.returncode == 1:
                 return False
             else:
-                raise err from err
+                raise
         else:
             return True
 
@@ -456,6 +460,12 @@ def get_image_id(name_or_id: str) -> str:
             check=True
         )
     except CalledProcessError as err:
-        raise ImageNotFoundError(tag_or_id=name_or_id) from err
+        # The docker command will return with value 1 if the image was not found.
+        # This should be raised as a more specific ImageNotFoundError. Any other
+        # non-zero return code should be raised as a CalledProcessError.
+        if err.returncode == 1:
+            raise ImageNotFoundError(tag_or_id=name_or_id) from err
+        else:
+            raise
     process_stdout = process.stdout.strip()
     return process_stdout

@@ -1,17 +1,11 @@
-from subprocess import CalledProcessError
-
-
-class CommandNotFoundError(CalledProcessError):
-    def __init__(self, prior_error: CalledProcessError, command_name: str):
-        super(CommandNotFoundError, self).__init__(
-            prior_error.returncode,
-            prior_error.cmd
-        )
+class CommandNotFoundError(Exception):
+    def __init__(self, command_name: str):
         self.command_name = command_name
+        self.message = (f"Command '{self.command_name}' was run, but is not "
+                        "present on the Docker image.")
 
     def __str__(self):
-        return f"Command '{self.command_name}' was run, but is not " + \
-            "present on the Docker image."
+        return self.message
 
 
 class DockerBuildError(Exception):

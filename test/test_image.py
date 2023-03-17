@@ -1,6 +1,6 @@
 from pathlib import Path
 from shlex import split
-from subprocess import PIPE, CalledProcessError, run
+from subprocess import PIPE, run
 from tempfile import NamedTemporaryFile
 
 import pytest
@@ -29,7 +29,7 @@ def test_init(image_id):
 def test_bad_init():
     """
     Tests that the __init__ function on the Image class raises a
-    CalledProcessError when given a malformed name.
+    ImageNotFoundError when given a malformed name.
     """
     img = None
     with pytest.raises(ImageNotFoundError):
@@ -274,12 +274,12 @@ def test_run_interactive_print_to_file(image_id):
 
 def test_run_interactive_malformed_command_exception(image_id):
     """
-    Tests that the run method raises a CalledProcessError when given a
+    Tests that the run method raises a CommandNotFoundError when given a
     malformed command.
     """
     img: Image = Image(image_id)
 
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(CommandNotFoundError):
         img.run("malformedcommand", interactive=True)
 
 
@@ -435,7 +435,7 @@ def test_get_image_id(image_id):
 
 def test_get_image_id_malformed_id_or_name():
     """
-    Validates that the get_image_id method raises a CalledProcessError when
+    Validates that the get_image_id method raises a ImageNotFoundError when
     given a malformed name or ID.
     """
     with pytest.raises(ImageNotFoundError):
