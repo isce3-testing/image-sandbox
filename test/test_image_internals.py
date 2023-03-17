@@ -6,11 +6,11 @@ import pytest
 from docker_cli import Image
 
 
-def test_inspect(image_id):
+def test_inspect(image_tag, image_id):
     """Tests that the _inspect method correctly retrieves data from the docker
     image."""
     inspect_process = run(
-        split("docker inspect -f='{{.RepoTags}}' isce3_pytest_temp"),
+        split("docker inspect -f='{{.RepoTags}}' " + image_tag),
         capture_output=True,
         text=True,
         check=True,

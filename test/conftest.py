@@ -8,20 +8,38 @@ from pytest import fixture
 
 
 @fixture
-def image_id():
+def image_tag():
+    """
+    Returns an image tag
+
+    Returns
+    ------
+    str
+        An image tag
+    """
+    return "isce3_pytest_temp"
+
+
+@fixture
+def image_id(image_tag):
     """
     Builds an image for testing and returns its ID.
+
+    Yields
+    ------
+    str
+        An image ID.
     """
-    run(split("docker build . -t isce3_pytest_temp"))
+    run(split(f"docker build . -t {image_tag}"))
     inspect_process = run(
-        split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+        split("docker inspect -f='{{.Id}}' " + image_tag),
         capture_output=True,
         text=True,
         check=True,
     )
     id = inspect_process.stdout.strip()
     yield id
-    run(split(f"docker image remove {id}"))
+    run(split(f"docker image remove {image_tag}"))
 
 
 def pytest_sessionstart(session):

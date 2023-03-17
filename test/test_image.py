@@ -10,14 +10,14 @@ from docker_cli._exceptions import ImageNotFoundError
 from docker_cli._image import get_image_id
 
 
-def test_init(image_id):
+def test_init(image_tag, image_id):
     """
     Tests that the __init__ function on the Image class is correctly
     receiving and remembering the ID of a docker image.
     """
     id = image_id
     print("ID: " + id)
-    img = Image("isce3_pytest_temp")
+    img = Image(image_tag)
 
     assert img is not None
     assert img.id == id
@@ -37,15 +37,15 @@ def test_bad_init():
     assert img is None
 
 
-def test_build_from_dockerfile():
+def test_build_from_dockerfile(image_tag):
     """
     Tests that the build method constructs and returns an Image when
     given a Dockerfile.
     """
     try:
-        img = Image.build(tag="isce3_pytest_temp", dockerfile="")
+        img = Image.build(tag=image_tag, dockerfile="")
         inspect_process = run(
-            split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+            split("docker inspect -f='{{.Id}}' " + image_tag),
             text=True,
             capture_output=True)
         id = inspect_process.stdout.strip()
@@ -53,10 +53,10 @@ def test_build_from_dockerfile():
         assert img is not None
         assert img.id == id
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
+        run(split(f"docker image rm {image_tag}"))
 
 
-def test_build_from_dockerfile_output_to_file():
+def test_build_from_dockerfile_output_to_file(image_tag):
     """
     Tests that the build method writes to a file when configured to
     do so.
@@ -65,7 +65,7 @@ def test_build_from_dockerfile_output_to_file():
     try:
         with open(tmp.name, "w") as file:
             img = Image.build(
-                tag="isce3_pytest_temp",
+                tag=image_tag,
                 dockerfile="",
                 stdout=file,
                 stderr=file
@@ -74,7 +74,7 @@ def test_build_from_dockerfile_output_to_file():
             assert len(file.read()) > 0
 
         inspect_process = run(
-            split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+            split("docker inspect -f='{{.Id}}' " + image_tag),
             text=True,
             capture_output=True)
         id = inspect_process.stdout.strip()
@@ -82,21 +82,21 @@ def test_build_from_dockerfile_output_to_file():
         assert img is not None
         assert img.id == id
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
+        run(split(f"docker image rm {image_tag}"))
 
 
-def test_build_from_dockerfile_dockerfile_in_different_location():
+def test_build_from_dockerfile_dockerfile_in_different_location(image_tag):
     """
     Tests that the build method can build an image from a dockerfile in a
     different location than the context root directory.
     """
     try:
         img = Image.build(
-            tag="isce3_pytest_temp",
+            tag=image_tag,
             dockerfile="dockerfiles/alpine_functional.dockerfile"
         )
         inspect_process = run(
-            split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+            split("docker inspect -f='{{.Id}}' " + image_tag),
             text=True,
             capture_output=True)
         id = inspect_process.stdout.strip()
@@ -104,10 +104,10 @@ def test_build_from_dockerfile_dockerfile_in_different_location():
         assert img is not None
         assert img.id == id
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
+        run(split("docker image rm " + image_tag))
 
 
-def test_build_from_dockerfile_context_in_different_location():
+def test_build_from_dockerfile_context_in_different_location(image_tag):
     """
     Tests that the build method can build when the context is set to a
     different directory.
@@ -115,11 +115,11 @@ def test_build_from_dockerfile_context_in_different_location():
     try:
         img = Image.build(
             context="dockerfiles",
-            tag="isce3_pytest_temp",
+            tag=image_tag,
             dockerfile="dockerfiles/alpine_functional.dockerfile"
         )
         inspect_process = run(
-            split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+            split("docker inspect -f='{{.Id}}' " + image_tag),
             text=True,
             capture_output=True)
         id = inspect_process.stdout.strip()
@@ -127,10 +127,10 @@ def test_build_from_dockerfile_context_in_different_location():
         assert img is not None
         assert img.id == id
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
+        run(split("docker image rm " + image_tag))
 
 
-def test_build_from_dockerfile_in_malformed_location():
+def test_build_from_dockerfile_in_malformed_location(image_tag):
     """
     Tests that the build method raises a DockerBuildError when a malformed
     dockerfile location is given.
@@ -138,21 +138,21 @@ def test_build_from_dockerfile_in_malformed_location():
     img = None
     with pytest.raises(DockerBuildError):
         img = Image.build(
-            tag="isce3_pytest_temp",
+            tag=image_tag,
             dockerfile="non_existent_directory/Dockerfile")
     assert img is None
 
 
-def test_build_from_string():
+def test_build_from_string(image_tag):
     """Tests that the build method builds and returns an Image when given a
     dockerfile-formatted string."""
     dockerfile = Path("Dockerfile").read_text()
     try:
         img: Image = Image.build(
-            tag="isce3_pytest_temp",
+            tag=image_tag,
             dockerfile_string=dockerfile)
         inspect_process = run(
-            split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+            split("docker inspect -f='{{.Id}}' " + image_tag),
             text=True,
             capture_output=True)
         id = inspect_process.stdout.strip()
@@ -160,10 +160,10 @@ def test_build_from_string():
         assert img is not None
         assert img.id == id
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
+        run(split("docker image rm " + image_tag))
 
 
-def test_build_from_string_output_to_file():
+def test_build_from_string_output_to_file(image_tag):
     """
     Tests that the build method writes to a file when formatted to do so and
     given a dockerfile string.
@@ -173,14 +173,14 @@ def test_build_from_string_output_to_file():
     try:
         with open(tmp.name, "w") as file:
             img: Image = Image.build(
-                tag="isce3_pytest_temp",
+                tag=image_tag,
                 dockerfile_string=dockerfile,
                 stdout=file,
                 stderr=file)
         with open(tmp.name) as file:
             assert len(file.read()) > 0
         inspect_process = run(
-            split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+            split("docker inspect -f='{{.Id}}' " + image_tag),
             text=True,
             capture_output=True)
         id = inspect_process.stdout.strip()
@@ -188,10 +188,10 @@ def test_build_from_string_output_to_file():
         assert img is not None
         assert img.id == id
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
+        run(split("docker image rm " + image_tag))
 
 
-def test_build_from_malformed_string():
+def test_build_from_malformed_string(image_tag):
     """
     Tests that the build method raises a DockerBuildError when a malformed
     dockerfile string is passed to it.
@@ -200,7 +200,7 @@ def test_build_from_malformed_string():
     img = None
     with pytest.raises(DockerBuildError):
         Image.build(
-            tag="isce3_pytest_temp",
+            tag=image_tag,
             dockerfile_string=malformed_string
         )
     assert img is None
@@ -284,7 +284,7 @@ def test_run_interactive_malformed_command_exception(image_id):
         img.run("malformedcommand", interactive=True)
 
 
-def test_tags(image_id):
+def test_tags(image_tag, image_id):
     """
     Tests that an Image.tag call returns the same .RepoTags value as a
     typical docker inspect call.
@@ -292,7 +292,7 @@ def test_tags(image_id):
     img: Image = Image(image_id)
 
     inspect_process = run(
-        split("docker inspect -f='{{.RepoTags}}' isce3_pytest_temp"),
+        split("docker inspect -f='{{.RepoTags}}' " + image_tag),
         capture_output=True,
         text=True,
         check=True,
@@ -302,7 +302,7 @@ def test_tags(image_id):
     assert img.tags == tags
 
 
-def test_id(image_id):
+def test_id(image_tag, image_id):
     """
     Tests that an Image.id call returns the same ID value as given by a docker
     inspect call.
@@ -310,7 +310,7 @@ def test_id(image_id):
     img = Image(image_id)
 
     inspect_process = run(
-        split("docker inspect -f='{{.Id}}' isce3_pytest_temp"),
+        split("docker inspect -f='{{.Id}}' " + image_tag),
         capture_output=True,
         text=True,
         check=True,
@@ -320,7 +320,7 @@ def test_id(image_id):
     assert img.id == id
 
 
-def test_check_command_availability(image_id):
+def test_check_command_availability(image_id, image_tag):
     """
     Tests that a check_command_availability properly returns the set of
     commands that exist on an Image and not ones that don't.
@@ -336,9 +336,9 @@ def test_check_command_availability(image_id):
     try:
         run(split(
             "docker build . --file=dockerfiles/alpine_functional.dockerfile "
-            "-t isce3_pytest_temp_2")
+            f"-t {image_tag}_2")
             )
-        img = Image("isce3_pytest_temp_2")
+        img = Image(f"{image_tag}_2")
 
         retvals_2 = img.check_command_availability(check_me)
         retvals_3 = img.check_command_availability(check_me_2)
@@ -347,11 +347,11 @@ def test_check_command_availability(image_id):
         assert retvals_2 == ['apk', 'wget', 'sh', 'bash']
         assert len(retvals_3) == 0
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
-        run(split("docker image remove isce3_pytest_temp_2"))
+        run(split("docker image rm " + image_tag))
+        run(split(f"docker image remove {image_tag}_2"))
 
 
-def test_check_command_availability_no_bash_exception():
+def test_check_command_availability_no_bash_exception(image_tag):
     """
     Validates that a check_command_availability throws the
     CommandNotFoundOnImageError when called on an image that doesn't have
@@ -363,16 +363,16 @@ def test_check_command_availability_no_bash_exception():
     try:
         run(split(
             "docker build ./ --file=dockerfiles/alpine_broken.dockerfile "
-            "-t isce3_pytest_temp")
+            f"-t {image_tag}")
             )
-        img = Image("isce3_pytest_temp")
+        img = Image(image_tag)
         with pytest.raises(CommandNotFoundError):
             img.check_command_availability(check_me)
     finally:
-        run(split("docker image rm isce3_pytest_temp"))
+        run(split("docker image rm " + image_tag))
 
 
-def test_repr(image_id):
+def test_repr(image_id, image_tag):
     """
     Tests that the __repr__() method of the Image class correctly produces
     representation strings.
@@ -380,7 +380,7 @@ def test_repr(image_id):
     id = image_id
 
     inspect_process = run(
-        split("docker inspect -f='{{.RepoTags}}' isce3_pytest_temp"),
+        split("docker inspect -f='{{.RepoTags}}' " + image_tag),
         capture_output=True,
         text=True,
         check=True,
@@ -392,19 +392,19 @@ def test_repr(image_id):
     assert representation == f"Image(id={id}, tags={tags})"
 
 
-def test_eq(image_id):
+def test_eq(image_id, image_tag):
     """
     Tests that the __eq__() method of the Image class correctly compares
     Images with other Images.
     """
     img = Image(image_id)
 
-    img_2 = Image("isce3_pytest_temp")
+    img_2 = Image(image_tag)
 
     assert img == img_2
 
 
-def test_neq(image_id):
+def test_neq(image_id, image_tag):
     """
     Tests that the internal __ne__() method of the Image class correctly
     compares Images with other nonequal Images and objects.
@@ -412,7 +412,7 @@ def test_neq(image_id):
     img = Image(image_id)
     try:
         img_2 = Image.build(
-            tag="isce3_pytest_temp_2",
+            tag=image_tag + "_2",
             dockerfile="dockerfiles/alpine_functional.dockerfile"
         )
 
@@ -420,17 +420,17 @@ def test_neq(image_id):
         assert img != 0
         assert img != img_2
     finally:
-        run(split("docker image remove isce3_pytest_temp_2"))
+        run(split(f"docker image remove {image_tag}_2"))
 
 
-def test_get_image_id(image_id):
+def test_get_image_id(image_id, image_tag):
     """
     Tests that the get_image_id method returns the correct ID when given a
     properly-formed ID or docker image name.
     """
     id = image_id
 
-    id_test = get_image_id("isce3_pytest_temp")
+    id_test = get_image_id(image_tag)
     assert id_test == id
 
     id_test_2 = get_image_id(id)
