@@ -241,7 +241,7 @@ class Image:
         stderr: Optional[Union[io.TextIOBase, int]] = None,
         interactive: bool = False,
         network: str = "host"
-    ):
+    ) -> str:
         """
         Run the given command on a container.
 
