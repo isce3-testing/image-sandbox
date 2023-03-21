@@ -316,7 +316,7 @@ class Image:
 
         Raises
         -------
-        CommandNotFoundOnImageError:
+        CommandNotFoundError:
             When bash is not recognized on the image.
         """
         cmd = ["docker", "run", f"--network={network}", "--rm", "-i"]
