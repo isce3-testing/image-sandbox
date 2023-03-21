@@ -2,6 +2,12 @@ import os
 import sys
 from pathlib import Path
 
+# This import is necessary for the fixtures to be visible to the test files.
+# Importing fixtures directly into a file can cause some non-trivial problems with
+# dependencies, since a fixture that depends on other fixtures will not automatically
+# import them.
+from .fixtures import *
+
 
 def pytest_sessionstart(session):
 

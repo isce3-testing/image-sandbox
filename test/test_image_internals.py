@@ -1,32 +1,31 @@
 from shlex import split
 from subprocess import CalledProcessError, run
 
-import pytest
+from pytest import mark, raises
 
 from docker_cli import Image
 
-from .utils import image_id, image_tag
 
+@mark.images
+class TestImageInternals:
+    def test_inspect(self, image_tag, image_id):
+        """Tests that the _inspect method correctly retrieves data from the docker
+        image."""
+        inspect_process = run(
+            split("docker inspect -f='{{.RepoTags}}' " + image_tag),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        tags = inspect_process.stdout.strip()
 
-def test_inspect(image_tag, image_id):
-    """Tests that the _inspect method correctly retrieves data from the docker
-    image."""
-    inspect_process = run(
-        split("docker inspect -f='{{.RepoTags}}' " + image_tag),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    tags = inspect_process.stdout.strip()
+        img: Image = Image(image_id)
+        img_tags = img._inspect(format="{{.RepoTags}}").strip()
+        assert img_tags == tags
 
-    img: Image = Image(image_id)
-    img_tags = img._inspect(format="{{.RepoTags}}").strip()
-    assert img_tags == tags
-
-
-def test_inspect_malformed(image_id):
-    """Tests that the _inspect method correctly raises a CalledProcessError
-    when a malformed string is passed to it"""
-    img: Image = Image(image_id)
-    with pytest.raises(CalledProcessError):
-        img._inspect(format="{{.MalformedInspect}}").strip()
+    def test_inspect_malformed(self, image_id):
+        """Tests that the _inspect method correctly raises a CalledProcessError
+        when a malformed string is passed to it"""
+        img: Image = Image(image_id)
+        with raises(CalledProcessError):
+            img._inspect(format="{{.MalformedInspect}}").strip()

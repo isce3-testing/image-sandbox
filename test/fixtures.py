@@ -1,3 +1,5 @@
+"""This file contains all fixtures that are needed by multiple test files."""
+
 from shlex import split
 from subprocess import run
 
