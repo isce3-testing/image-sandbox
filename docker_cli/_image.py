@@ -349,7 +349,7 @@ class Image:
 
         Returns
         -------
-        Iterable[str]
+        List[str]
             The names of all commands in `commands` that were present on the
             image.
         """
