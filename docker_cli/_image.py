@@ -148,7 +148,7 @@ class Image:
         stdout=None,
         stderr=None,
         network="host",
-        no_cache=True
+        no_cache=False
     ):
         if dockerfile is not None and dockerfile_string is not None:
             raise ValueError(
