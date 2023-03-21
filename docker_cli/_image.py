@@ -301,7 +301,7 @@ class Image:
     def drop_in(
             self,
             network: str = "host"
-    ):
+    ) -> None:
         """
         Start a drop-in session on a disposable container.
 
