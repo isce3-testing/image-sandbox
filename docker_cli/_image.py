@@ -191,12 +191,10 @@ class Image:
             )
         except CalledProcessError as err:
             if dockerfile_build:
-                raise DockerBuildError(tag, dockerfile) from err
+                raise DockerBuildError(image_tag=tag, dockerfile=dockerfile) from err
             else:
                 raise DockerBuildError(
-                    tag,
-                    dockerfile_string,
-                    f"String dockerfile {tag} failed to build."
+                    message=f"String dockerfile {tag} failed to build."
                 ) from err
 
         return cls(tag)
