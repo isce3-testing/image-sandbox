@@ -356,7 +356,7 @@ def test_check_command_availability(image_id, image_tag):
 def test_check_command_availability_no_bash_exception(image_tag):
     """
     Validates that a check_command_availability throws the
-    CommandNotFoundOnImageError when called on an image that doesn't have
+    CommandNotFoundError when called on an image that doesn't have
     bash installed.
     """
     check_me = [

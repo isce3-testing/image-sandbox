@@ -43,8 +43,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
-        context: Union[str, os.PathLike[str]],
         dockerfile: Optional[os.PathLike[str]],
+        context: Union[str, os.PathLike[str]],
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
         network: str,
@@ -60,11 +60,11 @@ class Image:
         ----------
         tag : str
             A name for the image.
-        context : os.PathLike, optional
-            The build context. Defaults to ".".
         dockerfile : os.PathLike
             The path of the Dockerfile to build, relative to the `context`
             directory.
+        context : os.PathLike, optional
+            The build context. Defaults to ".".
         stdout : io.TextIOBase or special value, optional
             For a description of valid values, see :func:`subprocess.run`.
         stderr : io.TextIOBase or special value, optional
@@ -95,8 +95,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
-        context: Union[str, os.PathLike[str]],
         dockerfile_string: str,
+        context: Union[str, os.PathLike[str]],
         stdout: Optional[io.TextIOBase],
         stderr: Optional[io.TextIOBase],
         network: str,
@@ -109,10 +109,10 @@ class Image:
         ----------
         tag : str
             A name for the image.
-        context : os.PathLike, optional
-            The build context. Defaults to ".".
         dockerfile_string : str
             A Dockerfile-formatted string.
+        context : os.PathLike, optional
+            The build context. Defaults to ".".
         stdout : io.TextIOBase or special value, optional
             For a description of valid values, see :func:`subprocess.run`.
         stderr : io.TextIOBase or special value, optional
@@ -142,9 +142,9 @@ class Image:
         cls,
         tag,
         *,
-        context=".",
         dockerfile=None,
         dockerfile_string=None,
+        context=".",
         stdout=None,
         stderr=None,
         network="host",
@@ -258,7 +258,7 @@ class Image:
             For a description of valid values, see :func:`subprocess.run`.
         interactive : bool, optional
             A boolean describing whether or not to run this command in
-            interactive mode or not. Defaults to True.
+            interactive mode or not. Defaults to False.
         network : str, optional
             The name of the network. Defaults to "host".
 
@@ -269,7 +269,7 @@ class Image:
 
         Raises
         -------
-        CommandNotFoundOnImageError:
+        CommandNotFoundError:
             When a command is attempted that is not recognized on the image.
         """
         cmd = ["docker", "run", f"--network={network}", "--rm"]
@@ -298,8 +298,8 @@ class Image:
         return retval
 
     def drop_in(
-            self,
-            network: str = "host"
+        self,
+        network: str = "host"
     ) -> None:
         """
         Start a drop-in session on a disposable container.
@@ -318,24 +318,7 @@ class Image:
         CommandNotFoundError:
             When bash is not recognized on the image.
         """
-        cmd = ["docker", "run", f"--network={network}", "--rm", "-i"]
-        if stdin.isatty():
-            cmd += ["--tty"]
-        cmd += [self._id, "bash"]
-
-        try:
-            run(
-                cmd,
-                text=True,
-                check=True
-            )
-        except CalledProcessError as err:
-            if err.returncode == 127:
-                raise CommandNotFoundError("bash") from err
-            else:
-                print(f"Drop-in session exited with code {err.returncode}.")
-                return
-        print("Drop-in session exited with code 0.")
+        self.run("bash", interactive=True, network=network)
 
     def check_command_availability(self, commands: Iterable[str]) -> List[str]:
         """
