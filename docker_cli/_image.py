@@ -62,9 +62,9 @@ class Image:
             A name for the image.
         context : os.PathLike, optional
             The build context. Defaults to ".".
-        dockerfile : os.PathLike, optional
+        dockerfile : os.PathLike
             The path of the Dockerfile to build, relative to the `context`
-            directory. Defaults to None.
+            directory.
         stdout : io.TextIOBase or special value, optional
             For a description of valid values, see :func:`subprocess.run`.
         stderr : io.TextIOBase or special value, optional
