@@ -73,7 +73,7 @@ class Image:
             The name of the network. Defaults to "host".
         no-cache : bool, optional
             A boolean designating whether or not the docker build should use
-            the cache.
+            the cache. Defaults to False.
 
         Returns
         -------
