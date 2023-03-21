@@ -5,6 +5,8 @@ import pytest
 
 from docker_cli import Image
 
+from .utils import image_id, image_tag
+
 
 def test_inspect(image_tag, image_id):
     """Tests that the _inspect method correctly retrieves data from the docker

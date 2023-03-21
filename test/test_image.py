@@ -9,6 +9,8 @@ from docker_cli import CommandNotFoundError, DockerBuildError, Image
 from docker_cli._exceptions import ImageNotFoundError
 from docker_cli._image import get_image_id
 
+from .utils import image_id, image_tag
+
 
 def test_init(image_tag, image_id):
     """
