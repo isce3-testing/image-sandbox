@@ -71,7 +71,7 @@ class Image:
             For a description of valid values, see :func:`subprocess.run`.
         network : str, optional
             The name of the network. Defaults to "host".
-        no-cache : bool, optional
+        no_cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache. Defaults to False.
 
