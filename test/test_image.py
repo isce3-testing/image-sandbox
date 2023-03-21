@@ -144,8 +144,10 @@ def test_build_from_dockerfile_in_malformed_location(image_tag):
 
 
 def test_build_from_string(image_tag):
-    """Tests that the build method builds and returns an Image when given a
-    dockerfile-formatted string."""
+    """
+    Tests that the build method builds and returns an Image when given a
+    dockerfile-formatted string.
+    """
     dockerfile = Path("Dockerfile").read_text()
     try:
         img: Image = Image.build(
