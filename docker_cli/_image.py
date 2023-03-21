@@ -164,8 +164,7 @@ class Image:
             "build",
             f"--network={network}",
             context_str,
-            "-t",
-            tag
+            f"-t={tag}"
         ]
 
         if no_cache:
