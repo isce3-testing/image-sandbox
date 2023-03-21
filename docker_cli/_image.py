@@ -251,7 +251,7 @@ class Image:
         Parameters
         ----------
         cmd : str
-            The desired command, in linux command format.
+            The desired command, in Unix shell syntax.
         stdout : io.TextIOBase or special value, optional
             For a description of valid values, see :func:`subprocess.run`.
         stderr : io.TextIOBase or special value, optional
