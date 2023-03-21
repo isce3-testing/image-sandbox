@@ -1,11 +1,8 @@
 class CommandNotFoundError(Exception):
     def __init__(self, command_name: str):
         self.command_name = command_name
-        self.message = (f"Command '{self.command_name}' was run, but is not "
-                        "present on the Docker image.")
-
-    def __str__(self):
-        return self.message
+        super().__init__(f"Command '{self.command_name}' was run, but is not "
+                          "present on the Docker image.")
 
 
 class DockerBuildError(Exception):
