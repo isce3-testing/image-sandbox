@@ -1,12 +1,16 @@
 """This file contains all fixtures that are needed by multiple test files."""
-
 from shlex import split
 from subprocess import run
+from textwrap import dedent
 
 from pytest import fixture
 
+from docker_cli.utils import generate_codename
 
-@fixture
+from .utils import remove_docker_image
+
+
+@fixture(scope="function")
 def image_tag():
     """
     Returns an image tag
@@ -16,10 +20,11 @@ def image_tag():
     str
         An image tag
     """
-    return "isce3_pytest_temp"
+    tag = f"isce3_pytest_temp_{generate_codename(k=10)}"
+    yield tag
 
 
-@fixture
+@fixture(scope="function")
 def image_id(image_tag):
     """
     Builds an image for testing and returns its ID.
@@ -29,7 +34,12 @@ def image_id(image_tag):
     str
         An image ID.
     """
-    run(split(f"docker build . -t {image_tag}"))
+    dockerfile = dedent(f"""\
+        FROM ubuntu
+
+        RUN echo {image_tag}
+    """.rstrip())
+    run(split(f"docker build . -t {image_tag} -f-"), text=True, input=dockerfile)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' " + image_tag),
         capture_output=True,
@@ -38,4 +48,4 @@ def image_id(image_tag):
     )
     id = inspect_process.stdout.strip()
     yield id
-    run(split(f"docker image remove {image_tag}"))
+    remove_docker_image(image_tag)

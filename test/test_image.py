@@ -9,6 +9,8 @@ from docker_cli import CommandNotFoundError, DockerBuildError, Image
 from docker_cli._exceptions import ImageNotFoundError
 from docker_cli._image import get_image_id
 
+from .utils import remove_docker_image
+
 
 @mark.images
 class TestImage:
@@ -51,9 +53,9 @@ class TestImage:
             id = inspect_process.stdout.strip()
 
             assert img is not None
-            assert img.id == id
+            assert img.id == str(id)
         finally:
-            run(split(f"docker image rm {image_tag}"))
+            remove_docker_image(image_tag)
 
     def test_build_from_dockerfile_output_to_file(self, image_tag):
         """
@@ -81,7 +83,7 @@ class TestImage:
             assert img is not None
             assert img.id == id
         finally:
-            run(split(f"docker image rm {image_tag}"))
+            remove_docker_image(image_tag)
 
     def test_build_from_dockerfile_dockerfile_in_different_location(self, image_tag):
         """
@@ -102,7 +104,7 @@ class TestImage:
             assert img is not None
             assert img.id == id
         finally:
-            run(split("docker image rm " + image_tag))
+            remove_docker_image(image_tag)
 
     def test_build_from_dockerfile_context_in_different_location(self, image_tag):
         """
@@ -124,7 +126,7 @@ class TestImage:
             assert img is not None
             assert img.id == id
         finally:
-            run(split("docker image rm " + image_tag))
+            remove_docker_image(image_tag)
 
     def test_build_from_dockerfile_in_malformed_location(self, image_tag):
         """
@@ -157,7 +159,7 @@ class TestImage:
             assert img is not None
             assert img.id == id
         finally:
-            run(split("docker image rm " + image_tag))
+            remove_docker_image(image_tag)
 
     def test_build_from_string_output_to_file(self, image_tag):
         """
@@ -184,7 +186,7 @@ class TestImage:
             assert img is not None
             assert img.id == id
         finally:
-            run(split("docker image rm " + image_tag))
+            remove_docker_image(image_tag)
 
     def test_build_from_malformed_string(self, image_tag):
         """
@@ -334,8 +336,7 @@ class TestImage:
             assert retvals_2 == ['apk', 'wget', 'sh', 'bash']
             assert len(retvals_3) == 0
         finally:
-            run(split("docker image rm " + image_tag))
-            run(split(f"docker image remove {image_tag}_2"))
+            remove_docker_image(f"{image_tag}_2")
 
     def test_check_command_availability_no_bash_exception(self, image_tag):
         """
@@ -355,7 +356,7 @@ class TestImage:
             with raises(CommandNotFoundError):
                 img.check_command_availability(check_me)
         finally:
-            run(split("docker image rm " + image_tag))
+            remove_docker_image(image_tag)
 
     def test_repr(self, image_id, image_tag):
         """
@@ -403,7 +404,7 @@ class TestImage:
             assert img != 0
             assert img != img_2
         finally:
-            run(split(f"docker image remove {image_tag}_2"))
+            remove_docker_image(f"{image_tag}_2")
 
     def test_get_image_id(self, image_id, image_tag):
         """
