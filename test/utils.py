@@ -2,6 +2,15 @@ from shlex import split
 from subprocess import run
 
 
+def determine_scope(
+    fixture_name,
+    config
+):
+    if config.option.numprocesses in ["auto", "logical"]:
+        return "function"
+    return "session"
+
+
 def remove_docker_image(tag_or_id: str):
     """
     Idiot-proof removal of a docker image.

@@ -7,10 +7,10 @@ from pytest import fixture
 
 from docker_cli.utils import generate_codename
 
-from .utils import remove_docker_image
+from .utils import determine_scope, remove_docker_image
 
 
-@fixture(scope="function")
+@fixture(scope=determine_scope)
 def image_tag():
     """
     Returns an image tag
