@@ -5,7 +5,22 @@ from subprocess import run
 def determine_scope(
     fixture_name,
     config
-):
+) -> str:
+    """
+    Sets the scope of certain fixtures.
+
+    Parameters
+    ----------
+    fixture_name
+        The name of the fixture.
+    config
+        A pytest internal object.
+
+    Returns
+    -------
+    str
+        The scope name.
+    """
     if config.option.numprocesses in ["auto", "logical"]:
         return "function"
     return "session"
