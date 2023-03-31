@@ -318,12 +318,8 @@ class Image:
         CommandNotFoundError:
             When bash is not recognized on the image.
         """
-        self.run(  # pragma: no cover
-            "bash",
-            interactive=True,
-            network=network,
-            check=False
-        )
+        self.run("bash", interactive=True, network=network, check=False) \
+            # pragma: no cover
 
     def check_command_availability(self, commands: Iterable[str]) -> List[str]:
         """
