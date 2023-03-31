@@ -33,7 +33,7 @@ def image_id(image_tag):
     str
         An image ID.
     """
-    dockerfile = dedent(f"""\
+    dockerfile = dedent(f"""
         FROM ubuntu
 
         RUN echo {image_tag}
