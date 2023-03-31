@@ -145,7 +145,7 @@ class TestImage:
         Tests that the build method builds and returns an Image when given a
         dockerfile-formatted string.
         """
-        dockerfile = Path("Dockerfile").read_text()
+        dockerfile = Path("Dockerfile").read_text() + f"\nRUN mkdir {image_tag}"
         try:
             img: Image = Image.build(
                 tag=image_tag,
@@ -167,7 +167,7 @@ class TestImage:
         given a dockerfile string.
         """
         tmp = NamedTemporaryFile()
-        dockerfile: str = Path("Dockerfile").read_text()
+        dockerfile: str = Path("Dockerfile").read_text() + f"\nRUN mkdir {image_tag}"
         try:
             with open(tmp.name, "w") as file:
                 img: Image = Image.build(
@@ -344,9 +344,7 @@ class TestImage:
         CommandNotFoundError when called on an image that doesn't have
         bash installed.
         """
-        check_me = [
-            "apk"
-        ]
+        check_me = ["apk"]
         try:
             run(split(
                 "docker build ./ --file=dockerfiles/alpine_broken.dockerfile "

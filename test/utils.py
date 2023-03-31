@@ -2,10 +2,7 @@ from shlex import split
 from subprocess import run
 
 
-def determine_scope(
-    fixture_name,
-    config
-) -> str:
+def determine_scope(fixture_name, config) -> str:
     """
     Sets the scope of certain fixtures.
 
@@ -21,9 +18,10 @@ def determine_scope(
     str
         The scope name.
     """
-    if config.option.numprocesses in ["auto", "logical"]:
-        return "function"
-    return "session"
+    if hasattr(config.option, "numprocesses"):
+        if config.option.numprocesses in ["auto", "logical"]:
+            return "function"
+    return "function"
 
 
 def remove_docker_image(tag_or_id: str):

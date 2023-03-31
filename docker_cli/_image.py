@@ -1,7 +1,7 @@
 import io
 import os
 from shlex import split
-from subprocess import DEVNULL, PIPE, CalledProcessError, run
+from subprocess import DEVNULL, CalledProcessError, run
 from sys import stdin
 from typing import (Any, Iterable, List, Optional, Type, TypeVar, Union,
                     overload)
@@ -61,7 +61,7 @@ class Image:
         tag : str
             A name for the image.
         dockerfile : os.PathLike
-            The path of the Dockerfile to build, relative to the `context`
+            The path of the Dockerfile to build
             directory.
         context : os.PathLike, optional
             The build context. Defaults to ".".
@@ -119,7 +119,7 @@ class Image:
             For a description of valid values, see :func:`subprocess.run`.
         network : str, optional
             The name of the network. Defaults to "host".
-        no-cache : bool, optional
+        no_cache : bool, optional
             A boolean designating whether or not the docker build should use
             the cache. Defaults to False.
 
@@ -191,10 +191,12 @@ class Image:
             )
         except CalledProcessError as err:
             if dockerfile_build:
-                raise DockerBuildError(image_tag=tag, dockerfile=dockerfile) from err
+                raise DockerBuildError(
+                    f"Dockerfile {tag} at {dockerfile} failed to build."
+                ) from err
             else:
                 raise DockerBuildError(
-                    message=f"String dockerfile {tag} failed to build."
+                    f"String dockerfile {tag} failed to build."
                 ) from err
 
         return cls(tag)
@@ -237,7 +239,8 @@ class Image:
         stdout: Optional[Union[io.TextIOBase, int]] = None,
         stderr: Optional[Union[io.TextIOBase, int]] = None,
         interactive: bool = False,
-        network: str = "host"
+        network: str = "host",
+        check: bool = True
     ) -> str:
         """
         Run the given command on a container.
@@ -259,6 +262,9 @@ class Image:
             interactive mode or not. Defaults to False.
         network : str, optional
             The name of the network. Defaults to "host".
+        check: bool, optional
+            If True, check for CalledProcessErrors on non-zero return codes. Defualts
+            to True.
 
         Returns
         -------
@@ -274,7 +280,7 @@ class Image:
         if interactive:
             cmd += ["-i"]
             if stdin.isatty():
-                cmd += ["--tty"]
+                cmd += ["--tty"]  # pragma: no cover
         cmd += [self._id, "bash"]
         cmd += ["-ci"] if interactive else ["-c"]
         cmd += split(f"'{command}'")
@@ -285,20 +291,16 @@ class Image:
                 text=True,
                 stdout=stdout,  # type: ignore
                 stderr=stderr,  # type: ignore
-                check=True
+                check=check
             )
-            retval = result.stdout
         except CalledProcessError as err:
             if err.returncode == 127:
                 raise CommandNotFoundError(split(command)[0]) from err
             else:
                 raise
-        return retval
+        return result.stdout
 
-    def drop_in(
-        self,
-        network: str = "host"
-    ) -> None:
+    def drop_in(self, network: str = "host") -> None:
         """
         Start a drop-in session on a disposable container.
 
@@ -316,7 +318,12 @@ class Image:
         CommandNotFoundError:
             When bash is not recognized on the image.
         """
-        self.run("bash", interactive=True, network=network)
+        self.run(  # pragma: no cover
+            "bash",
+            interactive=True,
+            network=network,
+            check=False
+        )
 
     def check_command_availability(self, commands: Iterable[str]) -> List[str]:
         """
@@ -342,7 +349,7 @@ class Image:
         Parameters
         ----------
         command : str
-            The name of the command (e.g. "curl", "echo")
+            The name of the command (e.g. "curl", "echo").
 
         Returns
         -------
@@ -350,11 +357,7 @@ class Image:
             True if the command is present, False if not.
         """
         try:
-            self.run(
-                f"command -v {command}",
-                stdout=PIPE,
-                stderr=DEVNULL
-            )
+            self.run(f"command -v {command}", stdout=DEVNULL)
         except CalledProcessError as err:
             # "command -v {cmd}" returns 0 if the command is found, else 1.
             # Thus, the CalledProcessError exception means return False
@@ -363,7 +366,7 @@ class Image:
             if err.returncode == 1:
                 return False
             else:
-                raise
+                raise  # pragma: no cover
         else:
             return True
 
@@ -444,8 +447,8 @@ def get_image_id(name_or_id: str) -> str:
         # This should be raised as a more specific ImageNotFoundError. Any other
         # non-zero return code should be raised as a CalledProcessError.
         if err.returncode == 1:
-            raise ImageNotFoundError(tag_or_id=name_or_id) from err
+            raise ImageNotFoundError(name_or_id) from err
         else:
-            raise
+            raise  # pragma: no cover
     process_stdout = process.stdout.strip()
     return process_stdout

@@ -2,7 +2,7 @@ import random
 from string import ascii_lowercase, digits
 
 
-def generate_codename(k: int = 10) -> str:
+def generate_random_string(k: int = 10) -> str:
     """
     Generates a random lowercase alphanumeric string.
 
@@ -12,7 +12,7 @@ def generate_codename(k: int = 10) -> str:
     Parameters
     ----------
     k : int, optional
-        The number of characters in the string, by default 10
+        The number of characters in the string. Defaults to 10.
 
     Returns
     -------

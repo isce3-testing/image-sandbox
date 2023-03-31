@@ -5,7 +5,7 @@ from textwrap import dedent
 
 from pytest import fixture
 
-from docker_cli.utils import generate_codename
+from docker_cli.utils import generate_random_string
 
 from .utils import determine_scope, remove_docker_image
 
@@ -13,15 +13,14 @@ from .utils import determine_scope, remove_docker_image
 @fixture(scope=determine_scope)
 def image_tag():
     """
-    Returns an image tag
+    Returns an image tag with a random suffix.
 
     Returns
     ------
     str
         An image tag
     """
-    tag = f"isce3_pytest_temp_{generate_codename(k=10)}"
-    yield tag
+    yield f"isce3_pytest_temp_{generate_random_string()}"
 
 
 @fixture(scope="function")
@@ -38,7 +37,7 @@ def image_id(image_tag):
         FROM ubuntu
 
         RUN echo {image_tag}
-    """.rstrip())
+    """).strip()
     run(split(f"docker build . -t {image_tag} -f-"), text=True, input=dockerfile)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' " + image_tag),

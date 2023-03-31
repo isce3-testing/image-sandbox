@@ -9,8 +9,10 @@ from docker_cli import Image
 @mark.images
 class TestImageInternals:
     def test_inspect(self, image_tag, image_id):
-        """Tests that the _inspect method correctly retrieves data from the docker
-        image."""
+        """
+        Tests that the _inspect method correctly retrieves data from the docker
+        image.
+        """
         inspect_process = run(
             split("docker inspect -f='{{.RepoTags}}' " + image_tag),
             capture_output=True,
@@ -24,8 +26,10 @@ class TestImageInternals:
         assert img_tags == tags
 
     def test_inspect_malformed(self, image_id):
-        """Tests that the _inspect method correctly raises a CalledProcessError
-        when a malformed string is passed to it"""
+        """
+        Tests that the _inspect method correctly raises a CalledProcessError
+        when a malformed string is passed to it.
+        """
         img: Image = Image(image_id)
         with raises(CalledProcessError):
             img._inspect(format="{{.MalformedInspect}}").strip()
