@@ -19,7 +19,9 @@ class CommandNotFoundError(Exception):
 
 class DockerBuildError(Exception):
     """Raised when a docker image fails to build"""
-    pass
+
+    def __init__(self, message: str = ""):
+        super().__init__(message)
 
 
 class ImageNotFoundError(Exception):
