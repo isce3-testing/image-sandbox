@@ -1,17 +1,13 @@
 import io
-import os
 import random
 import re
 from shlex import split
 from string import ascii_lowercase, digits
 from subprocess import DEVNULL, CalledProcessError, run
 from threading import Lock
-from typing import Optional, Tuple, Type, Union
+from typing import Optional, Tuple, Type
 
-from ._docker_cuda import (CUDADockerfileGenerator,
-                           get_cuda_dockerfile_generator)
-from ._docker_mamba import mamba_add_specs_dockerfile, mamba_install_dockerfile
-from ._dockerfile import Dockerfile, Image
+from ._image import Image
 from ._shell_cmds import (PackageManager, URLReader, get_package_manager,
                           get_supported_package_managers,
                           get_supported_url_readers, get_url_reader)
@@ -27,132 +23,6 @@ def universal_tag_prefix() -> str:
         The prefix.
     """
     return "dcli"
-
-
-def _generate_micromamba_runtime_dockerfile(
-    env_specfile: Union[os.PathLike, str]
-) -> Dockerfile:
-    """
-    Creates a micromamba runtime dockerfile.
-
-    Parameters
-    ----------
-    env_specfile : os.PathLike
-        A specfile location.
-    env_name : str
-        The name of the micromamba environment.
-
-    Returns
-    -------
-    Dockerfile
-        The generated dockerfile.
-    """
-
-    dockerfile = mamba_install_dockerfile(
-        env_specfile=env_specfile
-    )
-    return dockerfile
-
-
-def _generate_micromamba_dev_dockerfile(
-    env_specfile: Union[os.PathLike, str]
-) -> Dockerfile:
-    """
-    Creates a micromamba dev dockerfile.
-
-    Parameters
-    ----------
-    env_specfile : os.PathLike
-        A specfile location.
-    env_name : str
-        The name of the micromamba environment.
-
-    Returns
-    -------
-    Dockerfile
-        The generated dockerfile.
-    """
-
-    dockerfile = mamba_add_specs_dockerfile(
-        env_specfile=env_specfile
-    )
-    return dockerfile
-
-
-def _generate_cuda_runtime_dockerfile(
-    package_manager: Union[PackageManager, str],
-    cuda_major: int,
-    cuda_minor: int,
-    url_reader: Type[URLReader],
-    cuda_repo: str,
-    *,
-    arch: str = "x86_64"
-) -> Dockerfile:
-    """
-    Generate a dockerfile for the CUDA runtime.
-
-    Parameters
-    ----------
-    package_manager : Union[PackageManager, str]
-        The desired package manager.
-    cuda_major : int, optional
-        The CUDA major version.
-    cuda_minor : int, optional
-        The CUDA minor version.
-    url_reader : str, optional
-        The desired URL reader program.
-    cuda_repo : str, optional
-        The CUDA repo to install.
-    arch : str, optional
-        The system architecture as used by the CUDA repo file structure.
-
-    Returns
-    -------
-    Dockerfile
-        The generated dockerfile.
-    """
-    cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
-        pkg_mgr=package_manager,
-        url_reader=url_reader
-    )
-    dockerfile = cuda_gen.generate_runtime_dockerfile(
-        cuda_ver_major=cuda_major,
-        cuda_ver_minor=cuda_minor,
-        repo_ver=cuda_repo,
-        arch=arch
-    )
-    return dockerfile
-
-
-def _generate_cuda_dev_dockerfile(
-    package_manager: Union[PackageManager, str],
-    url_reader: Union[Type[URLReader], str]
-) -> Dockerfile:
-    """
-    Generates a dev environment dockerfile.
-
-    Parameters
-    ----------
-    package_manager : Union[PackageManager, str]
-        The desired package manager.
-    url_reader : Union[URLReader, str]
-        The desired URL reader program. (e.g. wget, curl.)
-
-    Returns
-    -------
-    Dockerfile
-        The generated dockerfile.
-    """
-    if isinstance(url_reader, str):
-        reader: Type[URLReader] = get_url_reader(url_reader)
-    else:
-        reader = url_reader
-    cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
-        pkg_mgr=package_manager,
-        url_reader=reader
-    )
-    dockerfile = cuda_gen.generate_dev_dockerfile()
-    return dockerfile
 
 
 def _package_manager_check(

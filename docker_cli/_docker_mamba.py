@@ -1,15 +1,13 @@
 import os
 import textwrap
-from typing import List, Optional, Union
-
-from ._dockerfile import Dockerfile
+from typing import List, Optional, Tuple, Union
 
 
 def mamba_install_dockerfile(
     env_specfile: Union[os.PathLike[str], str] = "spec-file.txt"
-) -> Dockerfile:
+) -> Tuple[str, str]:
     """
-    Creates and returns a Dockerfile for installing micromamba.
+    Creates and returns a dockerfile for installing micromamba.
 
     Parameters
     ----------
@@ -18,23 +16,21 @@ def mamba_install_dockerfile(
 
     Returns
     -------
-    Dockerfile
-        The generated dockerfile.
+    str
+        The generated dockerfile body.
     """
     body = _mamba_install_body(
         env_specfile=env_specfile
     )
-    return Dockerfile(
-        header=_mamba_install_prefix(),
-        body=body
-    )
+    header = _mamba_install_prefix()
+    return header, body
 
 
 def mamba_add_specs_dockerfile(
     env_specfile: Union[os.PathLike, str] = "spec-file.txt"
-) -> Dockerfile:
+) -> str:
     """
-    Creates a Dockerfile for adding micromamba environment specs.
+    Creates a dockerfile for adding micromamba environment specs.
 
     Parameters
     ----------
@@ -43,14 +39,13 @@ def mamba_add_specs_dockerfile(
 
     Returns
     -------
-    Dockerfile
-        The generated dockerfile.
+    str
+        The generated dockerfile body.
     """
-    body = _mamba_spec_command(
+    return _mamba_spec_command(
         specfile=env_specfile,
         command="install"
     )
-    return Dockerfile(body=body)
 
 
 def mamba_lockfile_command(

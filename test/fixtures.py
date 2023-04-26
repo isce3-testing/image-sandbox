@@ -2,12 +2,14 @@
 from shlex import split
 from subprocess import run
 from textwrap import dedent
+from typing import Iterator, Tuple, Type
 
 from pytest import fixture
 
-from docker_cli.utils import generate_random_string
+from docker_cli import Image, PackageManager, URLReader
+from docker_cli.setup_commands import _image_command_check, setup_init
 
-from .utils import determine_scope, remove_docker_image
+from .utils import determine_scope, generate_tag, remove_docker_image
 
 
 @fixture(scope=determine_scope)
@@ -20,10 +22,11 @@ def image_tag():
     str
         An image tag
     """
-    yield f"isce3_pytest_temp_{generate_random_string()}"
+    tag = generate_tag("temp")
+    yield tag
 
 
-@fixture(scope="function")
+@fixture(scope=determine_scope)
 def image_id(image_tag):
     """
     Builds an image for testing and returns its ID.
@@ -36,7 +39,7 @@ def image_id(image_tag):
     dockerfile = dedent(f"""
         FROM ubuntu
 
-        RUN echo {image_tag}
+        RUN mkdir {image_tag}
     """).strip()
     run(split(f"docker build . -t {image_tag} -f-"), text=True, input=dockerfile)
     inspect_process = run(
@@ -48,3 +51,67 @@ def image_id(image_tag):
     id = inspect_process.stdout.strip()
     yield id
     remove_docker_image(image_tag)
+
+
+@fixture(scope=determine_scope, params=["ubuntu", "oraclelinux:8.4"])
+def base_tag(request) -> str:
+    """The tag of the base image."""
+    return request.param
+
+
+@fixture(scope=determine_scope)
+def init_tag() -> str:
+    """
+    Returns an initialization image tag.
+
+    Returns
+    -------
+    str
+        The initialization image tag.
+    """
+    return generate_tag("base")
+
+
+@fixture(scope=determine_scope)
+def init_image(base_tag: str, init_tag: str) -> Iterator[Image]:
+    """
+    Yields an initialization image, then later deletes it.
+
+    Parameters
+    ----------
+    init_tag : str
+        The initialization image tag.
+    init_base_tag : str
+        The base image tag.
+
+    Yields
+    ------
+    Iterator[Image]
+        The initialization tag generator.
+    """
+    img, _, _ = setup_init(
+        base=base_tag,
+        tag=init_tag,
+        no_cache=False
+    )
+    yield img
+    remove_docker_image(init_tag)
+
+
+@fixture(scope=determine_scope)
+def base_properties(base_tag: str) -> Tuple[PackageManager, Type[URLReader]]:
+    """
+    Returns the package manager and URL reader needed for this CUDA test.
+
+    Parameters
+    ----------
+    base_tag : Tuple[str, str]
+        The base tag.
+
+    Returns
+    -------
+    Tuple[PackageManager, Type[URLReader]]
+        The package manager and URL reader.
+    """
+    package_mgr, url_reader, _ = _image_command_check(base_tag)
+    return (package_mgr, url_reader)

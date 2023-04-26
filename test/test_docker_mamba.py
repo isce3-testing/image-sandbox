@@ -1,8 +1,8 @@
-from typing import Iterator
+from typing import Iterator, Tuple
 
 from pytest import fixture, mark
 
-from docker_cli import Dockerfile, Image
+from docker_cli import Image
 from docker_cli._docker_mamba import (mamba_add_specs_dockerfile,
                                       mamba_install_dockerfile)
 
@@ -11,14 +11,14 @@ from .utils import (determine_scope, generate_tag, remove_docker_image,
 
 
 @fixture(scope=determine_scope)
-def mamba_runtime_dockerfile() -> Dockerfile:
+def mamba_runtime_dockerfile() -> Tuple[str, str]:
     """
     Returns a runtime dockerfile for mamba.
 
     Returns
     -------
-    Dockerfile
-        The dockerfile.
+    Tuple[str, str]
+        The dockerfile header and body.
     """
     return mamba_install_dockerfile(
         env_specfile="test-runtime-lock-file.txt"
@@ -40,7 +40,7 @@ def mamba_runtime_tag() -> Iterator[str]:
 
 @fixture(scope=determine_scope)
 def mamba_runtime_image(
-    mamba_runtime_dockerfile: Dockerfile,
+    mamba_runtime_dockerfile: Tuple[str, str],
     init_tag: str,
     mamba_runtime_tag: str,
     init_image: Image           # type: ignore
@@ -50,7 +50,7 @@ def mamba_runtime_image(
 
     Parameters
     ----------
-    mamba_runtime_dockerfile : Dockerfile
+    mamba_runtime_dockerfile : str
         The mamba runtime dockerfile.
     init_tag : str
         The initialization image tag.
@@ -64,23 +64,26 @@ def mamba_runtime_image(
     Iterator[Image]
         The mamba runtime image generator.
     """
-    img = mamba_runtime_dockerfile.build(
+    header, body = mamba_runtime_dockerfile
+
+    dockerfile = f"{header}\n\nFROM {init_tag}\n\n{body}"
+    img = Image.build(
         tag=mamba_runtime_tag,
-        base=init_tag
+        dockerfile_string=dockerfile
     )
     yield img
     remove_docker_image(mamba_runtime_tag)
 
 
 @fixture(scope=determine_scope)
-def mamba_dev_dockerfile() -> Dockerfile:
+def mamba_dev_dockerfile() -> str:
     """
     Returns a mamba dev dockerfile.
 
     Returns
     -------
-    Dockerfile
-        The dockerfile.
+    str
+        The dockerfile body.
     """
     return mamba_add_specs_dockerfile(
         env_specfile="test-dev-lock-file.txt"
@@ -102,7 +105,7 @@ def mamba_dev_tag() -> Iterator[str]:
 
 @fixture(scope=determine_scope)
 def mamba_dev_image(
-    mamba_dev_dockerfile: Dockerfile,
+    mamba_dev_dockerfile: str,
     mamba_runtime_tag: str,
     mamba_dev_tag: str,
     mamba_runtime_image: Image          # type: ignore
@@ -112,8 +115,8 @@ def mamba_dev_image(
 
     Parameters
     ----------
-    mamba_dev_dockerfile : Dockerfile
-        The dockerfile for the image.
+    mamba_dev_dockerfile : str
+        The dockerfile body for the image.
     mamba_runtime_tag : str
         The runtime image tag.
     mamba_dev_tag : str
@@ -126,9 +129,10 @@ def mamba_dev_image(
     Iterator[Image]
         The mamba dev image generator.
     """
-    img = mamba_dev_dockerfile.build(
+    dockerfile = f"FROM {mamba_runtime_tag}\n\n{mamba_dev_dockerfile}"
+    img = Image.build(
         tag=mamba_dev_tag,
-        base=mamba_runtime_tag
+        dockerfile_string=dockerfile
     )
     yield img
     remove_docker_image(mamba_dev_tag)
@@ -139,16 +143,17 @@ class TestMambaGenerators:
     """Test the mamba environment dockerfile generators"""
 
     @mark.dockerfiles
-    def test_mamba_install_dockerfile(self, mamba_runtime_dockerfile: Dockerfile):
+    def test_mamba_install_dockerfile(self, mamba_runtime_dockerfile: Tuple[str, str]):
         """Tests the mamba_install_dockerfile function."""
-        dockerfile_string = mamba_runtime_dockerfile.full_dockerfile("%TEST_IMAGE%")
+        header, body = mamba_runtime_dockerfile
+        dockerfile_string = f"{header}\n\nFROM %TEST_IMAGE%\n\n{body}"
 
         rough_dockerfile_validity_check(dockerfile_string)
 
     @mark.dockerfiles
-    def test_mamba_add_specs_dockerfile(self, mamba_dev_dockerfile: Dockerfile):
+    def test_mamba_add_specs_dockerfile(self, mamba_dev_dockerfile: str):
         """Tests the mamba_install_dockerfile function."""
-        dockerfile_string = mamba_dev_dockerfile.full_dockerfile("%TEST_IMAGE%")
+        dockerfile_string = f"FROM %TEST_IMAGE%\n\n{mamba_dev_dockerfile}"
 
         rough_dockerfile_validity_check(dockerfile_string)
 

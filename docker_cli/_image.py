@@ -43,12 +43,12 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
-        dockerfile: Optional[os.PathLike[str]],
-        context: Union[str, os.PathLike[str]],
-        stdout: Optional[io.TextIOBase],
-        stderr: Optional[io.TextIOBase],
-        network: str,
-        no_cache: bool
+        dockerfile: Union[str, os.PathLike[str]],
+        context: Union[str, os.PathLike[str]] = ...,
+        stdout: Any = ...,
+        stderr: Any = ...,
+        network: str = ...,
+        no_cache: bool = ...
     ) -> Self:
         """
         Build a new image from a dockerfile.
@@ -96,11 +96,11 @@ class Image:
         tag: str,
         *,
         dockerfile_string: str,
-        context: Union[str, os.PathLike[str]],
-        stdout: Optional[io.TextIOBase],
-        stderr: Optional[io.TextIOBase],
-        network: str,
-        no_cache: bool
+        context: Union[str, os.PathLike[str]] = ...,
+        stdout: Any = ...,
+        stderr: Any = ...,
+        network: str = ...,
+        no_cache: bool = ...
     ) -> Self:
         """
         Builds a new image from a string in dockerfile syntax.

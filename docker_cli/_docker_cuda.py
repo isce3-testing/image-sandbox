@@ -2,7 +2,6 @@ import textwrap
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Type, Union
 
-from ._dockerfile import Dockerfile
 from ._shell_cmds import PackageManager, URLReader, get_package_manager
 
 
@@ -36,7 +35,7 @@ class CUDADockerfileGenerator(ABC):
         arch: str = "x86_64",
         nvidia_visible_devices: str = "all",
         nvidia_driver_capabilities: str = "compute,utility",
-    ) -> Dockerfile:
+    ) -> str:
         """
         Generates a dockerfile for the CUDA runtime image.
 
@@ -55,8 +54,8 @@ class CUDADockerfileGenerator(ABC):
 
         Returns
         -------
-        Dockerfile
-            The generated dockerfile
+        str
+            The generated dockerfile body
 
         Raises
         ------
@@ -74,54 +73,43 @@ class CUDADockerfileGenerator(ABC):
             "\"${CUDA_VERSION_MAJOR}-${CUDA_VERSION_MINOR}\""
         nvidia_req_cuda: str = \
             "cuda>=${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}"
-        dockerfile = Dockerfile(
-            body=self._generate_initial_lines(repo_ver, arch=arch)
-        )
-        dockerfile.append_body(textwrap.dedent(f'''\
+        body: str = self._generate_initial_lines(repo_ver, arch=arch)
+        body += "\n" + textwrap.dedent(f'''\
             ENV NVIDIA_VISIBLE_DEVICES {nvidia_visible_devices}
             ENV NVIDIA_DRIVER_CAPABILITIES {nvidia_driver_capabilities}
             ENV CUDA_VERSION_MAJOR {cuda_ver_major}
             ENV CUDA_VERSION_MINOR {cuda_ver_minor}
             ENV CUDA_PKG_VERSION {cuda_pkg_version}
             ENV NVIDIA_REQUIRE_CUDA {nvidia_req_cuda}
-            ''')
-                               )
-        dockerfile.append_body(
-            self.generate_install_lines(
-                build_targets=self._runtime_build_targets
-            )
+            ''').strip()
+        body += "\n" + self.generate_install_lines(
+            build_targets=self._runtime_build_targets
         )
-        return dockerfile
+        return body
 
     def generate_dev_dockerfile(
         self
-    ) -> Dockerfile:
+    ) -> str:
         """
         Generates a dockerfile for the CUDA Dev image.
 
         Returns
         -------
-        Dockerfile
-            The generated dockerfile.
+        str
+            The generated dockerfile body.
         """
-        dockerfile = Dockerfile(
-            body=self.generate_install_lines(
-                build_targets=self._dev_build_targets
-            )
-        )
+        body = self.generate_install_lines(build_targets=self._dev_build_targets)
 
-        dockerfile.prepend_body("USER root")
+        body = "USER root\n" + body
 
         version_name = "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}"
-        dockerfile.append_body(
-            textwrap.dedent(f"""\
+        body += "\n" + textwrap.dedent(f"""\
                 ENV CUDAHOSTCXX=x86_64-conda-linux-gnu-c++
                 ENV CUDACXX=/usr/local/cuda-{version_name}/bin/nvcc
 
                 USER $DEFAULT_USER
                 """).strip()
-        )
-        return dockerfile
+        return body
 
     @abstractmethod
     def _generate_initial_lines(
@@ -306,14 +294,14 @@ def get_cuda_dockerfile_generator(
 
     Returns
     -------
-    CUDA_Dockerfile_Generator
-        The instance of the selected CUDA_Dockerfile_Generator
+    CUDADockerfileGenerator
+        The instance of the selected CUDADockerfileGenerator
 
     Raises
     ------
     ValueError
         If the package manager is not associated with any
-        CUDA_Dockerfile_Generator supported by this file.
+        CUDADockerfileGenerator supported by this file.
     """
     if isinstance(pkg_mgr, PackageManager):
         name = pkg_mgr.name

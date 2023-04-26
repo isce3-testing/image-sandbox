@@ -2,14 +2,12 @@ import os
 from textwrap import dedent
 from typing import Dict, Optional, Tuple, Type, Union
 
-from ._dockerfile import Dockerfile
+from ._docker_cuda import (CUDADockerfileGenerator,
+                           get_cuda_dockerfile_generator)
+from ._docker_mamba import mamba_add_specs_dockerfile, mamba_install_dockerfile
 from ._image import Image
-from ._shell_cmds import PackageManager, URLReader
-from ._utils import (_generate_cuda_dev_dockerfile,
-                     _generate_cuda_runtime_dockerfile,
-                     _generate_micromamba_dev_dockerfile,
-                     _generate_micromamba_runtime_dockerfile,
-                     _image_command_check, _parse_cuda_info,
+from ._shell_cmds import PackageManager, URLReader, get_url_reader
+from ._utils import (_image_command_check, _parse_cuda_info,
                      universal_tag_prefix)
 
 
@@ -39,13 +37,11 @@ def setup_init(
     Type[URLReader]
         The URL Reader present on the image
     """
-    package_mgr, url_reader, body = _image_command_check(
+    package_mgr, url_reader, dockerfile = _image_command_check(
         base, True
     )
 
-    dockerfile: Dockerfile = Dockerfile(body=body)
-
-    dockerfile.append_body(dedent("""
+    dockerfile = f"FROM {base}\n\n" + dockerfile + "\n" + dedent("""
         ENV DEFAULT_GROUP defaultgroup
         ENV DEFAULT_USER defaultuser
         ENV DEFAULT_GID 1000
@@ -53,15 +49,16 @@ def setup_init(
 
         RUN groupadd -g $DEFAULT_GID $DEFAULT_GROUP
         RUN useradd -g $DEFAULT_GID -u $DEFAULT_UID -m $DEFAULT_USER
+
+        RUN chmod -R 777 /tmp
         """).strip()
-    )
-    dockerfile.append_body("RUN chmod -R 777 /tmp")
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
-    image = dockerfile.build(
+
+    image = Image.build(
         tag=img_tag,
-        base=base,
+        dockerfile_string=dockerfile,
         no_cache=no_cache
     )
 
@@ -75,7 +72,8 @@ def setup_cuda_runtime(
         cuda_version: str,
         cuda_repo: str,
         package_manager: Optional[PackageManager] = None,
-        url_reader: Optional[Type[URLReader]] = None
+        url_reader: Optional[Type[URLReader]] = None,
+        arch: str = "x86_64"
 ) -> Image:
     """
     Build the CUDA runtime image.
@@ -119,21 +117,25 @@ def setup_cuda_runtime(
         package_mgr, url_program, init_lines = _image_command_check(base)
     cuda_major, cuda_minor = _parse_cuda_info(cuda_version=cuda_version)
 
-    dockerfile: Dockerfile = _generate_cuda_runtime_dockerfile(
-        package_mgr,
-        cuda_major=cuda_major,
-        cuda_minor=cuda_minor,
-        cuda_repo=cuda_repo,
+    cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
+        pkg_mgr=package_mgr,
         url_reader=url_program
     )
 
-    dockerfile.prepend_body(init_lines)
+    body = cuda_gen.generate_runtime_dockerfile(
+        cuda_ver_major=cuda_major,
+        cuda_ver_minor=cuda_minor,
+        repo_ver=cuda_repo,
+        arch=arch
+    )
+
+    dockerfile = f"FROM {base}\n\n{init_lines}\n\n{body}"
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
-    return dockerfile.build(
+    return Image.build(
         tag=img_tag,
-        base=base,
+        dockerfile_string=dockerfile,
         no_cache=no_cache
     )
 
@@ -181,17 +183,24 @@ def setup_cuda_dev(
     else:
         package_mgr, url_program, init_lines = _image_command_check(base)
 
-    dockerfile: Dockerfile = _generate_cuda_dev_dockerfile(
-        package_manager=package_mgr,
-        url_reader=url_program
+    if isinstance(url_reader, str):
+        reader: Type[URLReader] = get_url_reader(url_program)
+    else:
+        reader = url_reader     # type: ignore
+    cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
+        pkg_mgr=package_mgr,
+        url_reader=reader
     )
-    dockerfile.prepend_body(init_lines)
+    body = cuda_gen.generate_dev_dockerfile()
+
+    dockerfile = f"FROM {base}\n\n{init_lines}\n\n{body}"
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
-    return dockerfile.build(
+
+    return Image.build(
         tag=img_tag,
-        base=base,
+        dockerfile_string=dockerfile,
         no_cache=no_cache
     )
 
@@ -222,15 +231,17 @@ def setup_env_runtime(
         The generated image.
     """
 
-    dockerfile: Dockerfile = _generate_micromamba_runtime_dockerfile(
+    header, body = mamba_install_dockerfile(
         env_specfile=env_file
     )
+    full_dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
-    return dockerfile.build(
+
+    return Image.build(
         tag=img_tag,
-        base=base,
+        dockerfile_string=full_dockerfile,
         no_cache=no_cache
     )
 
@@ -261,15 +272,20 @@ def setup_env_dev(
         The generated image.
     """
 
-    dockerfile: Dockerfile = _generate_micromamba_dev_dockerfile(
-        env_specfile=env_file
-    )
+    body = mamba_add_specs_dockerfile(env_specfile=env_file)
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
-    return dockerfile.build(
+
+    full_dockerfile = dedent(f"""
+        FROM {base}
+
+        {body}
+        """).strip()
+
+    return Image.build(
         tag=img_tag,
-        base=base,
+        dockerfile_string=full_dockerfile,
         no_cache=no_cache
     )
 
