@@ -19,10 +19,10 @@ class PackageManager(ABC):
     @staticmethod
     @abstractmethod
     def generate_install_command(
-            targets: Iterable[str],
-            *,
-            stringify: bool = False,
-            clean: bool = True
+        targets: Iterable[str],
+        *,
+        stringify: bool = False,
+        clean: bool = True
     ) -> Union[List[str], str]:
         """
         Returns an set of commands to install the targets.
@@ -43,14 +43,14 @@ class PackageManager(ABC):
         Union[List[str], str]
             The commands.
         """
-        raise NotImplementedError()
+        ...
 
     @staticmethod
     @abstractmethod
     def generate_package_command(
-            target: str,
-            *,
-            stringify: bool = False
+        target: str,
+        *,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         """
         Returns a command to install a single package.
@@ -71,13 +71,13 @@ class PackageManager(ABC):
         Union[List[str], str]
             The commands.
         """
-        raise NotImplementedError()
+        ...
 
     @staticmethod
     @abstractmethod
     def generate_configure_command(
-            *,
-            stringify: bool = False
+        *,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         """
         Returns commands to configure and update the package manager.
@@ -93,7 +93,7 @@ class PackageManager(ABC):
         Union[List[str], str]
             The commands.
         """
-        raise NotImplementedError()
+        ...
 
     @property
     @abstractmethod
@@ -101,7 +101,7 @@ class PackageManager(ABC):
         """
         The package manager's command name.
         """
-        raise NotImplementedError()
+        ...
 
     @property
     @abstractmethod
@@ -109,17 +109,17 @@ class PackageManager(ABC):
         """
         The filetype associated with this package manager.
         """
-        raise NotImplementedError()
+        ...
 
 
 class Yum(PackageManager):
 
     @staticmethod
     def generate_install_command(
-            targets: Iterable[str],
-            *,
-            stringify: bool = False,
-            clean: bool = True,
+        targets: Iterable[str],
+        *,
+        stringify: bool = False,
+        clean: bool = True,
     ) -> Union[List[str], str]:
         retval = []
         retval += ["yum", "install", "-y"]
@@ -133,9 +133,9 @@ class Yum(PackageManager):
 
     @staticmethod
     def generate_package_command(  # pragma: no cover
-            target: str,
-            *,
-            stringify: bool = False
+        target: str,
+        *,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         retval = ["rpm", "-i", target]
         if stringify:
@@ -144,8 +144,8 @@ class Yum(PackageManager):
 
     @staticmethod
     def generate_configure_command(
-            *,
-            stringify: bool = False
+        *,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         retval = []
         retval += ["yum", "update", "-y"]
@@ -169,10 +169,10 @@ class AptGet(PackageManager):
 
     @staticmethod
     def generate_install_command(
-            targets: Iterable[str],
-            *,
-            stringify: bool = False,
-            clean: bool = True,
+        targets: Iterable[str],
+        *,
+        stringify: bool = False,
+        clean: bool = True,
     ) -> Union[List[str], str]:
         retval = []
         retval += ["apt-get", "-y", "update", "&&"]
@@ -186,9 +186,9 @@ class AptGet(PackageManager):
 
     @staticmethod
     def generate_package_command(  # pragma: no cover
-            target: str,
-            *,
-            stringify: bool = False
+        target: str,
+        *,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         retval = ["dpkg", "-i", target]
         if stringify:
@@ -197,8 +197,8 @@ class AptGet(PackageManager):
 
     @staticmethod
     def generate_configure_command(
-            *,
-            stringify: bool = False
+        *,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         retval = []
         retval += ["apt-get", "-y", "update"]
@@ -254,7 +254,7 @@ class URLReader(ABC):
         Union[List[str], str]
             The commands.
         """
-        raise NotImplementedError()
+        ...
 
     @staticmethod
     @abstractmethod
@@ -267,17 +267,17 @@ class URLReader(ABC):
         str
             The command name.
         """
-        raise NotImplementedError()
+        ...
 
 
 class Wget(URLReader):
 
     @staticmethod
     def generate_read_command(
-            target: str,
-            *,
-            output_target: Optional[Union[os.PathLike[str], str]] = None,
-            stringify: bool = False
+        target: str,
+        *,
+        output_target: Optional[Union[os.PathLike[str], str]] = None,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         retval = ["wget", target]
         if output_target is not None:
@@ -295,10 +295,10 @@ class cURL(URLReader):
 
     @staticmethod
     def generate_read_command(
-            target: str,
-            *,
-            output_target: Optional[Union[os.PathLike[str], str]] = None,
-            stringify: bool = False
+        target: str,
+        *,
+        output_target: Optional[Union[os.PathLike[str], str]] = None,
+        stringify: bool = False
     ) -> Union[List[str], str]:
         retval = ["curl", "--ssl", target]
         if output_target is not None:

@@ -129,7 +129,7 @@ class CUDADockerfileGenerator(ABC):
         str
             The initial lines of the CUDA install dockerfile.
         """
-        raise NotImplementedError()
+        ...
 
     @abstractmethod
     def generate_install_lines(
@@ -147,7 +147,7 @@ class CUDADockerfileGenerator(ABC):
         str
             The install lines of the CUDA install dockerfile.
         """
-        raise NotImplementedError()
+        ...
 
     @property
     def package_manager(self) -> PackageManager:
