@@ -1,10 +1,12 @@
 import os
 from textwrap import dedent
-from typing import Dict, Optional, Tuple, Type, Union
+from typing import Dict, Iterable, Optional, Tuple, Type, Union
 
 from ._docker_cuda import (CUDADockerfileGenerator,
                            get_cuda_dockerfile_generator)
-from ._docker_mamba import mamba_add_specs_dockerfile, mamba_install_dockerfile
+from ._docker_mamba import (mamba_add_packages_dockerfile,
+                            mamba_add_specs_dockerfile,
+                            mamba_install_dockerfile)
 from ._image import Image
 from ._shell_cmds import PackageManager, URLReader, get_url_reader
 from ._utils import (_image_command_check, _parse_cuda_info,
@@ -277,11 +279,50 @@ def setup_env_dev(
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
-    full_dockerfile = dedent(f"""
-        FROM {base}
+    full_dockerfile = f"FROM {base}\n\n{body}"
 
-        {body}
-        """).strip()
+    return Image.build(
+        tag=img_tag,
+        dockerfile_string=full_dockerfile,
+        no_cache=no_cache
+    )
+
+
+def setup_env_add(
+        base: str,
+        tag: str,
+        no_cache: bool,
+        packages: Iterable[str],
+        channels: Optional[Iterable[str]]
+) -> Image:
+    """
+    Create an image that adds packages to another image's micromamba environment.
+
+    Parameters
+    ----------
+    base : str
+        The name of the image upon this one will be based.
+    tag : str
+        The tag of the image to be built.
+    no_cache : bool
+        Run docker build with no cache if True.
+    packages : Iterable[str]
+        The packages to be added.
+    channels: Iterable[str], optional
+        Channels to look for packages in.
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+
+    body = mamba_add_packages_dockerfile(packages=packages, channels=channels)
+
+    prefix = universal_tag_prefix()
+    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+
+    full_dockerfile = f"FROM {base}\n\n{body}"
 
     return Image.build(
         tag=img_tag,

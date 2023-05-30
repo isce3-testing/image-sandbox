@@ -6,7 +6,8 @@ from typing import Sequence
 from ._utils import universal_tag_prefix
 from .commands import dropin, make_lockfile, remove
 from .setup_commands import (setup_all, setup_cuda_dev, setup_cuda_runtime,
-                             setup_env_dev, setup_env_runtime, setup_init)
+                             setup_env_add, setup_env_dev, setup_env_runtime,
+                             setup_init)
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -148,6 +149,21 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     _add_tag_argument(parser=setup_env_dev_parser, default="env-dev")
 
+    setup_env_add_parser = env_subparsers.add_parser(
+        "add", parents=[setup_parse, no_cache_parse],
+        help="Set up the runtime conda environment image",
+        formatter_class=help_formatter
+    )
+    setup_env_add_parser.add_argument(
+        "packages", nargs="+",
+        help="A list of conda packages to add to the environment."
+    )
+    setup_env_add_parser.add_argument(
+        "--channels", "-c", nargs="+",
+        help="A list of channels to look for conda packages in."
+    )
+    _add_tag_argument(parser=setup_env_add_parser, default="env-pkgs")
+
     dropin_parser = subparsers.add_parser(
         "dropin",
         help="Start a drop-in session.",
@@ -258,6 +274,8 @@ def main(
                 setup_env_runtime(**vars(args_parsed))
             elif env_subcommand == "dev":
                 setup_env_dev(**vars(args_parsed))
+            elif env_subcommand == "add":
+                setup_env_add(**vars(args_parsed))
         else:
             insufficient_subcommands_message(
                 subcommand='"docker_cli"',
