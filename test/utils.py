@@ -41,7 +41,7 @@ def determine_scope(fixture_name, config) -> str:
     Currently always returns "function." This is because bugs appear if different scopes
     are used. However, in the ideal case, parallel tests would have "function" scope
     while serial tests would have a wider scope like "session" to avoid re-creating
-    identical docker images over and over.
+    identical Docker images over and over.
 
     Parameters
     ----------
@@ -68,15 +68,15 @@ def determine_scope(fixture_name, config) -> str:
 
 def remove_docker_image(tag_or_id: str):
     """
-    Idiot-proof removal of a docker image.
+    Idiot-proof removal of a Docker image.
 
     NOTE: currently commented out. Docker images are removed en masse at the end of
     testing.
     This function remains because it would be preferable to use it over removing images
     en masse if the option presents, but currently doing so would be too buggy.
 
-    Added because a missed word in a `docker image rm` command resulted in difficult
-    debugging of a docker image being produced and not removed by the test suite.
+    Added because a missed word in a `Docker image rm` command resulted in difficult
+    debugging of a Docker image being produced and not removed by the test suite.
     Best to ensure this is done the same way every time.
 
     Parameters
@@ -84,7 +84,7 @@ def remove_docker_image(tag_or_id: str):
     tag : str
         The tag or ID of the image.
     """
-    # run(split(f"docker image rm --no-prune {tag_or_id}"))
+    # run(split(f"Docker image rm --no-prune {tag_or_id}"))
     pass
 
 

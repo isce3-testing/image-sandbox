@@ -38,7 +38,7 @@ def remove(
     ignore_prefix: bool = False
 ) -> None:
     """
-    Remove all docker images that fit a given tag or wildcard.
+    Remove all Docker images that fit a given tag or wildcard.
 
     This tag or wildcard will take the form [UNIVERSAL PREFIX]-[tag or wildcard] if the
     prefix does not already fit this.
@@ -82,7 +82,7 @@ def remove(
                 print(f"No images found fitting pattern {search}. Proceeding.")
             continue
         # The names come in a list delimited by newlines. Reform this to be delimited
-        # by spaces to use with `docker rmi`.
+        # by spaces to use with `Docker rmi`.
         search_result_str = ' '.join(search_result.stdout.split("\n"))
 
         # Remove all images in the list

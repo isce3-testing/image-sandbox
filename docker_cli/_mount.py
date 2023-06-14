@@ -3,7 +3,7 @@ from typing import Union
 
 
 class Mount:
-    """A description of a docker mount."""
+    """A description of a Docker mount."""
 
     def __init__(
         self,
@@ -12,7 +12,7 @@ class Mount:
         permissions: str
     ):
         """
-        A description of a docker mount.
+        A description of a Docker mount.
 
         Parameters
         ----------

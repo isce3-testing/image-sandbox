@@ -28,7 +28,7 @@ def setup_init(
     tag : str
         The tag of the image to be built.
     no_cache : bool
-        Run docker build with no cache if True.
+        Run Docker build with no cache if True.
 
     Returns
     -------
@@ -87,7 +87,7 @@ def setup_cuda_runtime(
     tag : str
         The tag of the image to be built.
     no_cache : bool
-        Run docker build with no cache if True.
+        Run Docker build with no cache if True.
     cuda_version : str
         The CUDA version.
     cuda_repo : str
@@ -159,7 +159,7 @@ def setup_cuda_dev(
     tag : str
         The tag of the image to be built.
     no_cache : bool
-        Run docker build with no cache if True.
+        Run Docker build with no cache if True.
     package_manager : PackageManager
         The package manager in use by the base image.
     url_reader : Type[URLReader]
@@ -223,7 +223,7 @@ def setup_env_runtime(
     tag : str
         The tag of the image to be built.
     no_cache : bool
-        Run docker build with no cache if True.
+        Run Docker build with no cache if True.
     env_file : str
         The location of the runtime environment spec-file.
 
@@ -264,7 +264,7 @@ def setup_env_dev(
     tag : str
         The tag of the image to be built.
     no_cache : bool
-        Run docker build with no cache if True.
+        Run Docker build with no cache if True.
     env_file : str
         The location of the runtime environment spec-file.
 
@@ -305,7 +305,7 @@ def setup_env_add(
     tag : str
         The tag of the image to be built.
     no_cache : bool
-        Run docker build with no cache if True.
+        Run Docker build with no cache if True.
     packages : Iterable[str]
         The packages to be added.
     channels: Iterable[str], optional
@@ -341,7 +341,7 @@ def setup_all(
     dev_env_file: os.PathLike
 ) -> Dict[str, Image]:
     """
-    Builds the entire docker image stack.
+    Builds the entire Docker image stack.
 
     Parameters
     ----------
@@ -350,7 +350,7 @@ def setup_all(
     tag : str
         The tag of the image to be built.
     no_cache : bool
-        Run docker build with no cache if True.
+        Run Docker build with no cache if True.
     cuda_version : str
         The CUDA version.
     cuda_repo : str

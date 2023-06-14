@@ -17,7 +17,7 @@ class TestImage:
     def test_init(self, image_tag, image_id):
         """
         Tests that the __init__ function on the Image class is correctly
-        receiving and remembering the ID of a docker image.
+        receiving and remembering the ID of a Docker image.
         """
         id = image_id
         print("ID: " + id)
@@ -204,7 +204,7 @@ class TestImage:
 
     def test_run_interactive(self, image_id):
         """
-        Tests that the run method performs a simple action on a docker container
+        Tests that the run method performs a simple action on a Docker container
         when called with interactive = True.
         """
         img: Image = Image(image_id)
@@ -218,7 +218,7 @@ class TestImage:
 
     def test_run_noninteractive(self, image_id):
         """
-        Tests that the run method performs a simple action on a docker container
+        Tests that the run method performs a simple action on a Docker container
         when called with interactive = False.
         """
         img: Image = Image(image_id)
@@ -278,7 +278,7 @@ class TestImage:
     def test_tags(self, image_tag, image_id):
         """
         Tests that an Image.tag call returns the same .RepoTags value as a
-        typical docker inspect call.
+        typical Docker inspect call.
         """
         img: Image = Image(image_id)
 
@@ -294,7 +294,7 @@ class TestImage:
 
     def test_id(self, image_tag, image_id):
         """
-        Tests that an Image.id call returns the same ID value as given by a docker
+        Tests that an Image.id call returns the same ID value as given by a Docker
         inspect call.
         """
         img = Image(image_id)
@@ -407,7 +407,7 @@ class TestImage:
     def test_get_image_id(self, image_id, image_tag):
         """
         Tests that the get_image_id method returns the correct ID when given a
-        properly-formed ID or docker image name.
+        properly-formed ID or Docker image name.
         """
         id = image_id
 

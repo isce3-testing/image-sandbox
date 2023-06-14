@@ -6,7 +6,7 @@ def generate_random_string(k: int = 10) -> str:
     """
     Generates a random lowercase alphanumeric string.
 
-    Used to give unique names to docker images - allows for multiple images of the same
+    Used to give unique names to Docker images - allows for multiple images of the same
     name to co-exist with different codes. Useful for testing and parallelism.
 
     Parameters

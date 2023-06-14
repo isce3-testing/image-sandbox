@@ -12,13 +12,13 @@ from ._exceptions import (CommandNotFoundError, DockerBuildError,
 
 class Image:
     """
-    A docker image.
+    A Docker image.
 
-    Holds a reference to a given docker image and provides
+    Holds a reference to a given Docker image and provides
     an interface by which to interact with that image.
 
     Capabilities include:
-    -   Building docker images from dockerfiles or dockerfile-formatted strings
+    -   Building Docker images from dockerfiles or dockerfile-formatted strings
         via :func:`~docker_cli.Image.build`.
     -   Running commands in containers built from the image using
         :func:`~docker_cli.Image.run`.
@@ -33,7 +33,7 @@ class Image:
         Parameters
         ----------
         name_or_id : str
-            A name or ID by which to find this image using docker inspect.
+            A name or ID by which to find this image using Docker inspect.
         """
         self._id = get_image_id(name_or_id)
 
@@ -72,7 +72,7 @@ class Image:
         network : str, optional
             The name of the network. Defaults to "host".
         no_cache : bool, optional
-            A boolean designating whether or not the docker build should use
+            A boolean designating whether or not the Docker build should use
             the cache. Defaults to False.
 
         Returns
@@ -83,7 +83,7 @@ class Image:
         Raises
         -------
         DockerBuildError
-            If the docker build command fails.
+            If the Docker build command fails.
         ValueError
             If both `dockerfile` and `dockerfile_string` are defined.
         """
@@ -120,7 +120,7 @@ class Image:
         network : str, optional
             The name of the network. Defaults to "host".
         no_cache : bool, optional
-            A boolean designating whether or not the docker build should use
+            A boolean designating whether or not the Docker build should use
             the cache. Defaults to False.
 
         Returns
@@ -131,7 +131,7 @@ class Image:
         Raises
         -------
         DockerBuildError
-            If the docker build command fails.
+            If the Docker build command fails.
         ValueError
             If both `dockerfile` and `dockerfile_string` are defined.
         """
@@ -172,7 +172,7 @@ class Image:
 
         if dockerfile_build:
             # If a dockerfile path is given, include it.
-            # Else, docker build will default to "./Dockerfile"
+            # Else, Docker build will default to "./Dockerfile"
             if dockerfile is not None:
                 cmd += [f"--file={os.fspath(dockerfile)}"]
             stdin = None
@@ -203,7 +203,7 @@ class Image:
 
     def _inspect(self, format: Optional[str] = None) -> str:
         """
-        Use 'docker inspect' to retrieve a piece of information about the
+        Use 'Docker inspect' to retrieve a piece of information about the
         image.
 
         Parameters
@@ -215,7 +215,7 @@ class Image:
         Returns
         -------
         str
-            The string returned by the docker inspect command.
+            The string returned by the Docker inspect command.
         """
         cmd = ["docker", "inspect"]
         if format:
@@ -368,7 +368,7 @@ class Image:
 
     @property
     def tags(self) -> List[str]:
-        """List[str]: The Repo Tags held on this docker image."""
+        """List[str]: The Repo Tags held on this Docker image."""
         return self._inspect(format="{{.RepoTags}}").strip('][\n').split(', ')
 
     @property
@@ -409,7 +409,7 @@ class Image:
 
 def get_image_id(name_or_id: str) -> str:
     """
-    Acquires the ID of a docker image with the given name or ID.
+    Acquires the ID of a Docker image with the given name or ID.
 
     Parameters
     ----------
@@ -419,7 +419,7 @@ def get_image_id(name_or_id: str) -> str:
     Returns
     -------
     str
-        The ID of the given docker image.
+        The ID of the given Docker image.
 
     Raises
     -------
@@ -439,7 +439,7 @@ def get_image_id(name_or_id: str) -> str:
             check=True
         )
     except CalledProcessError as err:
-        # The docker command will return with value 1 if the image was not found.
+        # The Docker command will return with value 1 if the image was not found.
         # This should be raised as a more specific ImageNotFoundError. Any other
         # non-zero return code should be raised as a CalledProcessError.
         if err.returncode == 1:

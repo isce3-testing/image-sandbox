@@ -35,14 +35,14 @@ def setup_parser() -> argparse.ArgumentParser:
     setup_parse = argparse.ArgumentParser(add_help=False)
     setup_parse.add_argument(
         "--base", "-b", type=str, required=True,
-        help='The name of the base docker image.'
+        help='The name of the base Docker image.'
     )
 
     no_cache_parse = argparse.ArgumentParser(add_help=False)
     no_cache_parse.add_argument(
         "--no-cache",
         action="store_true",
-        help="Run docker build with no cache if used."
+        help="Run Docker build with no cache if used."
     )
 
     cuda_run_parse = argparse.ArgumentParser(add_help=False)
@@ -74,17 +74,17 @@ def setup_parser() -> argparse.ArgumentParser:
 
     setup_all_parser = setup_subparsers.add_parser(
         "all", parents=[cuda_run_parse, no_cache_parse],
-        help="Set up the full docker image stack.",
+        help="Set up the full Docker image stack.",
         formatter_class=help_formatter
     )
     setup_all_parser.add_argument(
         "--tag", "-t", default="setup", type=str,
-        help='The sub-prefix of the docker images to be created. Generated images will '
+        help='The sub-prefix of the Docker images to be created. Generated images will '
         f'have tags: "{prefix}-[TAG]-*". Default: "setup"'
     )
     setup_all_parser.add_argument(
         "--base", "-b", default="oraclelinux:8.4", type=str,
-        help='The name of the parent docker image. Default: "oraclelinux:8.4"'
+        help='The name of the parent Docker image. Default: "oraclelinux:8.4"'
     )
     setup_all_parser.add_argument(
         "--runtime-env-file", default="runtime-spec-file.txt", type=str,
@@ -102,7 +102,7 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_init_parser.add_argument(
         "--base", "-b", default="oraclelinux:8.4", type=str, required=True,
-        help='The name of the parent docker image. Default: "oraclelinux:8.4"'
+        help='The name of the parent Docker image. Default: "oraclelinux:8.4"'
     )
     _add_tag_argument(parser=setup_init_parser, default="init")
 
@@ -174,7 +174,7 @@ def setup_parser() -> argparse.ArgumentParser:
 
     remove_parser = subparsers.add_parser(
         "remove",
-        help=f"Remove all docker images beginning with {prefix}-[IMAGE_TAG] for each "
+        help=f"Remove all Docker images beginning with {prefix}-[IMAGE_TAG] for each "
              "image tag provided.",
         formatter_class=help_formatter
     )
@@ -189,7 +189,7 @@ def setup_parser() -> argparse.ArgumentParser:
     remove_parser.add_argument(
         "--ignore-prefix", action="store_true",
         help=f"Ignore the {prefix} prefix. CAUTION: Using wildcards with this "
-             "argument can result in unintended removal of docker images. Use "
+             "argument can result in unintended removal of Docker images. Use "
              "with caution."
     )
     remove_parser.add_argument(
@@ -322,6 +322,6 @@ def _add_tag_argument(parser: argparse.ArgumentParser, default: str) -> None:
     prefix = universal_tag_prefix()
     parser.add_argument(
         "--tag", "-t", default=default, type=str,
-        help='The tag of the docker image to be created. This tag will be prefixed '
+        help='The tag of the Docker image to be created. This tag will be prefixed '
         f'with "{prefix}-". Default: "{default}"'
     )

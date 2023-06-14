@@ -200,7 +200,7 @@ def _mamba_install_body(
 
         # if your image defaults to a non-root user, then you may want to make
         # the next 3 ARG commands match the values in your image. You can get
-        # the values by running: docker run --rm -it my/image id -a
+        # the values by running: Docker run --rm -it my/image id -a
         ENV MAMBA_USER=$DEFAULT_USER
         ENV MAMBA_USER_ID=$DEFAULT_UID
         ENV MAMBA_USER_GID=$DEFAULT_GID
