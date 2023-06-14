@@ -42,7 +42,9 @@ def mamba_add_specs_dockerfile(
     str
         The generated dockerfile body.
     """
-    return _mamba_spec_command(specfile=env_specfile, command="install")
+    return _mamba_spec_command(
+        specfile=env_specfile, command="install", channels=["conda-forge"]
+    )
 
 
 def mamba_add_packages_dockerfile(
@@ -105,8 +107,8 @@ def micromamba_docker_lines():
 def _mamba_spec_command(
     command: str,
     *,
-    packages: Iterable[str],
     channels: Optional[Iterable[str]],
+    packages: Iterable[str],
     env_name: Optional[str] = ...,
 ) -> str:
     ...
@@ -114,13 +116,17 @@ def _mamba_spec_command(
 
 @overload
 def _mamba_spec_command(
-    command: str, *, specfile: os.PathLike[str] | str, env_name: Optional[str] = ...
+    command: str,
+    *,
+    channels: Optional[Iterable[str]],
+    specfile: os.PathLike[str] | str,
+    env_name: Optional[str] = ...,
 ) -> str:
     ...
 
 
 def _mamba_spec_command(
-    command, *, specfile=None, packages=None, channels=None, env_name=None
+    command, *, channels, specfile=None, packages=None, env_name=None
 ) -> str:
     if (specfile is not None) and (packages is not None):
         raise ValueError("Specfile and packages both given. Use only one.")
@@ -139,23 +145,26 @@ def _mamba_spec_command(
 
     # The output, with lines arranged into a list.
     command_list: List[str] = ["ARG MAMBA_DOCKERFILE_ACTIVATE=1", ""]
+    if channels is not None:
+        channels_arg = f" -c {' '.join(channels)} --override-channels"
 
     # If a specfile is given, give the instructions for copying and installing a
     # specfile.
     if specfile is not None:
         command_list += [
             f"COPY {specfile} /tmp/spec-file.txt",
-            f"RUN micromamba {command}{name_arg} -y -f /tmp/spec-file.txt \\",
+            f"RUN micromamba {command}{name_arg}{channels_arg} -y -f "
+            "/tmp/spec-file.txt \\",
             " && rm /tmp/spec-file.txt \\",
         ]
     # Otherwise packages were given, so give the instructions for installing the
     # packages.
     else:
         packages_str = " ".join(packages)
-        if channels is not None:
-            channels_param = " -c " + " ".join(channels)
-        install_command = f"micromamba {command}{name_arg}{channels_param} -y"
-        command_list += [f"RUN {install_command} {packages_str} \\"]
+        install_command = f"micromamba {command}{name_arg}{channels_arg} -y"
+        command_list += [
+            f"RUN {install_command} {packages_str} \\ && micromamba update --all \\ "
+        ]
 
     command_list += [" && micromamba clean --all --yes"]
     # Assemble this command into a portion of a dockerfile string.
@@ -184,7 +193,7 @@ def _mamba_install_body(env_specfile: os.PathLike[str] | str = "spec-file.txt"):
 
         # if your image defaults to a non-root user, then you may want to make
         # the next 3 ARG commands match the values in your image. You can get
-        # the values by running: Docker run --rm -it my/image id -a
+        # the values by running: docker run --rm -it my/image id -a
         ENV MAMBA_USER=$DEFAULT_USER
         ENV MAMBA_USER_ID=$DEFAULT_UID
         ENV MAMBA_USER_GID=$DEFAULT_GID
@@ -217,6 +226,8 @@ def _mamba_install_body(env_specfile: os.PathLike[str] | str = "spec-file.txt"):
         ).strip()
         + "\n"
     )
-    body += _mamba_spec_command(specfile=str(env_specfile), command="install")
+    body += _mamba_spec_command(
+        specfile=str(env_specfile), command="install", channels=["conda-forge"]
+    )
 
     return body

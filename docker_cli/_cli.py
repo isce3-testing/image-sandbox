@@ -104,14 +104,14 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_all_parser.add_argument(
         "--runtime-env-file",
-        default="runtime-spec-file.txt",
+        default="env_files/lock-runtime.txt",
         type=str,
         help="The location of the runtime requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
     setup_all_parser.add_argument(
         "--dev-env-file",
-        default="dev-spec-file.txt",
+        default="env_files/lock-dev.txt",
         type=str,
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
@@ -175,7 +175,7 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_conda_runtime_parser.add_argument(
         "--env-file",
-        default="spec-file.txt",
+        default="env_files/lock-runtime.txt",
         type=str,
         help="The location of the runtime requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
@@ -190,7 +190,7 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_conda_dev_parser.add_argument(
         "--env-file",
-        default="spec-file.txt",
+        default="env_files/lock-dev.txt",
         type=str,
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
