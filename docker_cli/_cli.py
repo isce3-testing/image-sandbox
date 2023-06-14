@@ -76,13 +76,15 @@ def setup_parser() -> argparse.ArgumentParser:
     )
 
     # Add arguments
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     setup_parser = subparsers.add_parser(
         "setup", help="Docker image setup commands.", formatter_class=help_formatter
     )
 
-    setup_subparsers = setup_parser.add_subparsers(dest="setup_subcommand")
+    setup_subparsers = setup_parser.add_subparsers(
+        dest="setup_subcommand", required=True
+    )
 
     setup_all_parser = setup_subparsers.add_parser(
         "all",
@@ -140,7 +142,9 @@ def setup_parser() -> argparse.ArgumentParser:
         formatter_class=help_formatter,
     )
 
-    cuda_subparsers = setup_cuda_parser.add_subparsers(dest="cuda_subcommand")
+    cuda_subparsers = setup_cuda_parser.add_subparsers(
+        dest="cuda_subcommand", required=True
+    )
     setup_cuda_runtime_parser = cuda_subparsers.add_parser(
         "runtime",
         parents=[setup_parse, cuda_run_parse, no_cache_parse],
@@ -163,7 +167,9 @@ def setup_parser() -> argparse.ArgumentParser:
         formatter_class=help_formatter,
     )
 
-    conda_subparsers = setup_conda_parser.add_subparsers(dest="conda_subcommand")
+    conda_subparsers = setup_conda_parser.add_subparsers(
+        dest="conda_subcommand", required=True
+    )
     setup_conda_runtime_parser = conda_subparsers.add_parser(
         "runtime",
         parents=[setup_parse, conda_parse, no_cache_parse],
@@ -271,18 +277,10 @@ def main(args: Sequence[str] = sys.argv[1:]):
     parser = setup_parser()
     args_parsed = parser.parse_args(args)
     command: str = args_parsed.command
-    if command is None:
-        insufficient_subcommands_message(
-            subcommand="The docker_cli program", command_str="docker_cli"
-        )
     command = command.lower()
     del args_parsed.command
     if command == "setup":
         setup_subcommand: str = args_parsed.setup_subcommand
-        if setup_subcommand is None:
-            insufficient_subcommands_message(
-                subcommand='"setup"', command_str="docker_cli setup"
-            )
         setup_subcommand = setup_subcommand.lower()
         del args_parsed.setup_subcommand
         if setup_subcommand == "all":
@@ -294,10 +292,6 @@ def main(args: Sequence[str] = sys.argv[1:]):
             setup_init(**vars(args_parsed))
         elif setup_subcommand == "cuda":
             cuda_subcommand = args_parsed.cuda_subcommand
-            if cuda_subcommand is None:
-                insufficient_subcommands_message(
-                    subcommand='"setup cuda"', command_str="docker_cli setup cuda"
-                )
             cuda_subcommand = cuda_subcommand.lower()
             del args_parsed.cuda_subcommand
             if cuda_subcommand == "runtime":
@@ -306,10 +300,6 @@ def main(args: Sequence[str] = sys.argv[1:]):
                 setup_cuda_dev(**vars(args_parsed))
         elif setup_subcommand == "conda":
             conda_subcommand = args_parsed.conda_subcommand
-            if conda_subcommand is None:
-                insufficient_subcommands_message(
-                    subcommand='"setup env"', command_str="docker_cli setup env"
-                )
             del args_parsed.conda_subcommand
             if conda_subcommand == "runtime":
                 setup_conda_runtime(**vars(args_parsed))
@@ -317,32 +307,12 @@ def main(args: Sequence[str] = sys.argv[1:]):
                 setup_conda_dev(**vars(args_parsed))
             elif conda_subcommand == "add":
                 setup_conda_add(**vars(args_parsed))
-        else:
-            insufficient_subcommands_message(
-                subcommand='"docker_cli"', command_str="docker_cli"
-            )
     elif command == "dropin":
         dropin(**vars(args_parsed))
     elif command == "remove":
         remove(**vars(args_parsed))
     elif command == "lockfile":
         make_lockfile(**vars(args_parsed))
-
-
-def insufficient_subcommands_message(subcommand: str, command_str: str) -> None:
-    """
-    Print an error string when an incomplete set of commands is given.
-
-    Parameters
-    ----------
-    subcommand : str
-        The subcommand name.
-    command_str : str
-        The full command string up to the subcommand (e.g. "docker_cli build")
-    """
-    print(f"\n  {subcommand} requires further subcommands!")
-    print(f'  For more info: "{command_str} -h"\n')
-    exit(1)
 
 
 def _add_tag_argument(parser: argparse.ArgumentParser, default: str) -> None:
