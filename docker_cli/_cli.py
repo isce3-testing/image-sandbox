@@ -27,6 +27,8 @@ def setup_parser() -> argparse.ArgumentParser:
     """
     prefix = universal_tag_prefix()
 
+    # Use a custom help message formatter to improve readability by increasing the
+    # indentation of parameter descriptions to accommodate longer parameter names.
     def help_formatter(prog):
         return argparse.HelpFormatter(prog, max_help_position=60)
 
