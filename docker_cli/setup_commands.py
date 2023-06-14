@@ -200,7 +200,7 @@ def setup_cuda_dev(
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
-def setup_env_runtime(
+def setup_conda_runtime(
     base: str, tag: str, no_cache: bool, env_file: Union[str, os.PathLike[str]]
 ) -> Image:
     """
@@ -234,7 +234,7 @@ def setup_env_runtime(
     )
 
 
-def setup_env_dev(
+def setup_conda_dev(
     base: str, tag: str, no_cache: bool, env_file: Union[str, os.PathLike[str]]
 ) -> Image:
     """
@@ -269,7 +269,7 @@ def setup_env_dev(
     )
 
 
-def setup_env_add(
+def setup_conda_add(
     base: str,
     tag: str,
     no_cache: bool,
@@ -372,7 +372,7 @@ def setup_all(
 
     # Build the Mamba runtime image and append it to the image list
     mamba_run_tag = f"{prefix}-{tag}-mamba-runtime"
-    mamba_run_image = setup_env_runtime(
+    mamba_run_image = setup_conda_runtime(
         base=cuda_run_tag,
         tag=mamba_run_tag,
         no_cache=no_cache,
@@ -393,7 +393,7 @@ def setup_all(
 
     # Build the Mamba dev image and append it to the image list
     mamba_dev_tag = f"{prefix}-{tag}-mamba-dev"
-    mamba_dev_image = setup_env_dev(
+    mamba_dev_image = setup_conda_dev(
         base=cuda_dev_tag, tag=mamba_dev_tag, no_cache=no_cache, env_file=dev_env_file
     )
     images[mamba_dev_tag] = mamba_dev_image

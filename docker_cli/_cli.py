@@ -7,11 +7,11 @@ from ._utils import universal_tag_prefix
 from .commands import dropin, make_lockfile, remove
 from .setup_commands import (
     setup_all,
+    setup_conda_add,
+    setup_conda_dev,
+    setup_conda_runtime,
     setup_cuda_dev,
     setup_cuda_runtime,
-    setup_env_add,
-    setup_env_dev,
-    setup_env_runtime,
     setup_init,
 )
 
@@ -67,8 +67,8 @@ def setup_parser() -> argparse.ArgumentParser:
         metavar="REPO_NAME",
     )
 
-    env_parse = argparse.ArgumentParser(add_help=False)
-    env_parse.add_argument(
+    conda_parse = argparse.ArgumentParser(add_help=False)
+    conda_parse.add_argument(
         "--env-file",
         default="spec-file.txt",
         type=str,
@@ -157,47 +157,49 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     _add_tag_argument(parser=setup_cuda_dev_parser, default="cuda-dev")
 
-    setup_env_parser = setup_subparsers.add_parser(
-        "env",
+    setup_conda_parser = setup_subparsers.add_parser(
+        "conda",
         help="Set up the runtime environment image. " "Designate dev or runtime.",
         formatter_class=help_formatter,
     )
 
-    env_subparsers = setup_env_parser.add_subparsers(dest="env_subcommand")
-    setup_env_runtime_parser = env_subparsers.add_parser(
+    conda_subparsers = setup_conda_parser.add_subparsers(dest="conda_subcommand")
+    setup_conda_runtime_parser = conda_subparsers.add_parser(
         "runtime",
-        parents=[setup_parse, env_parse, no_cache_parse],
+        parents=[setup_parse, conda_parse, no_cache_parse],
         help="Set up the runtime conda environment image",
         formatter_class=help_formatter,
     )
-    _add_tag_argument(parser=setup_env_runtime_parser, default="env-runtime")
+    _add_tag_argument(parser=setup_conda_runtime_parser, default="conda-runtime")
 
-    setup_env_dev_parser = env_subparsers.add_parser(
+    setup_conda_dev_parser = conda_subparsers.add_parser(
         "dev",
-        parents=[setup_parse, env_parse, no_cache_parse],
+        parents=[setup_parse, conda_parse, no_cache_parse],
         help="Set up the runtime conda environment image",
         formatter_class=help_formatter,
     )
-    _add_tag_argument(parser=setup_env_dev_parser, default="env-dev")
+    _add_tag_argument(parser=setup_conda_dev_parser, default="conda-dev")
 
-    setup_env_add_parser = env_subparsers.add_parser(
+    # This command has been commented out due to buggy implementation, but may
+    # later be recovered once a better implementation has been found.
+    """setup_conda_add_parser = conda_subparsers.add_parser(
         "add",
         parents=[setup_parse, no_cache_parse],
         help="Set up the runtime conda environment image",
         formatter_class=help_formatter,
     )
-    setup_env_add_parser.add_argument(
+    setup_conda_add_parser.add_argument(
         "packages",
         nargs="+",
         help="A list of conda packages to add to the environment.",
     )
-    setup_env_add_parser.add_argument(
+    setup_conda_add_parser.add_argument(
         "--channels",
         "-c",
         nargs="+",
         help="A list of channels to look for conda packages in.",
     )
-    _add_tag_argument(parser=setup_env_add_parser, default="env-pkgs")
+    _add_tag_argument(parser=setup_conda_add_parser, default="conda-pkgs")"""
 
     dropin_parser = subparsers.add_parser(
         "dropin", help="Start a drop-in session.", formatter_class=help_formatter
@@ -302,19 +304,19 @@ def main(args: Sequence[str] = sys.argv[1:]):
                 setup_cuda_runtime(**vars(args_parsed))
             elif cuda_subcommand == "dev":
                 setup_cuda_dev(**vars(args_parsed))
-        elif setup_subcommand == "env":
-            env_subcommand = args_parsed.env_subcommand
-            if env_subcommand is None:
+        elif setup_subcommand == "conda":
+            conda_subcommand = args_parsed.conda_subcommand
+            if conda_subcommand is None:
                 insufficient_subcommands_message(
                     subcommand='"setup env"', command_str="docker_cli setup env"
                 )
-            del args_parsed.env_subcommand
-            if env_subcommand == "runtime":
-                setup_env_runtime(**vars(args_parsed))
-            elif env_subcommand == "dev":
-                setup_env_dev(**vars(args_parsed))
-            elif env_subcommand == "add":
-                setup_env_add(**vars(args_parsed))
+            del args_parsed.conda_subcommand
+            if conda_subcommand == "runtime":
+                setup_conda_runtime(**vars(args_parsed))
+            elif conda_subcommand == "dev":
+                setup_conda_dev(**vars(args_parsed))
+            elif conda_subcommand == "add":
+                setup_conda_add(**vars(args_parsed))
         else:
             insufficient_subcommands_message(
                 subcommand='"docker_cli"', command_str="docker_cli"
