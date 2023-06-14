@@ -29,8 +29,9 @@ def setup_parser() -> argparse.ArgumentParser:
 
     # Use a custom help message formatter to improve readability by increasing the
     # indentation of parameter descriptions to accommodate longer parameter names.
+    # This formatter also includes defaults automatically in the help string.
     def help_formatter(prog):
-        return argparse.HelpFormatter(prog, max_help_position=60)
+        return argparse.ArgumentDefaultsHelpFormatter(prog, max_help_position=60)
 
     parser = argparse.ArgumentParser(prog=__package__, formatter_class=help_formatter)
 
@@ -57,7 +58,7 @@ def setup_parser() -> argparse.ArgumentParser:
         "-c",
         default="11.4",
         type=str,
-        help='The CUDA version. Default: "11.4"',
+        help="The CUDA version.",
         metavar="VERSION",
     )
     cuda_run_parse.add_argument(
@@ -65,7 +66,7 @@ def setup_parser() -> argparse.ArgumentParser:
         default="rhel8",
         type=str,
         help="The name of the CUDA repository for this distro "
-        '(e.g. "rhel8", "ubuntu2004".) Default: "rhel8"',
+        '(e.g. "rhel8", "ubuntu2004".)',
         metavar="REPO_NAME",
     )
 
@@ -75,8 +76,7 @@ def setup_parser() -> argparse.ArgumentParser:
         default="spec-file.txt",
         type=str,
         help="The location of the requirements file. Can be a pip-style "
-        "requirements.txt file, a conda-style environment.yml file, or a lockfile. "
-        'Default: "spec-file.txt"',
+        "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
 
     # Add arguments
@@ -102,30 +102,28 @@ def setup_parser() -> argparse.ArgumentParser:
         default="setup",
         type=str,
         help="The sub-prefix of the Docker images to be created. Generated images will "
-        f'have tags: "{prefix}-[TAG]-*". Default: "setup"',
+        f'have tags: "{prefix}-[TAG]-*".',
     )
     setup_all_parser.add_argument(
         "--base",
         "-b",
         default="oraclelinux:8.4",
         type=str,
-        help='The name of the parent Docker image. Default: "oraclelinux:8.4"',
+        help="The name of the parent Docker image.",
     )
     setup_all_parser.add_argument(
         "--runtime-env-file",
         default="runtime-spec-file.txt",
         type=str,
         help="The location of the runtime requirements file. Can be a pip-style "
-        "requirements.txt file, a conda-style environment.yml file, or a lockfile. "
-        'Default: "spec-file.txt"',
+        "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
     setup_all_parser.add_argument(
         "--dev-env-file",
         default="dev-spec-file.txt",
         type=str,
         help="The location of the dev requirements file. Can be a pip-style "
-        "requirements.txt file, a conda-style environment.yml file, or a lockfile. "
-        'Default: "spec-file.txt"',
+        "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
 
     setup_init_parser = setup_subparsers.add_parser(
@@ -140,7 +138,7 @@ def setup_parser() -> argparse.ArgumentParser:
         default="oraclelinux:8.4",
         type=str,
         required=True,
-        help='The name of the parent Docker image. Default: "oraclelinux:8.4"',
+        help="The name of the parent Docker image.",
     )
     _add_tag_argument(parser=setup_init_parser, default="init")
 
@@ -171,7 +169,7 @@ def setup_parser() -> argparse.ArgumentParser:
 
     setup_conda_parser = setup_subparsers.add_parser(
         "conda",
-        help="Set up the runtime environment image. " "Designate dev or runtime.",
+        help="Set up a conda environment image. Designate dev or runtime.",
         formatter_class=help_formatter,
     )
 
@@ -274,8 +272,7 @@ def setup_parser() -> argparse.ArgumentParser:
         metavar="ENVIRONMENT",
         type=str,
         default="base",
-        help="The name of the environment used to create the dockerfile. Defaults to "
-        '"base".',
+        help="The name of the environment used to create the dockerfile.",
     )
 
     return parser
@@ -338,5 +335,5 @@ def _add_tag_argument(parser: argparse.ArgumentParser, default: str) -> None:
         default=default,
         type=str,
         help="The tag of the Docker image to be created. This tag will be prefixed "
-        f'with "{prefix}-". Default: "{default}"',
+        f'with "{prefix}-".',
     )
