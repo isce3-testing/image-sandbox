@@ -8,9 +8,7 @@ from docker_cli._utils import _package_manager_check
 
 
 @mark.images
-def test_generate_install_command(
-    init_image: Image
-):
+def test_generate_install_command(init_image: Image):
     """
     Installs and checks for a package using the package manager.
 
@@ -25,15 +23,12 @@ def test_generate_install_command(
 
     # since Yum and Apt-Get have their own package names, this messy little
     # implementation detail (or something analogous) is necessary.
-    target: List[str] = {
-        "yum": ["python39-pip"],
-        "apt-get": ["python3-pip"]
-    }[pkg_manager.name]
+    target: List[str] = {"yum": ["python39-pip"], "apt-get": ["python3-pip"]}[
+        pkg_manager.name
+    ]
 
     install_cmd = pkg_manager.generate_install_command(
-        targets=target,
-        stringify=True,
-        clean=True
+        targets=target, stringify=True, clean=True
     )
     test_cmd = "pip3 -v"
 
@@ -58,9 +53,7 @@ def unused_test_generate_package_command():
 
 
 @mark.images
-def test_generate_configure_command(
-    image_id: str
-):
+def test_generate_configure_command(image_id: str):
     """
     Tests the configure command generation on an image.
 

@@ -19,10 +19,7 @@ class PackageManager(ABC):
     @staticmethod
     @abstractmethod
     def generate_install_command(
-        targets: Iterable[str],
-        *,
-        stringify: bool = False,
-        clean: bool = True
+        targets: Iterable[str], *, stringify: bool = False, clean: bool = True
     ) -> Union[List[str], str]:
         """
         Returns an set of commands to install the targets.
@@ -48,9 +45,7 @@ class PackageManager(ABC):
     @staticmethod
     @abstractmethod
     def generate_package_command(
-        target: str,
-        *,
-        stringify: bool = False
+        target: str, *, stringify: bool = False
     ) -> Union[List[str], str]:
         """
         Returns a command to install a single package.
@@ -75,10 +70,7 @@ class PackageManager(ABC):
 
     @staticmethod
     @abstractmethod
-    def generate_configure_command(
-        *,
-        stringify: bool = False
-    ) -> Union[List[str], str]:
+    def generate_configure_command(*, stringify: bool = False) -> Union[List[str], str]:
         """
         Returns commands to configure and update the package manager.
 
@@ -113,7 +105,6 @@ class PackageManager(ABC):
 
 
 class Yum(PackageManager):
-
     @staticmethod
     def generate_install_command(
         targets: Iterable[str],
@@ -128,32 +119,27 @@ class Yum(PackageManager):
             retval += ["&&", "yum", "clean", "all"]
             retval += ["&&", "rm", "-rf", "/var/cache/yum"]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval  # pragma: no cover
 
     @staticmethod
     def generate_package_command(  # pragma: no cover
-        target: str,
-        *,
-        stringify: bool = False
+        target: str, *, stringify: bool = False
     ) -> Union[List[str], str]:
         retval = ["rpm", "-i", target]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval
 
     @staticmethod
-    def generate_configure_command(
-        *,
-        stringify: bool = False
-    ) -> Union[List[str], str]:
+    def generate_configure_command(*, stringify: bool = False) -> Union[List[str], str]:
         retval = []
         retval += ["yum", "update", "-y"]
         retval += ["&&", "echo", "'skip_missing_names_on_install=False'"]
         retval += [">>", "/etc/yum.conf"]
         retval += ["&&", "rm", "-rf", "/var/cache/yum"]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval  # pragma: no cover
 
     @property
@@ -166,7 +152,6 @@ class Yum(PackageManager):
 
 
 class AptGet(PackageManager):
-
     @staticmethod
     def generate_install_command(
         targets: Iterable[str],
@@ -181,30 +166,25 @@ class AptGet(PackageManager):
         if clean:
             retval += ["&&", "apt-get", "clean", "all"]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval  # pragma: no cover
 
     @staticmethod
     def generate_package_command(  # pragma: no cover
-        target: str,
-        *,
-        stringify: bool = False
+        target: str, *, stringify: bool = False
     ) -> Union[List[str], str]:
         retval = ["dpkg", "-i", target]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval
 
     @staticmethod
-    def generate_configure_command(
-        *,
-        stringify: bool = False
-    ) -> Union[List[str], str]:
+    def generate_configure_command(*, stringify: bool = False) -> Union[List[str], str]:
         retval = []
         retval += ["apt-get", "-y", "update"]
         retval += ["&&", "apt-get", "clean", "all"]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval  # pragma: no cover
 
     @property
@@ -233,7 +213,7 @@ class URLReader(ABC):
         target: str,
         *,
         output_target: Optional[Union[str, os.PathLike[str]]] = None,
-        stringify: bool = False
+        stringify: bool = False,
     ) -> Union[List[str], str]:
         """
         Returns a set of commands to read a URL.
@@ -271,19 +251,18 @@ class URLReader(ABC):
 
 
 class Wget(URLReader):
-
     @staticmethod
     def generate_read_command(
         target: str,
         *,
         output_target: Optional[Union[os.PathLike[str], str]] = None,
-        stringify: bool = False
+        stringify: bool = False,
     ) -> Union[List[str], str]:
         retval = ["wget", target]
         if output_target is not None:
             retval += ["-O", str(output_target)]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval  # pragma: no cover
 
     @staticmethod
@@ -292,19 +271,18 @@ class Wget(URLReader):
 
 
 class cURL(URLReader):
-
     @staticmethod
     def generate_read_command(
         target: str,
         *,
         output_target: Optional[Union[os.PathLike[str], str]] = None,
-        stringify: bool = False
+        stringify: bool = False,
     ) -> Union[List[str], str]:
         retval = ["curl", "--ssl", target]
         if output_target is not None:
             retval += ["-o", str(output_target)]
         if stringify:
-            return ' '.join(retval)
+            return " ".join(retval)
         return retval  # pragma: no cover
 
     @staticmethod
@@ -359,10 +337,7 @@ def get_url_reader(name: str) -> Type[URLReader]:
     ValueError
         When `name` does not correspond to a supported URL reader.
     """
-    url_readers: Dict[str, Type[URLReader]] = {
-        "curl": cURL,
-        "wget": Wget
-    }
+    url_readers: Dict[str, Type[URLReader]] = {"curl": cURL, "wget": Wget}
     if name in url_readers.keys():
         url_reader: Type[URLReader] = url_readers[name]
         return url_reader
@@ -379,10 +354,7 @@ def get_supported_package_managers() -> List[str]:
     List[str]
         The list.
     """
-    return [
-        "yum",
-        "apt-get"
-    ]
+    return ["yum", "apt-get"]
 
 
 def get_supported_url_readers() -> List[str]:
@@ -394,7 +366,4 @@ def get_supported_url_readers() -> List[str]:
     List[str]
         The list.
     """
-    return [
-        "curl",
-        "wget"
-    ]
+    return ["curl", "wget"]

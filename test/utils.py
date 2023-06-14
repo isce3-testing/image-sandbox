@@ -88,9 +88,7 @@ def remove_docker_image(tag_or_id: str):
     pass
 
 
-def rough_dockerfile_validity_check(
-    dockerfile: str
-) -> None:
+def rough_dockerfile_validity_check(dockerfile: str) -> None:
     """
     Performs a coarse check to see if a dockerfile is valid.
 
@@ -166,14 +164,28 @@ def rough_dockerfile_validity_check(
     # Check that each line begins with an instruction.
     # The regex should match a line beginning with any of the following, followed by
     # a string, or only "HEALTHCHECK"
-    dockerfile_instructions = "|".join([
-        "FROM", "RUN", "CMD", "ENTRYPOINT", "WORKDIR", "USER", "LABEL", "ARG", "SHELL",
-        "EXPOSE", "ENV", "COPY", "ADD", "VOLUME"
-    ])
-    instruction_match_string = fr"^(?:{dockerfile_instructions})\s+.+|^HEALTHCHECK$"
+    dockerfile_instructions = "|".join(
+        [
+            "FROM",
+            "RUN",
+            "CMD",
+            "ENTRYPOINT",
+            "WORKDIR",
+            "USER",
+            "LABEL",
+            "ARG",
+            "SHELL",
+            "EXPOSE",
+            "ENV",
+            "COPY",
+            "ADD",
+            "VOLUME",
+        ]
+    )
+    instruction_match_string = rf"^(?:{dockerfile_instructions})\s+.+|^HEALTHCHECK$"
     instruction_match_pattern = re.compile(instruction_match_string, re.IGNORECASE)
 
     for line in complete_lines:
         matches = re.match(instruction_match_pattern, line)
         if matches is None:
-            raise ValueError(f"Dockerfile line \"{line}\" does not appear to be valid.")
+            raise ValueError(f'Dockerfile line "{line}" does not appear to be valid.')

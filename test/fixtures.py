@@ -36,11 +36,13 @@ def image_id(image_tag):
     str
         An image ID.
     """
-    dockerfile = dedent(f"""
+    dockerfile = dedent(
+        f"""
         FROM ubuntu
 
         RUN mkdir {image_tag}
-    """).strip()
+    """
+    ).strip()
     run(split(f"docker build . -t {image_tag} -f-"), text=True, input=dockerfile)
     inspect_process = run(
         split("docker inspect -f='{{.Id}}' " + image_tag),
@@ -89,11 +91,7 @@ def init_image(base_tag: str, init_tag: str) -> Iterator[Image]:
     Iterator[Image]
         The initialization tag generator.
     """
-    img, _, _ = setup_init(
-        base=base_tag,
-        tag=init_tag,
-        no_cache=False
-    )
+    img, _, _ = setup_init(base=base_tag, tag=init_tag, no_cache=False)
     yield img
     remove_docker_image(init_tag)
 

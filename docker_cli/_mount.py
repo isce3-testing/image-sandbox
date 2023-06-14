@@ -9,7 +9,7 @@ class Mount:
         self,
         host_mount_point: Union[os.PathLike[str], str],
         image_mount_point: Union[os.PathLike[str], str],
-        permissions: str
+        permissions: str,
     ):
         """
         A description of a Docker mount.
@@ -29,9 +29,7 @@ class Mount:
             _description_
         """
         if permissions not in ["ro", "rw"]:
-            raise ValueError(
-                "Permissions value for mount not given as \"ro\" or \"rw\"."
-            )
+            raise ValueError('Permissions value for mount not given as "ro" or "rw".')
         self.permissions = permissions
         self.host_mount_point = host_mount_point
         self.image_mount_point = image_mount_point

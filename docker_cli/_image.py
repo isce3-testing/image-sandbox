@@ -3,11 +3,9 @@ import os
 from shlex import split
 from subprocess import DEVNULL, CalledProcessError, run
 from sys import stdin
-from typing import (Any, Iterable, List, Optional, Type, TypeVar, Union,
-                    overload)
+from typing import Any, Iterable, List, Optional, Type, TypeVar, Union, overload
 
-from ._exceptions import (CommandNotFoundError, DockerBuildError,
-                          ImageNotFoundError)
+from ._exceptions import CommandNotFoundError, DockerBuildError, ImageNotFoundError
 
 
 class Image:
@@ -24,6 +22,7 @@ class Image:
         :func:`~docker_cli.Image.run`.
     -   Inspecting properties of the given image.
     """
+
     Self = TypeVar("Self", bound="Image")
 
     def __init__(self, name_or_id: str):
@@ -48,7 +47,7 @@ class Image:
         stdout: Any = ...,
         stderr: Any = ...,
         network: str = ...,
-        no_cache: bool = ...
+        no_cache: bool = ...,
     ) -> Self:
         """
         Build a new image from a dockerfile.
@@ -100,7 +99,7 @@ class Image:
         stdout: Any = ...,
         stderr: Any = ...,
         network: str = ...,
-        no_cache: bool = ...
+        no_cache: bool = ...,
     ) -> Self:
         """
         Builds a new image from a string in dockerfile syntax.
@@ -148,7 +147,7 @@ class Image:
         stdout=None,
         stderr=None,
         network="host",
-        no_cache=False
+        no_cache=False,
     ):
         if dockerfile is not None and dockerfile_string is not None:
             raise ValueError(
@@ -159,13 +158,7 @@ class Image:
         dockerfile_build = dockerfile_string is None
 
         context_str = os.fspath(".") if context is None else os.fspath(context)
-        cmd = [
-            "docker",
-            "build",
-            f"--network={network}",
-            context_str,
-            f"-t={tag}"
-        ]
+        cmd = ["docker", "build", f"--network={network}", context_str, f"-t={tag}"]
 
         if no_cache:
             cmd += ["--no-cache"]
@@ -187,7 +180,7 @@ class Image:
                 stdout=stdout,  # type: ignore
                 stderr=stderr,  # type: ignore
                 input=stdin,
-                check=True
+                check=True,
             )
         except CalledProcessError as err:
             if dockerfile_build:
@@ -222,12 +215,7 @@ class Image:
             cmd += [f"-f={format}"]
         cmd += [self._id]
 
-        inspect_result = run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        inspect_result = run(cmd, capture_output=True, text=True, check=True)
 
         output_text = inspect_result.stdout
         return output_text
@@ -240,7 +228,7 @@ class Image:
         stderr: Optional[Union[io.TextIOBase, int]] = None,
         interactive: bool = False,
         network: str = "host",
-        check: bool = True
+        check: bool = True,
     ) -> str:
         """
         Run the given command on a container.
@@ -291,7 +279,7 @@ class Image:
                 text=True,
                 stdout=stdout,  # type: ignore
                 stderr=stderr,  # type: ignore
-                check=check
+                check=check,
             )
         except CalledProcessError as err:
             if err.returncode == 127:
@@ -318,8 +306,9 @@ class Image:
         CommandNotFoundError:
             When bash is not recognized on the image.
         """
-        self.run("bash", interactive=True, network=network, check=False) \
-            # pragma: no cover
+        self.run(
+            "bash", interactive=True, network=network, check=False
+        )  # pragma: no cover
 
     def check_command_availability(self, commands: Iterable[str]) -> List[str]:
         """
@@ -369,7 +358,7 @@ class Image:
     @property
     def tags(self) -> List[str]:
         """List[str]: The Repo Tags held on this Docker image."""
-        return self._inspect(format="{{.RepoTags}}").strip('][\n').split(', ')
+        return self._inspect(format="{{.RepoTags}}").strip("][\n").split(", ")
 
     @property
     def id(self) -> str:
@@ -427,17 +416,10 @@ def get_image_id(name_or_id: str) -> str:
         If `name_or_id` is not a string
     """
     if not isinstance(name_or_id, str):
-        raise ValueError(
-            f"name_or_id given as {type(name_or_id)}. Expected string."
-        )
+        raise ValueError(f"name_or_id given as {type(name_or_id)}. Expected string.")
     command = "docker inspect -f={{.Id}} " + name_or_id
     try:
-        process = run(
-            split(command),
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        process = run(split(command), capture_output=True, text=True, check=True)
     except CalledProcessError as err:
         # The Docker command will return with value 1 if the image was not found.
         # This should be raised as a more specific ImageNotFoundError. Any other

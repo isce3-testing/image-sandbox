@@ -9,9 +9,7 @@ from ._image import Image
 from ._utils import _is_conda_pkg_name, universal_tag_prefix
 
 
-def dropin(
-    tag: str
-) -> None:
+def dropin(tag: str) -> None:
     """
     Initiates a drop-in session on an image.
 
@@ -35,7 +33,7 @@ def remove(
     tags: Iterable[str],
     force: bool = True,
     quiet: bool = False,
-    ignore_prefix: bool = False
+    ignore_prefix: bool = False,
 ) -> None:
     """
     Remove all Docker images that fit a given tag or wildcard.
@@ -73,8 +71,10 @@ def remove(
         # A CalledProcessError here indicates that the search failed. Skip to the next.
         except CalledProcessError as err:
             if not quiet:
-                print(f"Search for {search} failed with error code {err.returncode}. "
-                      "Proceeding.")
+                print(
+                    f"Search for {search} failed with error code {err.returncode}. "
+                    "Proceeding."
+                )
             continue
         # An empty return indicates that no such images were found. Skip to the next.
         if search_result.stdout == "":
@@ -83,25 +83,25 @@ def remove(
             continue
         # The names come in a list delimited by newlines. Reform this to be delimited
         # by spaces to use with `Docker rmi`.
-        search_result_str = ' '.join(search_result.stdout.split("\n"))
+        search_result_str = " ".join(search_result.stdout.split("\n"))
 
         # Remove all images in the list
-        command = split(f'docker rmi {force_arg}{search_result_str}')
+        command = split(f"docker rmi {force_arg}{search_result_str}")
         command += []
         try:
             run(command, stdout=output, stderr=output)
         except CalledProcessError as err:
             if not quiet:
-                print(f"Removal of {tag} failed with error code {err.returncode}. "
-                      "Proceeding.")
+                print(
+                    f"Removal of {tag} failed with error code {err.returncode}. "
+                    "Proceeding."
+                )
     if not quiet:
         print("Docker removal process completed.")
 
 
 def make_lockfile(
-    tag: str,
-    file: Union[str, os.PathLike[str]],
-    env_name: str = "base"
+    tag: str, file: Union[str, os.PathLike[str]], env_name: str = "base"
 ) -> None:
     """
     Makes a lockfile from an image.
@@ -127,8 +127,7 @@ def make_lockfile(
     lockfile_list: List[str] = lockfile.split("\n")
     conda_package_filter = filter(_is_conda_pkg_name, lockfile_list)
     other_lines_filter = filter(
-        lambda line: not _is_conda_pkg_name(line) and line != "",
-        lockfile_list
+        lambda line: not _is_conda_pkg_name(line) and line != "", lockfile_list
     )
     lockfile_conda_packages: List[str] = list(conda_package_filter)
     lockfile_other_lines: List[str] = list(other_lines_filter)
@@ -137,7 +136,7 @@ def make_lockfile(
     lockfile_conda_packages.sort()
     lockfile_list = lockfile_other_lines
     lockfile_list.extend(lockfile_conda_packages)
-    lockfile = "\n".join(lockfile_list) + '\n'
+    lockfile = "\n".join(lockfile_list) + "\n"
     # print (lockfile)
 
     with open(file, mode="w") as f:

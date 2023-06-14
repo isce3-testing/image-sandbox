@@ -3,11 +3,17 @@ from typing import Iterator, Tuple
 from pytest import fixture, mark
 
 from docker_cli import Image
-from docker_cli._docker_mamba import (mamba_add_specs_dockerfile,
-                                      mamba_install_dockerfile)
+from docker_cli._docker_mamba import (
+    mamba_add_specs_dockerfile,
+    mamba_install_dockerfile,
+)
 
-from .utils import (determine_scope, generate_tag, remove_docker_image,
-                    rough_dockerfile_validity_check)
+from .utils import (
+    determine_scope,
+    generate_tag,
+    remove_docker_image,
+    rough_dockerfile_validity_check,
+)
 
 
 @fixture(scope=determine_scope)
@@ -20,9 +26,7 @@ def mamba_runtime_dockerfile() -> Tuple[str, str]:
     Tuple[str, str]
         The dockerfile header and body.
     """
-    return mamba_install_dockerfile(
-        env_specfile="test-runtime-lock-file.txt"
-    )
+    return mamba_install_dockerfile(env_specfile="test-runtime-lock-file.txt")
 
 
 @fixture(scope=determine_scope)
@@ -43,7 +47,7 @@ def mamba_runtime_image(
     mamba_runtime_dockerfile: Tuple[str, str],
     init_tag: str,
     mamba_runtime_tag: str,
-    init_image: Image           # type: ignore
+    init_image: Image,  # type: ignore
 ) -> Iterator[Image]:
     """
     Yields a Mamba runtime image.
@@ -67,10 +71,7 @@ def mamba_runtime_image(
     header, body = mamba_runtime_dockerfile
 
     dockerfile = f"{header}\n\nFROM {init_tag}\n\n{body}"
-    img = Image.build(
-        tag=mamba_runtime_tag,
-        dockerfile_string=dockerfile
-    )
+    img = Image.build(tag=mamba_runtime_tag, dockerfile_string=dockerfile)
     yield img
     remove_docker_image(mamba_runtime_tag)
 
@@ -85,9 +86,7 @@ def mamba_dev_dockerfile() -> str:
     str
         The dockerfile body.
     """
-    return mamba_add_specs_dockerfile(
-        env_specfile="test-dev-lock-file.txt"
-    )
+    return mamba_add_specs_dockerfile(env_specfile="test-dev-lock-file.txt")
 
 
 @fixture(scope=determine_scope)
@@ -108,7 +107,7 @@ def mamba_dev_image(
     mamba_dev_dockerfile: str,
     mamba_runtime_tag: str,
     mamba_dev_tag: str,
-    mamba_runtime_image: Image          # type: ignore
+    mamba_runtime_image: Image,  # type: ignore
 ) -> Iterator[Image]:
     """
     Returns a mamba dev image.
@@ -130,10 +129,7 @@ def mamba_dev_image(
         The mamba dev image generator.
     """
     dockerfile = f"FROM {mamba_runtime_tag}\n\n{mamba_dev_dockerfile}"
-    img = Image.build(
-        tag=mamba_dev_tag,
-        dockerfile_string=dockerfile
-    )
+    img = Image.build(tag=mamba_dev_tag, dockerfile_string=dockerfile)
     yield img
     remove_docker_image(mamba_dev_tag)
 
@@ -165,4 +161,4 @@ class TestMambaGenerators:
 
         def test_mamba_dev_build(self, mamba_dev_image: Image):
             """Tests that the runtime build correctly functions."""
-            mamba_dev_image.run("python -c \"import scipy\"")
+            mamba_dev_image.run('python -c "import scipy"')

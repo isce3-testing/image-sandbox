@@ -16,14 +16,11 @@ class CUDADockerfileGenerator(ABC):
 
     _runtime_build_targets: List[str] = [
         "cuda-cudart-$CUDA_PKG_VERSION",
-        "libcufft-$CUDA_PKG_VERSION"
+        "libcufft-$CUDA_PKG_VERSION",
     ]
     _dev_build_targets: List[str] = []
 
-    def __init__(
-        self,
-        url_reader: Type[URLReader]
-    ):
+    def __init__(self, url_reader: Type[URLReader]):
         self.url_reader = url_reader
 
     def generate_runtime_dockerfile(
@@ -65,31 +62,32 @@ class CUDADockerfileGenerator(ABC):
         """
 
         if cuda_ver_major < 11:
-            raise ValueError(   # pragma: no cover
+            raise ValueError(  # pragma: no cover
                 "CUDA version below 11 requested. Only CUDA versions >= 11 "
                 "are supported."
             )
-        cuda_pkg_version = \
-            "\"${CUDA_VERSION_MAJOR}-${CUDA_VERSION_MINOR}\""
-        nvidia_req_cuda: str = \
-            "cuda>=${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}"
+        cuda_pkg_version = '"${CUDA_VERSION_MAJOR}-${CUDA_VERSION_MINOR}"'
+        nvidia_req_cuda: str = "cuda>=${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}"
         body: str = self._generate_initial_lines(repo_ver, arch=arch)
-        body += "\n" + textwrap.dedent(f'''\
+        body += (
+            "\n"
+            + textwrap.dedent(
+                f"""\
             ENV NVIDIA_VISIBLE_DEVICES {nvidia_visible_devices}
             ENV NVIDIA_DRIVER_CAPABILITIES {nvidia_driver_capabilities}
             ENV CUDA_VERSION_MAJOR {cuda_ver_major}
             ENV CUDA_VERSION_MINOR {cuda_ver_minor}
             ENV CUDA_PKG_VERSION {cuda_pkg_version}
             ENV NVIDIA_REQUIRE_CUDA {nvidia_req_cuda}
-            ''').strip()
+            """
+            ).strip()
+        )
         body += "\n" + self.generate_install_lines(
             build_targets=self._runtime_build_targets
         )
         return body
 
-    def generate_dev_dockerfile(
-        self
-    ) -> str:
+    def generate_dev_dockerfile(self) -> str:
         """
         Generates a dockerfile for the CUDA Dev image.
 
@@ -103,21 +101,21 @@ class CUDADockerfileGenerator(ABC):
         body = "USER root\n" + body
 
         version_name = "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}"
-        body += "\n" + textwrap.dedent(f"""\
+        body += (
+            "\n"
+            + textwrap.dedent(
+                f"""\
                 ENV CUDAHOSTCXX=x86_64-conda-linux-gnu-c++
                 ENV CUDACXX=/usr/local/cuda-{version_name}/bin/nvcc
 
                 USER $DEFAULT_USER
-                """).strip()
+                """
+            ).strip()
+        )
         return body
 
     @abstractmethod
-    def _generate_initial_lines(
-        self,
-        repo_ver: str,
-        *,
-        arch: str = "x86_64"
-    ) -> str:
+    def _generate_initial_lines(self, repo_ver: str, *, arch: str = "x86_64") -> str:
         """
         Generates the first lines of the cuda install dockerfile.
 
@@ -132,10 +130,7 @@ class CUDADockerfileGenerator(ABC):
         ...
 
     @abstractmethod
-    def generate_install_lines(
-        self,
-        build_targets: Iterable[str]
-    ) -> str:
+    def generate_install_lines(self, build_targets: Iterable[str]) -> str:
         """
         Generates the install lines for the cuda install dockerfile.
 
@@ -177,51 +172,37 @@ class AptGetCUDADockerfileGen(CUDADockerfileGenerator):
     _dev_build_targets = [
         "cuda-cudart-dev-$CUDA_PKG_VERSION",
         "cuda-nvcc-$CUDA_PKG_VERSION",
-        "libcufft-dev-$CUDA_PKG_VERSION"
+        "libcufft-dev-$CUDA_PKG_VERSION",
     ]
 
-    def __init__(
-        self,
-        url_reader: Type[URLReader]
-    ):
-        super(AptGetCUDADockerfileGen, self).__init__(
-            url_reader=url_reader
-        )
+    def __init__(self, url_reader: Type[URLReader]):
+        super(AptGetCUDADockerfileGen, self).__init__(url_reader=url_reader)
         self._package_manager: PackageManager = get_package_manager("apt-get")
 
-    def _generate_initial_lines(
-            self,
-            repo_ver: str,
-            *,
-            arch: str = "x86_64"
-    ) -> str:
-        cuda_repo_name = "https://developer.download.nvidia.com/" \
+    def _generate_initial_lines(self, repo_ver: str, *, arch: str = "x86_64") -> str:
+        cuda_repo_name = (
+            "https://developer.download.nvidia.com/"
             f"compute/cuda/repos/{repo_ver}/{arch}/"
+        )
         filename = f"cuda-keyring_1.0-1_all.{self.package_manager.file_type}"
         read_section = self.url_reader.generate_read_command(
             target=f"{cuda_repo_name}" + filename,
             output_target=filename,
-            stringify=True
+            stringify=True,
         )
-        package_command_section = \
-            self.package_manager.generate_package_command(
-                target=filename,
-                stringify=True
-            )
+        package_command_section = self.package_manager.generate_package_command(
+            target=filename, stringify=True
+        )
         return f"RUN {read_section} \\\n && {package_command_section}"
 
-    def generate_install_lines(
-        self,
-        build_targets: Iterable[str]
-    ) -> str:
+    def generate_install_lines(self, build_targets: Iterable[str]) -> str:
         targets = build_targets
         install_section = self.package_manager.generate_install_command(
-            targets=targets,
-            stringify=True,
-            clean=True
+            targets=targets, stringify=True, clean=True
         )
-        install_line = \
+        install_line = (
             f"RUN {self.package_manager.name} update \\\n && {install_section}"
+        )
         return install_line
 
 
@@ -234,39 +215,25 @@ class YumCUDADockerfileGen(CUDADockerfileGenerator):
         "cuda-cudart-devel-$CUDA_PKG_VERSION",
         "cuda-nvcc-$CUDA_PKG_VERSION",
         "libcufft-devel-$CUDA_PKG_VERSION",
-        "rpm-build"
+        "rpm-build",
     ]
 
-    def __init__(
-        self,
-        url_reader: Type[URLReader]
-    ):
-        super(YumCUDADockerfileGen, self).__init__(
-            url_reader=url_reader
-        )
+    def __init__(self, url_reader: Type[URLReader]):
+        super(YumCUDADockerfileGen, self).__init__(url_reader=url_reader)
         self._package_manager: PackageManager = get_package_manager("yum")
 
-    def _generate_initial_lines(
-            self,
-            repo_ver: str,
-            *,
-            arch: str = "x86_64"
-    ) -> str:
-        cuda_repo_name = "https://developer.download.nvidia.com/" \
+    def _generate_initial_lines(self, repo_ver: str, *, arch: str = "x86_64") -> str:
+        cuda_repo_name = (
+            "https://developer.download.nvidia.com/"
             f"compute/cuda/repos/{repo_ver}/{arch}/"
+        )
         cuda_repo = f"{cuda_repo_name}cuda-{repo_ver}.repo"
-        return f"RUN yum-config-manager --add-repo {cuda_repo} \\\n " \
-            "&& yum clean all"
+        return f"RUN yum-config-manager --add-repo {cuda_repo} \\\n " "&& yum clean all"
 
-    def generate_install_lines(
-        self,
-        build_targets: Iterable[str]
-    ) -> str:
+    def generate_install_lines(self, build_targets: Iterable[str]) -> str:
         targets = build_targets
         install_line = self.package_manager.generate_install_command(
-            targets=targets,
-            stringify=True,
-            clean=True
+            targets=targets, stringify=True, clean=True
         )
         assert isinstance(install_line, str)
         install_line = "RUN " + install_line
@@ -274,8 +241,7 @@ class YumCUDADockerfileGen(CUDADockerfileGenerator):
 
 
 def get_cuda_dockerfile_generator(
-    pkg_mgr: Union[PackageManager, str],
-    url_reader: Type[URLReader]
+    pkg_mgr: Union[PackageManager, str], url_reader: Type[URLReader]
 ) -> CUDADockerfileGenerator:
     """
     Returns the appropriate dockerfile generator for a system.
@@ -308,16 +274,10 @@ def get_cuda_dockerfile_generator(
     elif isinstance(pkg_mgr, str):
         name = pkg_mgr
     else:
-        raise ValueError(
-            "pkg_mgr argument value must be a PackageManager or str."
-        )
+        raise ValueError("pkg_mgr argument value must be a PackageManager or str.")
     if name == "apt-get":
-        return AptGetCUDADockerfileGen(
-            url_reader=url_reader
-        )
+        return AptGetCUDADockerfileGen(url_reader=url_reader)
     elif name == "yum":
-        return YumCUDADockerfileGen(
-            url_reader=url_reader
-        )
+        return YumCUDADockerfileGen(url_reader=url_reader)
     else:
         raise ValueError(f"Unrecognized package manager: {name}")

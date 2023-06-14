@@ -3,15 +3,20 @@ from typing import Iterator, Tuple, Type
 from pytest import fixture, mark
 
 from docker_cli import Image
-from docker_cli._docker_cuda import (AptGetCUDADockerfileGen,
-                                     CUDADockerfileGenerator,
-                                     YumCUDADockerfileGen,
-                                     get_cuda_dockerfile_generator)
-from docker_cli._shell_cmds import (AptGet, PackageManager, URLReader, Wget,
-                                    Yum, cURL)
+from docker_cli._docker_cuda import (
+    AptGetCUDADockerfileGen,
+    CUDADockerfileGenerator,
+    YumCUDADockerfileGen,
+    get_cuda_dockerfile_generator,
+)
+from docker_cli._shell_cmds import AptGet, PackageManager, URLReader, Wget, Yum, cURL
 
-from .utils import (determine_scope, generate_tag, remove_docker_image,
-                    rough_dockerfile_validity_check)
+from .utils import (
+    determine_scope,
+    generate_tag,
+    remove_docker_image,
+    rough_dockerfile_validity_check,
+)
 
 
 @mark.cuda
@@ -61,8 +66,7 @@ def cuda_generator(
 
 @fixture(scope=determine_scope)
 def cuda_runtime_dockerfile(
-    cuda_generator: CUDADockerfileGenerator,
-    cuda_repo_ver: str
+    cuda_generator: CUDADockerfileGenerator, cuda_repo_ver: str
 ) -> str:
     """
     Returns a runtime dockerfile for cuda.
@@ -73,9 +77,7 @@ def cuda_runtime_dockerfile(
         The dockerfile body.
     """
     dockerfile: str = cuda_generator.generate_runtime_dockerfile(
-        cuda_ver_major=11,
-        cuda_ver_minor=4,
-        repo_ver=cuda_repo_ver
+        cuda_ver_major=11, cuda_ver_minor=4, repo_ver=cuda_repo_ver
     )
     return dockerfile
 
@@ -98,7 +100,7 @@ def cuda_runtime_image(
     cuda_runtime_dockerfile: str,
     init_tag: str,
     cuda_runtime_tag: str,
-    init_image: Image           # type: ignore
+    init_image: Image,  # type: ignore
 ) -> Iterator[Image]:
     """
     Yields a cuda runtime image.
@@ -120,10 +122,7 @@ def cuda_runtime_image(
         The cuda runtime image generator.
     """
     dockerfile = f"FROM {init_tag}\n\n{cuda_runtime_dockerfile}"
-    img = Image.build(
-        tag=cuda_runtime_tag,
-        dockerfile_string=dockerfile
-    )
+    img = Image.build(tag=cuda_runtime_tag, dockerfile_string=dockerfile)
     yield img
     remove_docker_image(cuda_runtime_tag)
 
@@ -160,7 +159,7 @@ def cuda_dev_image(
     cuda_dev_dockerfile: str,
     cuda_runtime_tag: str,
     cuda_dev_tag: str,
-    cuda_runtime_image: Image          # type: ignore
+    cuda_runtime_image: Image,  # type: ignore
 ) -> Iterator[Image]:
     """
     Returns a cuda dev image.
@@ -182,10 +181,7 @@ def cuda_dev_image(
         The cuda dev image generator.
     """
     dockerfile: str = f"FROM {cuda_runtime_tag}\n\n{cuda_dev_dockerfile}"
-    img = Image.build(
-        tag=cuda_dev_tag,
-        dockerfile_string=dockerfile
-    )
+    img = Image.build(tag=cuda_dev_tag, dockerfile_string=dockerfile)
     yield img
     remove_docker_image(cuda_dev_tag)
 
@@ -197,7 +193,7 @@ class TestCudaGen:
     def test_init(
         self,
         cuda_generator: CUDADockerfileGenerator,
-        base_properties: Tuple[PackageManager, Type[URLReader]]
+        base_properties: Tuple[PackageManager, Type[URLReader]],
     ):
         """Tests the constructor."""
         pkg_mgr, url_reader = base_properties
@@ -207,16 +203,16 @@ class TestCudaGen:
     def test_generate_install_lines(
         self,
         cuda_generator: CUDADockerfileGenerator,
-        base_properties: Tuple[PackageManager, Type[URLReader]]
+        base_properties: Tuple[PackageManager, Type[URLReader]],
     ):
         """Tests the generation of CUDA install lines."""
         pkg_mgr, _ = base_properties
-        dummy_installs = ['a', 'b', 'c', 'd', 'e']
+        dummy_installs = ["a", "b", "c", "d", "e"]
         install_return = cuda_generator.generate_install_lines(
-            build_targets=dummy_installs)
+            build_targets=dummy_installs
+        )
         apt_get_install = pkg_mgr.generate_install_command(
-            targets=dummy_installs,
-            stringify=True
+            targets=dummy_installs, stringify=True
         )
         assert isinstance(apt_get_install, str)
         assert apt_get_install in install_return
@@ -224,15 +220,11 @@ class TestCudaGen:
 
     @mark.dockerfiles
     def test_generate_runtime_dockerfile(
-        self,
-        cuda_generator: CUDADockerfileGenerator,
-        cuda_repo_ver: str
+        self, cuda_generator: CUDADockerfileGenerator, cuda_repo_ver: str
     ):
         """Tests the generation of a runtime CUDA dockerfile."""
         dockerfile: str = cuda_generator.generate_runtime_dockerfile(
-            cuda_ver_major=11,
-            cuda_ver_minor=4,
-            repo_ver=cuda_repo_ver
+            cuda_ver_major=11, cuda_ver_minor=4, repo_ver=cuda_repo_ver
         )
         assert isinstance(dockerfile, str)
 
@@ -241,10 +233,7 @@ class TestCudaGen:
         rough_dockerfile_validity_check(dockerfile)
 
     @mark.dockerfiles
-    def test_generate_dev_dockerfile(
-        self,
-        cuda_generator: CUDADockerfileGenerator
-    ):
+    def test_generate_dev_dockerfile(self, cuda_generator: CUDADockerfileGenerator):
         """Tests the generation of a dev CUDA dockerfile."""
         dockerfile: str = cuda_generator.generate_dev_dockerfile()
         assert isinstance(dockerfile, str)

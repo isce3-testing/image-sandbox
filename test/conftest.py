@@ -10,7 +10,6 @@ from .fixtures import *
 
 
 def pytest_sessionstart(session):
-
     # Navigate to the test folder path in order to make use of tests that require for
     # a dockerfile to be in the local directory, regardless of where tests are being
     # run from.

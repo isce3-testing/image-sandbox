@@ -49,7 +49,8 @@ class TestImage:
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -66,10 +67,7 @@ class TestImage:
         try:
             with open(tmp.name, "w") as file:
                 img = Image.build(
-                    tag=image_tag,
-                    dockerfile="",
-                    stdout=file,
-                    stderr=file
+                    tag=image_tag, dockerfile="", stdout=file, stderr=file
                 )
             with open(tmp.name) as file:
                 assert len(file.read()) > 0
@@ -77,7 +75,8 @@ class TestImage:
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -92,13 +91,13 @@ class TestImage:
         """
         try:
             img = Image.build(
-                tag=image_tag,
-                dockerfile="dockerfiles/alpine_functional.dockerfile"
+                tag=image_tag, dockerfile="dockerfiles/alpine_functional.dockerfile"
             )
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -115,12 +114,13 @@ class TestImage:
             img = Image.build(
                 context="dockerfiles",
                 tag=image_tag,
-                dockerfile="dockerfiles/alpine_functional.dockerfile"
+                dockerfile="dockerfiles/alpine_functional.dockerfile",
             )
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -136,8 +136,8 @@ class TestImage:
         img = None
         with raises(DockerBuildError):
             img = Image.build(
-                tag=image_tag,
-                dockerfile="non_existent_directory/Dockerfile")
+                tag=image_tag, dockerfile="non_existent_directory/Dockerfile"
+            )
         assert img is None
 
     def test_build_from_string(self, image_tag):
@@ -147,13 +147,12 @@ class TestImage:
         """
         dockerfile = Path("Dockerfile").read_text() + f"\nRUN mkdir {image_tag}"
         try:
-            img: Image = Image.build(
-                tag=image_tag,
-                dockerfile_string=dockerfile)
+            img: Image = Image.build(tag=image_tag, dockerfile_string=dockerfile)
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -174,13 +173,15 @@ class TestImage:
                     tag=image_tag,
                     dockerfile_string=dockerfile,
                     stdout=file,
-                    stderr=file)
+                    stderr=file,
+                )
             with open(tmp.name) as file:
                 assert len(file.read()) > 0
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -196,10 +197,7 @@ class TestImage:
         malformed_string: str = "qwerty"
         img = None
         with raises(DockerBuildError):
-            Image.build(
-                tag=image_tag,
-                dockerfile_string=malformed_string
-            )
+            Image.build(tag=image_tag, dockerfile_string=malformed_string)
         assert img is None
 
     def test_run_interactive(self, image_id):
@@ -209,11 +207,7 @@ class TestImage:
         """
         img: Image = Image(image_id)
 
-        retval = img.run(
-            'echo "Hello, World!"',
-            interactive=True,
-            stdout=PIPE
-        )
+        retval = img.run('echo "Hello, World!"', interactive=True, stdout=PIPE)
         assert "Hello, World!\n" in retval
 
     def test_run_noninteractive(self, image_id):
@@ -223,11 +217,7 @@ class TestImage:
         """
         img: Image = Image(image_id)
 
-        retval = img.run(
-            'echo "Hello, World!"',
-            interactive=False,
-            stdout=PIPE
-        )
+        retval = img.run('echo "Hello, World!"', interactive=False, stdout=PIPE)
         assert "Hello, World!\n" in retval
 
     def test_run_noninteractive_output_redirect(self, image_id):
@@ -238,10 +228,7 @@ class TestImage:
         img: Image = Image(image_id)
 
         retval = img.run(
-            'echo "Hello, World!"',
-            interactive=True,
-            stdout=PIPE,
-            stderr=None
+            'echo "Hello, World!"', interactive=True, stdout=PIPE, stderr=None
         )
         assert retval == "Hello, World!\n"
 
@@ -252,13 +239,7 @@ class TestImage:
         img: Image = Image(image_id)
         tmp = NamedTemporaryFile()
         with open(tmp.name, "w") as file:
-
-            img.run(
-                'echo "Hello, World!"',
-                interactive=True,
-                stdout=file,
-                stderr=file
-            )
+            img.run('echo "Hello, World!"', interactive=True, stdout=file, stderr=file)
         with open(tmp.name) as file:
             file_txt = file.read()
             print(file_txt)
@@ -288,7 +269,7 @@ class TestImage:
             text=True,
             check=True,
         )
-        tags = inspect_process.stdout.strip('][\n').split(', ')
+        tags = inspect_process.stdout.strip("][\n").split(", ")
 
         assert img.tags == tags
 
@@ -314,26 +295,26 @@ class TestImage:
         Tests that a check_command_availability properly returns the set of
         commands that exist on an Image and not ones that don't.
         """
-        check_me = [
-            "apk", "apt-get", "yum", "curl", "wget", "python", "sh", "bash"
-        ]
+        check_me = ["apk", "apt-get", "yum", "curl", "wget", "python", "sh", "bash"]
         check_me_2 = ["apt-get"]
 
         img = Image(image_id)
         retvals_1 = img.check_command_availability(check_me)
 
         try:
-            run(split(
-                "docker build . --file=dockerfiles/alpine_functional.dockerfile "
-                f"-t {image_tag}_2")
+            run(
+                split(
+                    "docker build . --file=dockerfiles/alpine_functional.dockerfile "
+                    f"-t {image_tag}_2"
                 )
+            )
             img = Image(f"{image_tag}_2")
 
             retvals_2 = img.check_command_availability(check_me)
             retvals_3 = img.check_command_availability(check_me_2)
 
-            assert retvals_1 == ['apt-get', 'sh', 'bash']
-            assert retvals_2 == ['apk', 'wget', 'sh', 'bash']
+            assert retvals_1 == ["apt-get", "sh", "bash"]
+            assert retvals_2 == ["apk", "wget", "sh", "bash"]
             assert len(retvals_3) == 0
         finally:
             remove_docker_image(f"{image_tag}_2")
@@ -346,10 +327,12 @@ class TestImage:
         """
         check_me = ["apk"]
         try:
-            run(split(
-                "docker build ./ --file=dockerfiles/alpine_broken.dockerfile "
-                f"-t {image_tag}")
+            run(
+                split(
+                    "docker build ./ --file=dockerfiles/alpine_broken.dockerfile "
+                    f"-t {image_tag}"
                 )
+            )
             img = Image(image_tag)
             with raises(CommandNotFoundError):
                 img.check_command_availability(check_me)
@@ -369,7 +352,7 @@ class TestImage:
             text=True,
             check=True,
         )
-        tags = inspect_process.stdout.strip('][\n').split(", ")
+        tags = inspect_process.stdout.strip("][\n").split(", ")
 
         img = Image(id)
         representation = repr(img)
@@ -395,7 +378,7 @@ class TestImage:
         try:
             img_2 = Image.build(
                 tag=image_tag + "_2",
-                dockerfile="dockerfiles/alpine_functional.dockerfile"
+                dockerfile="dockerfiles/alpine_functional.dockerfile",
             )
 
             assert img != "String"

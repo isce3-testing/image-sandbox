@@ -6,7 +6,7 @@ from typing import Iterable, List, Optional, Tuple, overload
 
 
 def mamba_install_dockerfile(
-    env_specfile: os.PathLike[str] | str = "spec-file.txt"
+    env_specfile: os.PathLike[str] | str = "spec-file.txt",
 ) -> Tuple[str, str]:
     """
     Creates and returns a dockerfile for installing micromamba.
@@ -21,15 +21,13 @@ def mamba_install_dockerfile(
     str
         The generated dockerfile body.
     """
-    body = _mamba_install_body(
-        env_specfile=env_specfile
-    )
+    body = _mamba_install_body(env_specfile=env_specfile)
     header = _mamba_install_prefix()
     return header, body
 
 
 def mamba_add_specs_dockerfile(
-    env_specfile: os.PathLike[str] | str = "spec-file.txt"
+    env_specfile: os.PathLike[str] | str = "spec-file.txt",
 ) -> str:
     """
     Creates a dockerfile for adding micromamba environment specs.
@@ -44,15 +42,11 @@ def mamba_add_specs_dockerfile(
     str
         The generated dockerfile body.
     """
-    return _mamba_spec_command(
-        specfile=env_specfile,
-        command="install"
-    )
+    return _mamba_spec_command(specfile=env_specfile, command="install")
 
 
 def mamba_add_packages_dockerfile(
-    packages: Iterable[str],
-    channels: Optional[Iterable[str]]
+    packages: Iterable[str], channels: Optional[Iterable[str]]
 ) -> str:
     """
     Creates a dockerfile body for adding the given packages to a micromamba environment.
@@ -69,17 +63,11 @@ def mamba_add_packages_dockerfile(
     str
         The dockerfile body.
     """
-    return _mamba_spec_command(
-        packages=packages,
-        channels=channels,
-        command="install"
-    )
+    return _mamba_spec_command(packages=packages, channels=channels, command="install")
 
 
 def mamba_lockfile_command(
-    env_name: str,
-    *,
-    stringify: bool = False
+    env_name: str, *, stringify: bool = False
 ) -> str | List[str]:
     """
     Returns a command to generate a lockfile with micromamba.
@@ -104,11 +92,13 @@ def mamba_lockfile_command(
 
 
 def micromamba_docker_lines():
-    return textwrap.dedent("""
+    return textwrap.dedent(
+        """
         ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
         USER $MAMBA_USER
-        """).strip()
+        """
+    ).strip()
 
 
 @overload
@@ -117,34 +107,28 @@ def _mamba_spec_command(
     *,
     packages: Iterable[str],
     channels: Optional[Iterable[str]],
-    env_name: Optional[str] = ...
+    env_name: Optional[str] = ...,
 ) -> str:
     ...
 
 
 @overload
 def _mamba_spec_command(
-    command: str,
-    *,
-    specfile: os.PathLike[str] | str,
-    env_name: Optional[str] = ...
+    command: str, *, specfile: os.PathLike[str] | str, env_name: Optional[str] = ...
 ) -> str:
     ...
 
 
 def _mamba_spec_command(
-    command,
-    *,
-    specfile=None,
-    packages=None,
-    channels=None,
-    env_name=None
+    command, *, specfile=None, packages=None, channels=None, env_name=None
 ) -> str:
     if (specfile is not None) and (packages is not None):
         raise ValueError("Specfile and packages both given. Use only one.")
     if command not in ["install", "create"]:
-        raise ValueError("Improper value given for micromamba specs installation. "
-                         'Please use one of "install" or "create".')
+        raise ValueError(
+            "Improper value given for micromamba specs installation. "
+            'Please use one of "install" or "create".'
+        )
 
     # If a name was given for the environment, an argument will be added to all
     # micromamba installation commands.
@@ -162,7 +146,7 @@ def _mamba_spec_command(
         command_list += [
             f"COPY {specfile} /tmp/spec-file.txt",
             f"RUN micromamba {command}{name_arg} -y -f /tmp/spec-file.txt \\",
-            " && rm /tmp/spec-file.txt \\"
+            " && rm /tmp/spec-file.txt \\",
         ]
     # Otherwise packages were given, so give the instructions for installing the
     # packages.
@@ -184,9 +168,7 @@ def _mamba_install_prefix():
     return "FROM mambaorg/micromamba:1.3.1 as micromamba"
 
 
-def _mamba_install_body(
-    env_specfile: os.PathLike[str] | str = "spec-file.txt"
-):
+def _mamba_install_body(env_specfile: os.PathLike[str] | str = "spec-file.txt"):
     # String variables to keep some of the COPY lines short
     bin = "/usr/local/bin/"
     activate_current_env = f"{bin}_activate_current_env.sh"
@@ -195,7 +177,9 @@ def _mamba_install_body(
     initialize_user_account = f"{bin}_dockerfile_initialize_user_accounts.sh"
     setup_root_prefix = f"{bin}_dockerfile_setup_root_prefix.sh"
 
-    body: str = textwrap.dedent(f'''
+    body: str = (
+        textwrap.dedent(
+            f"""
         USER root
 
         # if your image defaults to a non-root user, then you may want to make
@@ -229,10 +213,10 @@ def _mamba_install_body(
         # environment activated, then do this:
         # ENTRYPOINT ["{entrypoint}", "my_entrypoint_program"]
 
-    ''').strip() + "\n"
-    body += _mamba_spec_command(
-        specfile=str(env_specfile),
-        command="install"
+    """
+        ).strip()
+        + "\n"
     )
+    body += _mamba_spec_command(specfile=str(env_specfile), command="install")
 
     return body

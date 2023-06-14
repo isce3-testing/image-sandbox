@@ -2,21 +2,19 @@ import os
 from textwrap import dedent
 from typing import Dict, Iterable, Optional, Tuple, Type, Union
 
-from ._docker_cuda import (CUDADockerfileGenerator,
-                           get_cuda_dockerfile_generator)
-from ._docker_mamba import (mamba_add_packages_dockerfile,
-                            mamba_add_specs_dockerfile,
-                            mamba_install_dockerfile)
+from ._docker_cuda import CUDADockerfileGenerator, get_cuda_dockerfile_generator
+from ._docker_mamba import (
+    mamba_add_packages_dockerfile,
+    mamba_add_specs_dockerfile,
+    mamba_install_dockerfile,
+)
 from ._image import Image
 from ._shell_cmds import PackageManager, URLReader, get_url_reader
-from ._utils import (_image_command_check, _parse_cuda_info,
-                     universal_tag_prefix)
+from ._utils import _image_command_check, _parse_cuda_info, universal_tag_prefix
 
 
 def setup_init(
-    base: str,
-    tag: str,
-    no_cache: bool
+    base: str, tag: str, no_cache: bool
 ) -> Tuple[Image, PackageManager, Type[URLReader]]:
     """
     Set up the initial configuration image
@@ -39,11 +37,14 @@ def setup_init(
     Type[URLReader]
         The URL Reader present on the image
     """
-    package_mgr, url_reader, dockerfile = _image_command_check(
-        base, True
-    )
+    package_mgr, url_reader, dockerfile = _image_command_check(base, True)
 
-    dockerfile = f"FROM {base}\n\n" + dockerfile + "\n" + dedent("""
+    dockerfile = (
+        f"FROM {base}\n\n"
+        + dockerfile
+        + "\n"
+        + dedent(
+            """
         ENV DEFAULT_GROUP defaultgroup
         ENV DEFAULT_USER defaultuser
         ENV DEFAULT_GID 1000
@@ -53,29 +54,27 @@ def setup_init(
         RUN useradd -g $DEFAULT_GID -u $DEFAULT_UID -m $DEFAULT_USER
 
         RUN chmod -R 777 /tmp
-        """).strip()
+        """
+        ).strip()
+    )
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
-    image = Image.build(
-        tag=img_tag,
-        dockerfile_string=dockerfile,
-        no_cache=no_cache
-    )
+    image = Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
     return (image, package_mgr, url_reader)
 
 
 def setup_cuda_runtime(
-        base: str,
-        tag: str,
-        no_cache: bool,
-        cuda_version: str,
-        cuda_repo: str,
-        package_manager: Optional[PackageManager] = None,
-        url_reader: Optional[Type[URLReader]] = None,
-        arch: str = "x86_64"
+    base: str,
+    tag: str,
+    no_cache: bool,
+    cuda_version: str,
+    cuda_repo: str,
+    package_manager: Optional[PackageManager] = None,
+    url_reader: Optional[Type[URLReader]] = None,
+    arch: str = "x86_64",
 ) -> Image:
     """
     Build the CUDA runtime image.
@@ -113,41 +112,38 @@ def setup_cuda_runtime(
         url_program = url_reader
         init_lines = ""
     elif (package_manager is not None) or (url_reader is not None):
-        raise ValueError("Either both package_manager and url_reader must both be "
-                         "defined or neither.")
+        raise ValueError(
+            "Either both package_manager and url_reader must both be "
+            "defined or neither."
+        )
     else:
         package_mgr, url_program, init_lines = _image_command_check(base)
     cuda_major, cuda_minor = _parse_cuda_info(cuda_version=cuda_version)
 
     cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
-        pkg_mgr=package_mgr,
-        url_reader=url_program
+        pkg_mgr=package_mgr, url_reader=url_program
     )
 
     body = cuda_gen.generate_runtime_dockerfile(
         cuda_ver_major=cuda_major,
         cuda_ver_minor=cuda_minor,
         repo_ver=cuda_repo,
-        arch=arch
+        arch=arch,
     )
 
     dockerfile = f"FROM {base}\n\n{init_lines}\n\n{body}"
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
-    return Image.build(
-        tag=img_tag,
-        dockerfile_string=dockerfile,
-        no_cache=no_cache
-    )
+    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
 def setup_cuda_dev(
-        base: str,
-        tag: str,
-        no_cache: bool,
-        package_manager: Optional[PackageManager] = None,
-        url_reader: Optional[Type[URLReader]] = None
+    base: str,
+    tag: str,
+    no_cache: bool,
+    package_manager: Optional[PackageManager] = None,
+    url_reader: Optional[Type[URLReader]] = None,
 ) -> Image:
     """
     Builds the CUDA dev image.
@@ -180,18 +176,19 @@ def setup_cuda_dev(
         url_program = url_reader
         init_lines = ""
     elif (package_manager is not None) or (url_reader is not None):
-        raise ValueError("Either both package_manager and url_reader must both be "
-                         "defined or neither.")
+        raise ValueError(
+            "Either both package_manager and url_reader must both be "
+            "defined or neither."
+        )
     else:
         package_mgr, url_program, init_lines = _image_command_check(base)
 
     if isinstance(url_reader, str):
         reader: Type[URLReader] = get_url_reader(url_program)
     else:
-        reader = url_reader     # type: ignore
+        reader = url_reader  # type: ignore
     cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
-        pkg_mgr=package_mgr,
-        url_reader=reader
+        pkg_mgr=package_mgr, url_reader=reader
     )
     body = cuda_gen.generate_dev_dockerfile()
 
@@ -200,18 +197,11 @@ def setup_cuda_dev(
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
-    return Image.build(
-        tag=img_tag,
-        dockerfile_string=dockerfile,
-        no_cache=no_cache
-    )
+    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
 def setup_env_runtime(
-        base: str,
-        tag: str,
-        no_cache: bool,
-        env_file: Union[str, os.PathLike[str]]
+    base: str, tag: str, no_cache: bool, env_file: Union[str, os.PathLike[str]]
 ) -> Image:
     """
     Builds the Conda runtime environment image with micromamba.
@@ -233,26 +223,19 @@ def setup_env_runtime(
         The generated image.
     """
 
-    header, body = mamba_install_dockerfile(
-        env_specfile=env_file
-    )
+    header, body = mamba_install_dockerfile(env_specfile=env_file)
     full_dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
     return Image.build(
-        tag=img_tag,
-        dockerfile_string=full_dockerfile,
-        no_cache=no_cache
+        tag=img_tag, dockerfile_string=full_dockerfile, no_cache=no_cache
     )
 
 
 def setup_env_dev(
-        base: str,
-        tag: str,
-        no_cache: bool,
-        env_file: Union[str, os.PathLike[str]]
+    base: str, tag: str, no_cache: bool, env_file: Union[str, os.PathLike[str]]
 ) -> Image:
     """
     Set up the development environment.
@@ -282,18 +265,16 @@ def setup_env_dev(
     full_dockerfile = f"FROM {base}\n\n{body}"
 
     return Image.build(
-        tag=img_tag,
-        dockerfile_string=full_dockerfile,
-        no_cache=no_cache
+        tag=img_tag, dockerfile_string=full_dockerfile, no_cache=no_cache
     )
 
 
 def setup_env_add(
-        base: str,
-        tag: str,
-        no_cache: bool,
-        packages: Iterable[str],
-        channels: Optional[Iterable[str]]
+    base: str,
+    tag: str,
+    no_cache: bool,
+    packages: Iterable[str],
+    channels: Optional[Iterable[str]],
 ) -> Image:
     """
     Create an image that adds packages to another image's micromamba environment.
@@ -325,9 +306,7 @@ def setup_env_add(
     full_dockerfile = f"FROM {base}\n\n{body}"
 
     return Image.build(
-        tag=img_tag,
-        dockerfile_string=full_dockerfile,
-        no_cache=no_cache
+        tag=img_tag, dockerfile_string=full_dockerfile, no_cache=no_cache
     )
 
 
@@ -338,7 +317,7 @@ def setup_all(
     cuda_version: str,
     cuda_repo: str,
     runtime_env_file: os.PathLike,
-    dev_env_file: os.PathLike
+    dev_env_file: os.PathLike,
 ) -> Dict[str, Image]:
     """
     Builds the entire Docker image stack.
@@ -374,15 +353,12 @@ def setup_all(
     # Build the initial image and append it to the image list
     base_image_tag = f"{prefix}-{tag}-init"
     base_image, package_mgr, url_program = setup_init(
-        base=base,
-        tag=base_image_tag,
-        no_cache=no_cache
+        base=base, tag=base_image_tag, no_cache=no_cache
     )
     images[base_image_tag] = base_image
 
     # Build the CUDA runtime image and append it to the image list
-    cuda_run_tag = f"{prefix}-{tag}-cuda-" + \
-                   f"{cuda_major}-{cuda_minor}-runtime"
+    cuda_run_tag = f"{prefix}-{tag}-cuda-" + f"{cuda_major}-{cuda_minor}-runtime"
     cuda_run_image = setup_cuda_runtime(
         base=base_image_tag,
         tag=cuda_run_tag,
@@ -390,7 +366,7 @@ def setup_all(
         cuda_version=cuda_version,
         cuda_repo=cuda_repo,
         package_manager=package_mgr,
-        url_reader=url_program
+        url_reader=url_program,
     )
     images[cuda_run_tag] = cuda_run_image
 
@@ -400,29 +376,25 @@ def setup_all(
         base=cuda_run_tag,
         tag=mamba_run_tag,
         no_cache=no_cache,
-        env_file=runtime_env_file
+        env_file=runtime_env_file,
     )
     images[mamba_run_tag] = mamba_run_image
 
     # Build the CUDA dev image and append it to the image list
-    cuda_dev_tag = f"{prefix}-{tag}-cuda-" + \
-                   f"{cuda_major}-{cuda_minor}-dev"
+    cuda_dev_tag = f"{prefix}-{tag}-cuda-" + f"{cuda_major}-{cuda_minor}-dev"
     cuda_dev_image = setup_cuda_dev(
         base=mamba_run_tag,
         tag=cuda_dev_tag,
         no_cache=no_cache,
         package_manager=package_mgr,
-        url_reader=url_program
+        url_reader=url_program,
     )
     images[cuda_dev_tag] = cuda_dev_image
 
     # Build the Mamba dev image and append it to the image list
     mamba_dev_tag = f"{prefix}-{tag}-mamba-dev"
     mamba_dev_image = setup_env_dev(
-        base=cuda_dev_tag,
-        tag=mamba_dev_tag,
-        no_cache=no_cache,
-        env_file=dev_env_file
+        base=cuda_dev_tag, tag=mamba_dev_tag, no_cache=no_cache, env_file=dev_env_file
     )
     images[mamba_dev_tag] = mamba_dev_image
 
