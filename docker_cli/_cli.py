@@ -1,6 +1,7 @@
 import argparse
 import sys
 import textwrap
+from pathlib import Path
 from typing import Sequence
 
 from ._utils import universal_tag_prefix
@@ -14,6 +15,13 @@ from .setup_commands import (
     setup_cuda_runtime,
     setup_init,
 )
+
+# Acquire the location of defaults relative to the module
+module_location: Path = Path(__file__).parent
+default_run_reqs_file: Path = module_location / "env_files" / "lock-runtime.txt"
+default_dev_reqs_file: Path = module_location / "env_files" / "lock-dev.txt"
+run_reqs_path_str = str(default_run_reqs_file)
+dev_reqs_path_str = str(default_dev_reqs_file)
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -104,14 +112,14 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_all_parser.add_argument(
         "--runtime-env-file",
-        default="env_files/lock-runtime.txt",
+        default=run_reqs_path_str,
         type=str,
         help="The location of the runtime requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
     setup_all_parser.add_argument(
         "--dev-env-file",
-        default="env_files/lock-dev.txt",
+        default=dev_reqs_path_str,
         type=str,
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
@@ -175,7 +183,7 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_conda_runtime_parser.add_argument(
         "--env-file",
-        default="env_files/lock-runtime.txt",
+        default=run_reqs_path_str,
         type=str,
         help="The location of the runtime requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
@@ -190,7 +198,7 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_conda_dev_parser.add_argument(
         "--env-file",
-        default="env_files/lock-dev.txt",
+        default=dev_reqs_path_str,
         type=str,
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
