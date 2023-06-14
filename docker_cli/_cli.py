@@ -70,15 +70,6 @@ def setup_parser() -> argparse.ArgumentParser:
         metavar="REPO_NAME",
     )
 
-    conda_parse = argparse.ArgumentParser(add_help=False)
-    conda_parse.add_argument(
-        "--env-file",
-        default="spec-file.txt",
-        type=str,
-        help="The location of the requirements file. Can be a pip-style "
-        "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
-    )
-
     # Add arguments
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -178,17 +169,31 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_conda_runtime_parser = conda_subparsers.add_parser(
         "runtime",
-        parents=[setup_parse, conda_parse, no_cache_parse],
+        parents=[setup_parse, no_cache_parse],
         help="Set up the runtime conda environment image",
         formatter_class=help_formatter,
+    )
+    setup_conda_runtime_parser.add_argument(
+        "--env-file",
+        default="spec-file.txt",
+        type=str,
+        help="The location of the runtime requirements file. Can be a pip-style "
+        "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
     _add_tag_argument(parser=setup_conda_runtime_parser, default="conda-runtime")
 
     setup_conda_dev_parser = conda_subparsers.add_parser(
         "dev",
-        parents=[setup_parse, conda_parse, no_cache_parse],
-        help="Set up the runtime conda environment image",
+        parents=[setup_parse, no_cache_parse],
+        help="Set up the dev conda environment image",
         formatter_class=help_formatter,
+    )
+    setup_conda_dev_parser.add_argument(
+        "--env-file",
+        default="spec-file.txt",
+        type=str,
+        help="The location of the dev requirements file. Can be a pip-style "
+        "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
     _add_tag_argument(parser=setup_conda_dev_parser, default="conda-dev")
 
