@@ -285,11 +285,9 @@ def main(args: Sequence[str] = sys.argv[1:]):
     parser = setup_parser()
     args_parsed = parser.parse_args(args)
     command: str = args_parsed.command
-    command = command.lower()
     del args_parsed.command
     if command == "setup":
         setup_subcommand: str = args_parsed.setup_subcommand
-        setup_subcommand = setup_subcommand.lower()
         del args_parsed.setup_subcommand
         if setup_subcommand == "all":
             images = setup_all(**vars(args_parsed))
@@ -300,7 +298,6 @@ def main(args: Sequence[str] = sys.argv[1:]):
             setup_init(**vars(args_parsed))
         elif setup_subcommand == "cuda":
             cuda_subcommand = args_parsed.cuda_subcommand
-            cuda_subcommand = cuda_subcommand.lower()
             del args_parsed.cuda_subcommand
             if cuda_subcommand == "runtime":
                 setup_cuda_runtime(**vars(args_parsed))
