@@ -37,7 +37,7 @@ def setup_parser() -> argparse.ArgumentParser:
 
     # Use a custom help message formatter to improve readability by increasing the
     # indentation of parameter descriptions to accommodate longer parameter names.
-    # This formatter also includes defaults automatically in the help string.
+    # This formatter also includes argument defaults automatically in the help string.
     def help_formatter(prog):
         return argparse.ArgumentDefaultsHelpFormatter(prog, max_help_position=60)
 
