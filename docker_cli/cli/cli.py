@@ -5,7 +5,7 @@ from typing import Sequence
 from .._utils import universal_tag_prefix
 from ._utils import help_formatter
 from .setup_commands import init_setup_parsers, run_setup
-from .util_cmds import init_util_parsers, run_util
+from .util_commands import init_util_parsers, run_util
 
 
 def initialize_parser() -> argparse.ArgumentParser:
