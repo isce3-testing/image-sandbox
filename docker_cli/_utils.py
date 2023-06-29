@@ -68,7 +68,7 @@ def image_command_check(
         If the parent image does not have a recognized package manager.
     """
 
-    tag = f"{universal_tag_prefix()}-temp-{UniqueGenerator.generate(k=10)}"
+    tag = f"{universal_tag_prefix()}-temp-{generate_random_string(k=10)}"
     try:
         base: Image = Image.build(  # type: ignore
             tag=tag,
@@ -103,7 +103,7 @@ def parse_cuda_info(cuda_version: str) -> Tuple[int, int]:
     Parameters
     ----------
     cuda_version : str
-        The version string.
+        The version string, in "<major>.<minor>" format.
 
     Returns
     -------
@@ -131,19 +131,19 @@ def parse_cuda_info(cuda_version: str) -> Tuple[int, int]:
 
 def is_conda_pkg_name(line: str) -> bool:
     """
-    Returns if a line appears to be an anaconda package URL
+    Returns True if a line appears to be an Anaconda package URL.
 
-    Used for filtering lockfiles
+    Used for filtering lockfiles.
 
     Parameters
     ----------
     line : str
-        The line
+        The line.
 
     Returns
     -------
     bool
-        True if the line appears to be an anaconda package URL, false otherwise
+        True if the line appears to be an Anaconda package URL, false otherwise.
     """
     conda_pkg_pattern = re.compile(r"^https:\/\/conda.anaconda.org\/\S*$")
     return re.match(conda_pkg_pattern, line) is not None
@@ -250,25 +250,25 @@ def _get_reader_install_lines(package_mgr: PackageManager) -> Tuple[URLReader, s
     return url_program, init_lines
 
 
-class UniqueGenerator:
-    """Generates random, threadsafe strings of lowercase letters and digits."""
+def generate_random_string(k: int = 10) -> str:
+    """
+    Generates random, threadsafe strings of lowercase letters and digits.
 
-    lock = Lock()
+    Parameters
+    ----------
+    k : int, optional
+        The length of the string to be generated. Defaults to 10.
 
-    @staticmethod
-    def generate(k: int = 10) -> str:
-        """
-        Generates random, threadsafe strings of lowercase letters and digits.
+    Returns
+    -------
+    str
+        The random string.
+    """
 
-        Parameters
-        ----------
-        k : int, optional
-            The length of the string to be generated. Defaults to 10.
-
-        Returns
-        -------
-        str
-            The random string.
-        """
-        with UniqueGenerator.lock:
+    # `lock` is initialized just once (when the Python module is first loaded).
+    # Every invocation of the function will use the same lock instance.
+    def helper(lock: Lock = Lock()) -> str:
+        with lock:
             return "".join(random.choices(ascii_lowercase + digits, k=k))
+
+    return helper()

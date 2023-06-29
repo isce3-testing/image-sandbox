@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from docker_cli._utils import UniqueGenerator, universal_tag_prefix
+from docker_cli._utils import generate_random_string, universal_tag_prefix
 
 
 def image_tag_prefix() -> str:
@@ -31,7 +31,7 @@ def generate_tag(name: str) -> str:
     str
         The tag.
     """
-    return f"{image_tag_prefix()}-{name}-{UniqueGenerator.generate(k=10)}"
+    return f"{image_tag_prefix()}-{name}-{generate_random_string(k=10)}"
 
 
 def determine_scope(fixture_name, config) -> str:
