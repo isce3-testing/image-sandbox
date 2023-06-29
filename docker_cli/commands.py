@@ -118,7 +118,7 @@ def make_lockfile(
     env_name: str
         The name of the environment. Defaults to "base".
     """
-    cmd: str = str(mamba_lockfile_command(env_name=env_name, stringify=True))
+    cmd: str = str(mamba_lockfile_command(env_name=env_name))
     image: Image = Image(tag)
     lockfile: str = image.run(command=cmd, stdout=PIPE)
     assert isinstance(lockfile, str)

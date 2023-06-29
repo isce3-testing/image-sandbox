@@ -1,4 +1,4 @@
-from typing import Iterator, Tuple, Type
+from typing import Iterator, Tuple
 
 from pytest import fixture, mark
 
@@ -9,7 +9,8 @@ from docker_cli._docker_cuda import (
     YumCUDADockerfileGen,
     get_cuda_dockerfile_generator,
 )
-from docker_cli._shell_cmds import AptGet, PackageManager, URLReader, Wget, Yum, cURL
+from docker_cli._package_manager import AptGet, PackageManager, Yum
+from docker_cli._url_reader import Curl, URLReader, Wget
 
 from .utils import (
     determine_scope,
@@ -22,9 +23,9 @@ from .utils import (
 @mark.cuda
 def test_get_cuda_dockerfile_generator():
     """Tests that the get_cuda_dockerfile_generator returns the right generator."""
-    gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(AptGet(), cURL)
+    gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(AptGet(), Curl)
     assert isinstance(gen, AptGetCUDADockerfileGen)
-    assert gen.url_reader == cURL
+    assert gen.url_reader == Curl
 
     gen = get_cuda_dockerfile_generator(Yum(), Wget)
     assert isinstance(gen, YumCUDADockerfileGen)
@@ -44,14 +45,14 @@ def cuda_repo_ver(base_tag: str) -> str:
 
 @fixture(scope=determine_scope)
 def cuda_generator(
-    base_properties: Tuple[PackageManager, Type[URLReader]]
+    base_properties: Tuple[PackageManager, URLReader]
 ) -> CUDADockerfileGenerator:
     """
     Returns the CUDADockerfileGenerator needed for this CUDA test.
 
     Parameters
     ----------
-    base_properties : Tuple[PackageManager, Type[URLReader]]
+    base_properties : Tuple[PackageManager, URLReader]
         The package manager and URL reader.
 
     Returns
@@ -193,7 +194,7 @@ class TestCudaGen:
     def test_init(
         self,
         cuda_generator: CUDADockerfileGenerator,
-        base_properties: Tuple[PackageManager, Type[URLReader]],
+        base_properties: Tuple[PackageManager, URLReader],
     ):
         """Tests the constructor."""
         pkg_mgr, url_reader = base_properties
@@ -203,7 +204,7 @@ class TestCudaGen:
     def test_generate_install_lines(
         self,
         cuda_generator: CUDADockerfileGenerator,
-        base_properties: Tuple[PackageManager, Type[URLReader]],
+        base_properties: Tuple[PackageManager, URLReader],
     ):
         """Tests the generation of CUDA install lines."""
         pkg_mgr, _ = base_properties
@@ -212,9 +213,8 @@ class TestCudaGen:
             build_targets=dummy_installs
         )
         apt_get_install = pkg_mgr.generate_install_command(
-            targets=dummy_installs, stringify=True
+            targets=dummy_installs,
         )
-        assert isinstance(apt_get_install, str)
         assert apt_get_install in install_return
         rough_dockerfile_validity_check(install_return)
 

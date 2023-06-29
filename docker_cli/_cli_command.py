@@ -56,9 +56,10 @@ class BranchingCommand(Command):
 
         Returns
         -------
-        Tuple[Dict[str, Any], str]
-            The remaining argparse dictionary and the value that was held at the
-            subcommand destination.
+        Dict[str, Any]
+            The remaining argparse dictionary.
+        subcommand : str
+            The value that was held at the subcommand destination.
         """
         if isinstance(args, argparse.Namespace):
             kwds = vars(args)

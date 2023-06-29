@@ -5,17 +5,15 @@ from shlex import split
 from string import ascii_lowercase, digits
 from subprocess import DEVNULL, CalledProcessError, run
 from threading import Lock
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple
 
 from ._image import Image
-from ._shell_cmds import (
+from ._package_manager import (
     PackageManager,
-    URLReader,
     get_package_manager,
     get_supported_package_managers,
-    get_supported_url_readers,
-    get_url_reader,
 )
+from ._url_reader import URLReader, get_supported_url_readers, get_url_reader
 
 
 def universal_tag_prefix() -> str:
@@ -56,7 +54,7 @@ def _package_manager_check(image: Image) -> PackageManager:
 
 def _url_reader_check(
     image: Image, package_mgr: PackageManager
-) -> Tuple[Type[URLReader], str]:
+) -> Tuple[URLReader, str]:
     """
     Return the URL reader on a given image, and a string to install one if there is
     none.
@@ -70,18 +68,22 @@ def _url_reader_check(
 
     Returns
     -------
-    Tuple[Type[URLReader], str]
-        The installed URL reader and a string to install it if necessary.
+    url_reader : URLReader
+        The installed URL reader
+    install_command : str
+        a string to install the URL reader if necessary.
     """
     url_programs = image.check_command_availability(get_supported_url_readers())
     init_lines = ""
     if url_programs:
-        url_program: Type[URLReader] = get_url_reader(url_programs[0])
+        url_program: URLReader = get_url_reader(url_programs[0])
     else:
         init_lines += (
             "RUN "
             + str(
-                package_mgr.generate_install_command(targets=["wget"], stringify=True)
+                package_mgr.generate_install_command(
+                    targets=["wget"],
+                )
             )
             + "\n"
         )
@@ -95,7 +97,7 @@ def _image_command_check(
     configure: bool = False,
     stdout: Optional[io.TextIOBase] = None,
     stderr: Optional[io.TextIOBase] = None,
-) -> Tuple[PackageManager, Type[URLReader], str]:
+) -> Tuple[PackageManager, URLReader, str]:
     """
     Determine what relevant commands are present on the image.
 
@@ -117,9 +119,12 @@ def _image_command_check(
 
     Returns
     -------
-    Tuple[PackageManager, URLReader, str]
-        The Package Manager object, URL Reader object, and any install and
-        configuration lines required by the dockerfile.
+    package_manager : PackageManager
+        The Package Manager object.
+    url_reader : URLReader
+        The URL Reader object.
+    config_commands : str
+        Any install and configuration lines required by the dockerfile.
 
     Raises
     ------
@@ -141,9 +146,7 @@ def _image_command_check(
     package_mgr = _package_manager_check(image=base)
 
     if configure:
-        init_lines: str = (
-            "RUN " + str(package_mgr.generate_configure_command(stringify=True)) + "\n"
-        )
+        init_lines: str = "RUN " + str(package_mgr.generate_configure_command()) + "\n"
     else:
         init_lines = ""
 
@@ -166,8 +169,10 @@ def _parse_cuda_info(cuda_version: str) -> Tuple[int, int]:
 
     Returns
     -------
-    Tuple[int, int]
-        The major and minor versions, in that order
+    major_ver : int
+        The major version.
+    minor_ver : int
+        The minor version.
 
     Raises
     ------

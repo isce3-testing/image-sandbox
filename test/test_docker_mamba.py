@@ -23,8 +23,10 @@ def mamba_runtime_dockerfile() -> Tuple[str, str]:
 
     Returns
     -------
-    Tuple[str, str]
-        The dockerfile header and body.
+    header : str
+        The dockerfile header.
+    body : str
+        The dockerfile body.
     """
     return mamba_install_dockerfile(env_specfile="test-runtime-lock-file.txt")
 

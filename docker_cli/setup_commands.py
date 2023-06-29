@@ -1,6 +1,6 @@
 import os
 from textwrap import dedent
-from typing import Dict, Iterable, Optional, Tuple, Type, Union
+from typing import Dict, Iterable, Optional, Tuple, Union
 
 from ._docker_cuda import CUDADockerfileGenerator, get_cuda_dockerfile_generator
 from ._docker_mamba import (
@@ -9,13 +9,14 @@ from ._docker_mamba import (
     mamba_install_dockerfile,
 )
 from ._image import Image
-from ._shell_cmds import PackageManager, URLReader, get_url_reader
+from ._package_manager import PackageManager
+from ._url_reader import URLReader, get_url_reader
 from ._utils import _image_command_check, _parse_cuda_info, universal_tag_prefix
 
 
 def setup_init(
     base: str, tag: str, no_cache: bool
-) -> Tuple[Image, PackageManager, Type[URLReader]]:
+) -> Tuple[Image, PackageManager, URLReader]:
     """
     Set up the initial configuration image
 
@@ -30,11 +31,11 @@ def setup_init(
 
     Returns
     -------
-    Image
+    image : Image
         The generated image
-    PackageManager
+    package_mgr : PackageManager
         The package manager present on the image
-    Type[URLReader]
+    url_reader : URLReader
         The URL Reader present on the image
     """
     package_mgr, url_reader, dockerfile = _image_command_check(base, True)
@@ -73,7 +74,7 @@ def setup_cuda_runtime(
     cuda_version: str,
     cuda_repo: str,
     package_manager: Optional[PackageManager] = None,
-    url_reader: Optional[Type[URLReader]] = None,
+    url_reader: Optional[URLReader] = None,
     arch: str = "x86_64",
 ) -> Image:
     """
@@ -94,7 +95,7 @@ def setup_cuda_runtime(
         (e.g. 'rhel8', 'ubuntu2004')
     package_manager : PackageManager
         The package manager in use by the base image.
-    url_reader : Type[URLReader]
+    url_reader : URLReader
         The URL reader in use by the base image.
 
     Returns
@@ -143,7 +144,7 @@ def setup_cuda_dev(
     tag: str,
     no_cache: bool,
     package_manager: Optional[PackageManager] = None,
-    url_reader: Optional[Type[URLReader]] = None,
+    url_reader: Optional[URLReader] = None,
 ) -> Image:
     """
     Builds the CUDA dev image.
@@ -158,7 +159,7 @@ def setup_cuda_dev(
         Run Docker build with no cache if True.
     package_manager : PackageManager
         The package manager in use by the base image.
-    url_reader : Type[URLReader]
+    url_reader : URLReader
         The URL reader in use by the base image.
 
     Returns
@@ -184,7 +185,7 @@ def setup_cuda_dev(
         package_mgr, url_program, init_lines = _image_command_check(base)
 
     if isinstance(url_reader, str):
-        reader: Type[URLReader] = get_url_reader(url_program)
+        reader: URLReader = get_url_reader(url_program)
     else:
         reader = url_reader  # type: ignore
     cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(

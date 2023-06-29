@@ -69,8 +69,8 @@ def mamba_add_packages_dockerfile(
 
 
 def mamba_lockfile_command(
-    env_name: str, *, stringify: bool = False
-) -> str | List[str]:
+    env_name: str,
+) -> str:
     """
     Returns a command to generate a lockfile with micromamba.
 
@@ -78,19 +78,14 @@ def mamba_lockfile_command(
     ----------
     env_name : str
         The name of the environment for which a dockerfile should be generated.
-    stringify : bool, optional
-        Whether to return a string or list - if true, will return a string.
-            Defaults to False.
 
     Returns
     -------
-    str | List[str]
+    str
         The command.
     """
     cmd = ["micromamba", "env", "export", "--name", env_name, "--explicit", "--no-md5"]
-    if stringify:
-        return str(" ".join(cmd))
-    return cmd
+    return str(" ".join(cmd))
 
 
 def micromamba_docker_lines():

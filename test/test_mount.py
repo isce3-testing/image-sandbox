@@ -1,13 +1,11 @@
 from pytest import raises
 
-from docker_cli._mount import BindMount
+from docker_cli._bind_mount import BindMount
 
 
 def test_mount_init():
     """Tests that the mount object works and returns the correct string."""
-    mount = BindMount(
-        host_mount_point="anything", image_mount_point="anything", permissions="ro"
-    )
+    mount = BindMount(src="anything", dst="anything", permissions="ro")
     assert mount.mount_string() == "anything:anything:ro"
 
 
@@ -18,7 +16,7 @@ def test_mount_error():
     """
     with raises(ValueError):
         BindMount(
-            host_mount_point="anything",
-            image_mount_point="anything",
+            src="anything",
+            dst="anything",
             permissions="malformed",
         )

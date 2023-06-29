@@ -3,7 +3,7 @@ from typing import List
 from pytest import mark
 
 from docker_cli import Image
-from docker_cli._shell_cmds import PackageManager
+from docker_cli._package_manager import PackageManager
 from docker_cli._utils import _package_manager_check
 
 
@@ -27,13 +27,8 @@ def test_generate_install_command(init_image: Image):
         pkg_manager.name
     ]
 
-    install_cmd = pkg_manager.generate_install_command(
-        targets=target, stringify=True, clean=True
-    )
+    install_cmd = pkg_manager.generate_install_command(targets=target, clean=True)
     test_cmd = "pip3 -v"
-
-    # Mypy must be appeased. A modest sacrifice:
-    assert isinstance(install_cmd, str)
 
     # Yum and Apt-Get will give DIFFERENT ERROR CODES (100 or 2) on failure.
     init_image.run(" && ".join([install_cmd, test_cmd]))
@@ -64,7 +59,7 @@ def test_generate_configure_command(image_id: str):
     """
     img: Image = Image(image_id)
     package_mgr: PackageManager = _package_manager_check(img)
-    config_cmd: str = str(package_mgr.generate_configure_command(stringify=True))
+    config_cmd: str = str(package_mgr.generate_configure_command())
 
     # Not too much to check here, just run the command and make sure it doesn't break
     # Theoretically, ensuring that an install command after this doesn't break would

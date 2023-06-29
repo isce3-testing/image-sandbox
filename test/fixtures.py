@@ -2,7 +2,7 @@
 from shlex import split
 from subprocess import run
 from textwrap import dedent
-from typing import Iterator, Tuple, Type
+from typing import Iterator, Tuple
 
 from pytest import fixture
 
@@ -97,19 +97,21 @@ def init_image(base_tag: str, init_tag: str) -> Iterator[Image]:
 
 
 @fixture(scope=determine_scope)
-def base_properties(base_tag: str) -> Tuple[PackageManager, Type[URLReader]]:
+def base_properties(base_tag: str) -> Tuple[PackageManager, URLReader]:
     """
     Returns the package manager and URL reader needed for this CUDA test.
 
     Parameters
     ----------
-    base_tag : Tuple[str, str]
+    base_tag : str
         The base tag.
 
     Returns
     -------
-    Tuple[PackageManager, Type[URLReader]]
-        The package manager and URL reader.
+    package_manager : PackageManager
+        The package manager.
+    url_reader : URLReader
+        The URL reader.
     """
     package_mgr, url_reader, _ = _image_command_check(base_tag)
     return (package_mgr, url_reader)

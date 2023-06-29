@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import textwrap
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Type, Union
+from typing import Iterable, List
 
-from ._shell_cmds import PackageManager, URLReader, get_package_manager
+from ._package_manager import PackageManager, get_package_manager
+from ._url_reader import URLReader
 
 
 class CUDADockerfileGenerator(ABC):
@@ -20,7 +23,7 @@ class CUDADockerfileGenerator(ABC):
     ]
     _dev_build_targets: List[str] = []
 
-    def __init__(self, url_reader: Type[URLReader]):
+    def __init__(self, url_reader: URLReader):
         self.url_reader = url_reader
 
     def generate_runtime_dockerfile(
@@ -175,7 +178,7 @@ class AptGetCUDADockerfileGen(CUDADockerfileGenerator):
         "libcufft-dev-$CUDA_PKG_VERSION",
     ]
 
-    def __init__(self, url_reader: Type[URLReader]):
+    def __init__(self, url_reader: URLReader):
         super(AptGetCUDADockerfileGen, self).__init__(url_reader=url_reader)
         self._package_manager: PackageManager = get_package_manager("apt-get")
 
@@ -187,18 +190,17 @@ class AptGetCUDADockerfileGen(CUDADockerfileGenerator):
         filename = f"cuda-keyring_1.0-1_all.{self.package_manager.file_type}"
         read_section = self.url_reader.generate_read_command(
             target=f"{cuda_repo_name}" + filename,
-            output_target=filename,
-            stringify=True,
+            output_file=filename,
         )
         package_command_section = self.package_manager.generate_package_command(
-            target=filename, stringify=True
+            target=filename,
         )
         return f"RUN {read_section} \\\n && {package_command_section}"
 
     def generate_install_lines(self, build_targets: Iterable[str]) -> str:
         targets = build_targets
         install_section = self.package_manager.generate_install_command(
-            targets=targets, stringify=True, clean=True
+            targets=targets, clean=True
         )
         install_line = (
             f"RUN {self.package_manager.name} update \\\n && {install_section}"
@@ -218,7 +220,7 @@ class YumCUDADockerfileGen(CUDADockerfileGenerator):
         "rpm-build",
     ]
 
-    def __init__(self, url_reader: Type[URLReader]):
+    def __init__(self, url_reader: URLReader):
         super(YumCUDADockerfileGen, self).__init__(url_reader=url_reader)
         self._package_manager: PackageManager = get_package_manager("yum")
 
@@ -233,15 +235,14 @@ class YumCUDADockerfileGen(CUDADockerfileGenerator):
     def generate_install_lines(self, build_targets: Iterable[str]) -> str:
         targets = build_targets
         install_line = self.package_manager.generate_install_command(
-            targets=targets, stringify=True, clean=True
+            targets=targets, clean=True
         )
-        assert isinstance(install_line, str)
         install_line = "RUN " + install_line
         return install_line
 
 
 def get_cuda_dockerfile_generator(
-    pkg_mgr: Union[PackageManager, str], url_reader: Type[URLReader]
+    pkg_mgr: PackageManager | str, url_reader: URLReader
 ) -> CUDADockerfileGenerator:
     """
     Returns the appropriate dockerfile generator for a system.

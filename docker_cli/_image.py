@@ -32,7 +32,7 @@ class Image:
         Parameters
         ----------
         name_or_id : str
-            A name or ID by which to find this image using Docker inspect.
+            A name or ID by which to find this image using 'docker inspect'.
         """
         self._id = get_image_id(name_or_id)
 
@@ -196,7 +196,7 @@ class Image:
 
     def _inspect(self, format: Optional[str] = None) -> str:
         """
-        Use 'Docker inspect' to retrieve a piece of information about the
+        Use 'docker inspect' to retrieve a piece of information about the
         image.
 
         Parameters
@@ -208,7 +208,7 @@ class Image:
         Returns
         -------
         str
-            The string returned by the Docker inspect command.
+            The string returned by the 'docker inspect' command.
         """
         cmd = ["docker", "inspect"]
         if format:
@@ -366,14 +366,7 @@ class Image:
         return self._id
 
     def __repr__(self) -> str:
-        """
-        Returns a string representation of the Image.
-
-        Returns
-        -------
-        str
-            A string representation of the Image.
-        """
+        """Returns a string representation of the Image."""
         return f"Image(id={self._id}, tags={self.tags})"
 
     def __eq__(self, other: Any) -> bool:
