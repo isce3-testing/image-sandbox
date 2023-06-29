@@ -5,18 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 
 
-# Use a custom help message formatter to improve readability by increasing the
-# indentation of parameter descriptions to accommodate longer parameter names.
-# This formatter also includes argument defaults automatically in the help string.
-def help_formatter(prog):
-    return argparse.ArgumentDefaultsHelpFormatter(prog, max_help_position=60)
-
-
 class Command(ABC):
-    def helpformat(prog):
-        """The help formatter for this command."""
-        return help_formatter(prog)
-
     @property
     @abstractmethod
     def name(self) -> str:
