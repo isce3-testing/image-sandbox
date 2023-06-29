@@ -56,7 +56,7 @@ class BranchingCommand(Command):
 
         Returns
         -------
-        Dict[str, Any]
+        remaining_dict : Dict[str, Any]
             The remaining argparse dictionary.
         subcommand : str
             The value that was held at the subcommand destination.
