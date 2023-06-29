@@ -189,14 +189,10 @@ def _package_manager_check(image: Image) -> PackageManager:
     PackageManager
         The package manager.
     """
-    package_mgrs = image.check_command_availability(get_supported_package_managers())
-
-    if package_mgrs:
-        package_mgr = get_package_manager(package_mgrs[0])
-    else:
-        ValueError("No recognized package manager found on parent image.")
-
-    return package_mgr
+    for name in get_supported_package_managers():
+        if image.has_command(name):
+            return get_package_manager(name)
+    raise ValueError("No recognized package manager found on parent image.")
 
 
 def _url_reader_check(image: Image) -> Optional[URLReader]:
@@ -216,11 +212,10 @@ def _url_reader_check(image: Image) -> Optional[URLReader]:
     url_reader : URLReader
         The installed URL reader, if one exists.
     """
-    url_programs = image.check_command_availability(get_supported_url_readers())
-    if url_programs:
-        return get_url_reader(url_programs[0])
-    else:
-        return None
+    for name in get_supported_url_readers():
+        if image.has_command(name):
+            return get_url_reader(name)
+    return None
 
 
 def _get_reader_install_lines(package_mgr: PackageManager) -> Tuple[URLReader, str]:
