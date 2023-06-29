@@ -33,7 +33,7 @@ class PackageManager(ABC):
 
         Returns
         -------
-        Union[List[str], str]
+        str
             The commands.
         """
         ...
@@ -56,7 +56,7 @@ class PackageManager(ABC):
 
         Returns
         -------
-        Union[List[str], str]
+        str
             The commands.
         """
         ...
@@ -69,7 +69,7 @@ class PackageManager(ABC):
 
         Returns
         -------
-        Union[List[str], str]
+        str
             The commands.
         """
         ...
