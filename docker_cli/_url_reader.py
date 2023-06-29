@@ -109,8 +109,7 @@ def get_url_reader(name: str) -> URLReader:
     """
     url_readers: Dict[str, URLReader] = {"curl": Curl(), "wget": Wget()}
     try:
-        url_reader: URLReader = url_readers[name]
-        return url_reader
+        return url_readers[name]
     except KeyError as err:
         raise ValueError(f"URL Reader {name} not recognized!") from err
 

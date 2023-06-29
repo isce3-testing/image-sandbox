@@ -28,71 +28,7 @@ def universal_tag_prefix() -> str:
     return "dcli"
 
 
-def _package_manager_check(image: Image) -> PackageManager:
-    """
-    Returns the package manager present on an image.
-
-    Parameters
-    ----------
-    base : Image
-        The image.
-
-    Returns
-    -------
-    PackageManager
-        The package manager.
-    """
-    package_mgrs = image.check_command_availability(get_supported_package_managers())
-
-    if package_mgrs:
-        package_mgr = get_package_manager(package_mgrs[0])
-    else:
-        ValueError("No recognized package manager found on parent image.")
-
-    return package_mgr
-
-
-def _url_reader_check(
-    image: Image, package_mgr: PackageManager
-) -> Tuple[URLReader, str]:
-    """
-    Return the URL reader on a given image, and a string to install one if there is
-    none.
-
-    Parameters
-    ----------
-    base : Image
-        The image.
-    package_mgr : PackageManager
-        The images package manager.
-
-    Returns
-    -------
-    url_reader : URLReader
-        The installed URL reader
-    install_command : str
-        a string to install the URL reader if necessary.
-    """
-    url_programs = image.check_command_availability(get_supported_url_readers())
-    init_lines = ""
-    if url_programs:
-        url_program: URLReader = get_url_reader(url_programs[0])
-    else:
-        init_lines += (
-            "RUN "
-            + str(
-                package_mgr.generate_install_command(
-                    targets=["wget"],
-                )
-            )
-            + "\n"
-        )
-        url_program = get_url_reader("wget")
-
-    return url_program, init_lines
-
-
-def _image_command_check(
+def image_command_check(
     image_name: str,
     configure: bool = False,
     stdout: Optional[io.TextIOBase] = None,
@@ -150,15 +86,17 @@ def _image_command_check(
     else:
         init_lines = ""
 
-    url_program, url_init = _url_reader_check(image=base, package_mgr=package_mgr)
-    init_lines += url_init
+    url_program = _url_reader_check(image=base)
+    if url_program is None:
+        url_program, url_init = _get_reader_install_lines(package_mgr=package_mgr)
+        init_lines += url_init
 
     run(split(f"docker image rm {tag}"), stdout=DEVNULL, stderr=DEVNULL)
 
     return package_mgr, url_program, init_lines
 
 
-def _parse_cuda_info(cuda_version: str) -> Tuple[int, int]:
+def parse_cuda_info(cuda_version: str) -> Tuple[int, int]:
     """
     Turns a cuda version string into a major and minor version.
 
@@ -191,7 +129,7 @@ def _parse_cuda_info(cuda_version: str) -> Tuple[int, int]:
     return (cuda_major, cuda_minor)
 
 
-def _is_conda_pkg_name(line: str) -> bool:
+def is_conda_pkg_name(line: str) -> bool:
     """
     Returns if a line appears to be an anaconda package URL
 
@@ -235,6 +173,86 @@ def test_image(image: Image, expression: str) -> bool:
             return False
         else:
             raise
+
+
+def _package_manager_check(image: Image) -> PackageManager:
+    """
+    Returns the package manager present on an image.
+
+    Parameters
+    ----------
+    base : Image
+        The image.
+
+    Returns
+    -------
+    PackageManager
+        The package manager.
+    """
+    package_mgrs = image.check_command_availability(get_supported_package_managers())
+
+    if package_mgrs:
+        package_mgr = get_package_manager(package_mgrs[0])
+    else:
+        ValueError("No recognized package manager found on parent image.")
+
+    return package_mgr
+
+
+def _url_reader_check(image: Image) -> Optional[URLReader]:
+    """
+    Return the URL reader on a given image, and a string to install one if there is
+    none.
+
+    Parameters
+    ----------
+    base : Image
+        The image.
+    package_mgr : PackageManager
+        The images package manager.
+
+    Returns
+    -------
+    url_reader : URLReader
+        The installed URL reader, if one exists.
+    """
+    url_programs = image.check_command_availability(get_supported_url_readers())
+    if url_programs:
+        return get_url_reader(url_programs[0])
+    else:
+        return None
+
+
+def _get_reader_install_lines(package_mgr: PackageManager) -> Tuple[URLReader, str]:
+    """
+    Return a URL Reader and a string to install it.
+
+    Parameters
+    ----------
+    base : Image
+        The image.
+    package_mgr : PackageManager
+        The images package manager.
+
+    Returns
+    -------
+    url_reader : URLReader
+        The URL reader
+    install_command : str
+        a string to install the URL reader.
+    """
+    init_lines = (
+        "RUN "
+        + str(
+            package_mgr.generate_install_command(
+                targets=["wget"],
+            )
+        )
+        + "\n"
+    )
+    url_program = get_url_reader("wget")
+
+    return url_program, init_lines
 
 
 class UniqueGenerator:

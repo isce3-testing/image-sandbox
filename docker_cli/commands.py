@@ -6,7 +6,7 @@ from typing import Iterable, List, Union
 from ._docker_mamba import mamba_lockfile_command
 from ._exceptions import ImageNotFoundError
 from ._image import Image
-from ._utils import _is_conda_pkg_name, universal_tag_prefix
+from ._utils import is_conda_pkg_name, universal_tag_prefix
 
 
 def dropin(tag: str) -> None:
@@ -125,9 +125,9 @@ def make_lockfile(
 
     # Split the lockfile into two parts - initial lines and conda package lines.
     lockfile_list: List[str] = lockfile.split("\n")
-    conda_package_filter = filter(_is_conda_pkg_name, lockfile_list)
+    conda_package_filter = filter(is_conda_pkg_name, lockfile_list)
     other_lines_filter = filter(
-        lambda line: not _is_conda_pkg_name(line) and line != "", lockfile_list
+        lambda line: not is_conda_pkg_name(line) and line != "", lockfile_list
     )
     lockfile_conda_packages: List[str] = list(conda_package_filter)
     lockfile_other_lines: List[str] = list(other_lines_filter)

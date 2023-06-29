@@ -7,7 +7,7 @@ from typing import Iterator, Tuple
 from pytest import fixture
 
 from docker_cli import Image, PackageManager, URLReader
-from docker_cli.setup_commands import _image_command_check, setup_init
+from docker_cli.setup_commands import image_command_check, setup_init
 
 from .utils import determine_scope, generate_tag, remove_docker_image
 
@@ -113,5 +113,5 @@ def base_properties(base_tag: str) -> Tuple[PackageManager, URLReader]:
     url_reader : URLReader
         The URL reader.
     """
-    package_mgr, url_reader, _ = _image_command_check(base_tag)
+    package_mgr, url_reader, _ = image_command_check(base_tag)
     return (package_mgr, url_reader)
