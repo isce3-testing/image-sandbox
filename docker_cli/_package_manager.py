@@ -1,4 +1,3 @@
-import shlex
 import textwrap
 from abc import ABC, abstractmethod
 from typing import Iterable, List
@@ -40,11 +39,11 @@ class PackageManager(ABC):
 
     @staticmethod
     @abstractmethod
-    def generate_package_command(
+    def generate_local_install_command(
         target: str,
     ) -> str:
         """
-        Returns a command to install a single package.
+        Returns a command to install a single local package.
 
         Uses the package tool underlying the package manager if one is
         available. (e.g. dpkg or rpm)
@@ -97,19 +96,18 @@ class Yum(PackageManager):
         targets: Iterable[str],
         clean: bool = True,
     ) -> str:
-        retval = ["yum", "install", "-y"]
-        retval.extend(targets)
+        # " ".join() used here in lieu of shlex.join because shlex.join breaks
+        # situations where an environment variable is referenced in one or more targets.
+        retval = "yum install -y " + " ".join(targets)
         if clean:
-            retval += ["&&", "yum", "clean", "all"]
-            retval += ["&&", "rm", "-rf", "/var/cache/yum"]
-        return " ".join(retval)
+            retval += " && yum clean all && rm -rf /var/cache/yum"
+        return retval
 
     @staticmethod
-    def generate_package_command(  # pragma: no cover
+    def generate_local_install_command(  # pragma: no cover
         target: str,
     ) -> str:
-        retval = ["rpm", "-i", target]
-        return shlex.join(retval)
+        return f"rpm -i {target}"
 
     @staticmethod
     def generate_configure_command() -> str:
@@ -137,25 +135,22 @@ class AptGet(PackageManager):
         targets: Iterable[str],
         clean: bool = True,
     ) -> str:
-        retval = ["apt-get", "-y", "update", "&&"]
-        retval += ["apt-get", "-y", "install"]
-        retval.extend(targets)
+        # " ".join() used here in lieu of shlex.join because shlex.join breaks
+        # situations where an environment variable is referenced in one or more targets.
+        retval = "apt-get -y update && apt-get -y install " + " ".join(targets)
         if clean:
-            retval += ["&&", "apt-get", "clean", "all"]
-        return " ".join(retval)
+            retval += " && apt-get clean all"
+        return retval
 
     @staticmethod
-    def generate_package_command(  # pragma: no cover
+    def generate_local_install_command(  # pragma: no cover
         target: str,
     ) -> str:
-        retval = ["dpkg", "-i", target]
-        return shlex.join(retval)
+        return f"dpkg -i {target}"
 
     @staticmethod
     def generate_configure_command() -> str:
-        retval = ["apt-get", "-y", "update"]
-        retval += ["&&", "apt-get", "clean", "all"]
-        return " ".join(retval)
+        return "apt-get -y update && apt-get clean all"
 
     @property
     def name(self):

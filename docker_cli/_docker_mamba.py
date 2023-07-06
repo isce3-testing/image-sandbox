@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+import shlex
 import textwrap
-from typing import Iterable, List, Optional, Tuple, overload
+from typing import Iterable, Optional, Tuple, overload
 
 
 def mamba_install_dockerfile(
@@ -84,8 +85,8 @@ def mamba_lockfile_command(
     str
         The command.
     """
-    cmd = ["micromamba", "env", "export", "--name", env_name, "--explicit", "--no-md5"]
-    return str(" ".join(cmd))
+    cmd = f"micromamba env export --name {env_name} --explicit --no-md5"
+    return cmd
 
 
 def micromamba_docker_lines():
@@ -138,32 +139,38 @@ def _mamba_spec_command(
     else:
         name_arg = f" -n {env_name}"
 
-    # The output, with lines arranged into a list.
-    command_list: List[str] = ["ARG MAMBA_DOCKERFILE_ACTIVATE=1", ""]
+    # Put together the channels argument
     if channels is not None:
-        channels_arg = f" -c {' '.join(channels)} --override-channels"
+        channels_arg = f" -c {shlex.join(channels)} --override-channels"
 
     # If a specfile is given, give the instructions for copying and installing a
     # specfile.
     if specfile is not None:
-        command_list += [
-            f"COPY {specfile} /tmp/spec-file.txt",
-            f"RUN micromamba {command}{name_arg}{channels_arg} -y -f "
-            "/tmp/spec-file.txt \\",
-            " && rm /tmp/spec-file.txt \\",
-        ]
+        install_command = textwrap.dedent(
+            f"""
+            COPY {specfile} /tmp/spec-file.txt
+            RUN micromamba {command}{name_arg}{channels_arg} -y -f /tmp/spec-file.txt \\
+             && rm /tmp/spec-file.txt \\
+        """
+        ).strip()
     # Otherwise packages were given, so give the instructions for installing the
     # packages.
     else:
-        packages_str = " ".join(packages)
-        install_command = f"micromamba {command}{name_arg}{channels_arg} -y"
-        command_list += [
-            f"RUN {install_command} {packages_str} \\ && micromamba update --all \\ "
-        ]
+        packages_str = shlex.join(packages)
+        install_command = textwrap.dedent(
+            f"""
+            RUN micromamba {command}{name_arg}{channels_arg} -y {packages_str} \\
+             && micromamba update --all \\
+        """
+        ).strip()
 
-    command_list += [" && micromamba clean --all --yes"]
     # Assemble this command into a portion of a Dockerfile string.
-    cmd: str = "\n".join(command_list)
+    cmd: str = (
+        "ARG MAMBA_DOCKERFILE_ACTIVATE=1\n\n"
+        + install_command
+        + "\n"
+        + " && micromamba clean --all --yes"
+    )
 
     return cmd
 

@@ -85,19 +85,23 @@ class CUDADockerfileGenerator(ABC):
         version_name = f'"{cuda_ver_major}.{cuda_ver_minor}"'
         nvidia_req_cuda: str = f"cuda>={version_name}"
 
-        return textwrap.dedent(
-            f"""
-            {init_lines}
-
+        retval = (
+            init_lines
+            + "\n\n"
+            + textwrap.dedent(
+                f"""
             ENV NVIDIA_VISIBLE_DEVICES {nvidia_visible_devices}
             ENV NVIDIA_DRIVER_CAPABILITIES {nvidia_driver_capabilities}
             ENV CUDA_VERSION {version_name}
             ENV CUDA_PKG_VERSION {cuda_pkg_version}
             ENV NVIDIA_REQUIRE_CUDA {nvidia_req_cuda}
-
-            {install_lines}
         """
-        ).strip()
+            ).strip()
+            + "\n\n"
+            + install_lines
+        )
+
+        return retval
 
     def generate_dev_dockerfile(self) -> str:
         """
@@ -223,7 +227,7 @@ class AptGetCUDADockerfileGen(CUDADockerfileGenerator):
             target=f"{cuda_repo_name}" + filename,
             output_file=filename,
         )
-        package_command_section = self.package_manager.generate_package_command(
+        package_command_section = self.package_manager.generate_local_install_command(
             target=filename,
         )
         return textwrap.dedent(

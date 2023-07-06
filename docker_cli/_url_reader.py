@@ -1,5 +1,4 @@
 import os
-import shlex
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union
 
@@ -61,10 +60,10 @@ class Wget(URLReader):
         *,
         output_file: Optional[Union[os.PathLike[str], str]] = None,
     ) -> str:
-        retval = ["wget", target]
+        retval = f"wget {target}"
         if output_file is not None:
-            retval += ["-O", os.fspath(output_file)]
-        return shlex.join(retval)
+            retval += f" -O {os.fspath(output_file)}"
+        return retval
 
     @property
     def name(self) -> str:  # pragma: no cover
@@ -78,10 +77,10 @@ class Curl(URLReader):
         *,
         output_file: Optional[Union[os.PathLike[str], str]] = None,
     ) -> str:
-        retval = ["curl", "--ssl", target]
+        retval = f"curl --ssl {target}"
         if output_file is not None:
-            retval += ["-o", os.fspath(output_file)]
-        return shlex.join(retval)
+            retval += f" -o {os.fspath(output_file)}"
+        return retval
 
     @property
     def name(self) -> str:  # pragma: no cover
