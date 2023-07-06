@@ -86,7 +86,7 @@ class TestImage:
 
     def test_build_from_dockerfile_dockerfile_in_different_location(self, image_tag):
         """
-        Tests that the build method can build an image from a dockerfile in a
+        Tests that the build method can build an image from a Dockerfile in a
         different location than the context root directory.
         """
         try:
@@ -131,19 +131,19 @@ class TestImage:
     def test_build_from_dockerfile_in_malformed_location(self, image_tag):
         """
         Tests that the build method raises a DockerBuildError when a malformed
-        dockerfile location is given.
+        Dockerfile location is given.
         """
         img = None
         with raises(DockerBuildError):
             img = Image.build(
-                tag=image_tag, dockerfile="non_existent_directory/Dockerfile"
+                tag=image_tag, dockerfile="non_existent_directory/dockerfile"
             )
         assert img is None
 
     def test_build_from_string(self, image_tag):
         """
         Tests that the build method builds and returns an Image when given a
-        dockerfile-formatted string.
+        Dockerfile-formatted string.
         """
         dockerfile = Path("Dockerfile").read_text() + f"\nRUN mkdir {image_tag}"
         try:
@@ -163,7 +163,7 @@ class TestImage:
     def test_build_from_string_output_to_file(self, image_tag):
         """
         Tests that the build method writes to a file when formatted to do so and
-        given a dockerfile string.
+        given a Dockerfile string.
         """
         tmp = NamedTemporaryFile()
         dockerfile: str = Path("Dockerfile").read_text() + f"\nRUN mkdir {image_tag}"

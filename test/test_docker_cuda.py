@@ -34,7 +34,7 @@ def test_get_cuda_dockerfile_generator():
 
 @fixture(scope=determine_scope)
 def cuda_repo_ver(base_tag: str) -> str:
-    """The basic information about the cuda dockerfile or image to be generated."""
+    """The basic information about the CUDA Dockerfile or image to be generated."""
     if base_tag == "ubuntu":
         return "ubuntu2004"
     if base_tag == "oraclelinux:8.4":
@@ -58,7 +58,7 @@ def cuda_generator(
     Returns
     -------
     CUDADockerfileGenerator
-        The dockerfile generator.
+        The Dockerfile generator.
     """
     package_mgr, url_reader = base_properties
     gen = get_cuda_dockerfile_generator(pkg_mgr=package_mgr, url_reader=url_reader)
@@ -70,12 +70,12 @@ def cuda_runtime_dockerfile(
     cuda_generator: CUDADockerfileGenerator, cuda_repo_ver: str
 ) -> str:
     """
-    Returns a runtime dockerfile for cuda.
+    Returns a runtime Dockerfile for CUDA.
 
     Returns
     -------
     str
-        The dockerfile body.
+        The Dockerfile body.
     """
     dockerfile: str = cuda_generator.generate_runtime_dockerfile(
         cuda_ver_major=11, cuda_ver_minor=4, repo_ver=cuda_repo_ver
@@ -86,7 +86,7 @@ def cuda_runtime_dockerfile(
 @fixture(scope=determine_scope)
 def cuda_runtime_tag() -> Iterator[str]:
     """
-    Returns a cuda runtime image tag.
+    Returns a CUDA runtime image tag.
 
     Returns
     -------
@@ -104,23 +104,23 @@ def cuda_runtime_image(
     init_image: Image,  # type: ignore
 ) -> Iterator[Image]:
     """
-    Yields a cuda runtime image.
+    Yields a CUDA runtime image.
 
     Parameters
     ----------
     cuda_runtime_dockerfile : str
-        The cuda runtime dockerfile.
+        The CUDA runtime Dockerfile.
     init_tag : str
         The initialization image tag.
     cuda_runtime_tag : str
-        The cuda runtime tag.
+        The CUDA runtime tag.
     init_image : Image
         Unused; ensures the initialization image has been built.
 
     Yields
     ------
     Iterator[Image]
-        The cuda runtime image generator.
+        The CUDA runtime image generator.
     """
     dockerfile = f"FROM {init_tag}\n\n{cuda_runtime_dockerfile}"
     img = Image.build(tag=cuda_runtime_tag, dockerfile_string=dockerfile)
@@ -131,12 +131,12 @@ def cuda_runtime_image(
 @fixture(scope=determine_scope)
 def cuda_dev_dockerfile(cuda_generator: CUDADockerfileGenerator) -> str:
     """
-    Returns a cuda dev dockerfile.
+    Returns a CUDA dev Dockerfile.
 
     Returns
     -------
     str
-        The dockerfile body.
+        The Dockerfile body.
     """
     dockerfile = cuda_generator.generate_dev_dockerfile()
     return dockerfile
@@ -145,7 +145,7 @@ def cuda_dev_dockerfile(cuda_generator: CUDADockerfileGenerator) -> str:
 @fixture(scope=determine_scope)
 def cuda_dev_tag() -> Iterator[str]:
     """
-    Returns an image tag for the cuda dev image.
+    Returns an image tag for the CUDA dev image.
 
     Returns
     -------
@@ -163,12 +163,12 @@ def cuda_dev_image(
     cuda_runtime_image: Image,  # type: ignore
 ) -> Iterator[Image]:
     """
-    Returns a cuda dev image.
+    Returns a CUDA dev image.
 
     Parameters
     ----------
     cuda_dev_dockerfile : str
-        The dockerfile for the image.
+        The Dockerfile for the image.
     cuda_runtime_tag : str
         The runtime image tag.
     cuda_dev_tag : str
@@ -179,7 +179,7 @@ def cuda_dev_image(
     Yields
     ------
     Iterator[Image]
-        The cuda dev image generator.
+        The CUDA dev image generator.
     """
     dockerfile: str = f"FROM {cuda_runtime_tag}\n\n{cuda_dev_dockerfile}"
     img = Image.build(tag=cuda_dev_tag, dockerfile_string=dockerfile)
@@ -222,7 +222,7 @@ class TestCudaGen:
     def test_generate_runtime_dockerfile(
         self, cuda_generator: CUDADockerfileGenerator, cuda_repo_ver: str
     ):
-        """Tests the generation of a runtime CUDA dockerfile."""
+        """Tests the generation of a runtime CUDA Dockerfile."""
         dockerfile: str = cuda_generator.generate_runtime_dockerfile(
             cuda_ver_major=11, cuda_ver_minor=4, repo_ver=cuda_repo_ver
         )
@@ -234,7 +234,7 @@ class TestCudaGen:
 
     @mark.dockerfiles
     def test_generate_dev_dockerfile(self, cuda_generator: CUDADockerfileGenerator):
-        """Tests the generation of a dev CUDA dockerfile."""
+        """Tests the generation of a dev CUDA Dockerfile."""
         dockerfile: str = cuda_generator.generate_dev_dockerfile()
         assert isinstance(dockerfile, str)
 

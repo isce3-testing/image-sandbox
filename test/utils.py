@@ -90,28 +90,28 @@ def remove_docker_image(tag_or_id: str):
 
 def rough_dockerfile_validity_check(dockerfile: str) -> None:
     """
-    Performs a coarse check to see if a dockerfile is valid.
+    Performs a coarse check to see if a Dockerfile is valid.
 
     For the purposes of this check, validity is determined by stripping all comments,
     leading and trailing whitespace lines, and empty lines. Lines ending in backslashes
     are then concatenated together, and each line is checked for an initial instruction.
 
     This checker does NOT check if anything following the initial instruction name
-    is valid, or if the dockerfile can actually build.
+    is valid, or if the Dockerfile can actually build.
 
     Parameters
     ----------
-    dockerfile : Dockerfile or str
-        The dockerfile
+    dockerfile : str
+        The Dockerfile
 
     Raises
     ------
     ValueError
-    -   If the dockerfile is empty.
-    -   If the dockerfile does not contain anything but whitespace and comments.
+    -   If the Dockerfile is empty.
+    -   If the Dockerfile does not contain anything but whitespace and comments.
     -   If an ONBUILD instruction appears without any text following it.
-    -   If non-commented text is found in the dockerfile that is not preceded by a
-        dockerfile instruction keyword.
+    -   If non-commented text is found in the Dockerfile that is not preceded by a
+        Dockerfile instruction keyword.
     """
     comment_pattern: re.Pattern = re.compile(
         r"^(?P<instruction>[^#]*)(?P<comment>#.*)?$"

@@ -60,7 +60,7 @@ def image_command_check(
     url_reader : URLReader
         The URL Reader object.
     config_commands : str
-        Any install and configuration lines required by the dockerfile.
+        Any install and configuration lines required by the Dockerfile.
 
     Raises
     ------
@@ -98,7 +98,7 @@ def image_command_check(
 
 def parse_cuda_info(cuda_version: str) -> Tuple[int, int]:
     """
-    Turns a cuda version string into a major and minor version.
+    Turns a CUDA version string into a major and minor version.
 
     Parameters
     ----------

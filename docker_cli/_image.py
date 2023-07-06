@@ -16,7 +16,7 @@ class Image:
     an interface by which to interact with that image.
 
     Capabilities include:
-    -   Building Docker images from dockerfiles or dockerfile-formatted strings
+    -   Building Docker images from dockerfiles or Dockerfile-formatted strings
         via :func:`~docker_cli.Image.build`.
     -   Running commands in containers built from the image using
         :func:`~docker_cli.Image.run`.
@@ -50,7 +50,7 @@ class Image:
         no_cache: bool = ...,
     ) -> Self:
         """
-        Build a new image from a dockerfile.
+        Build a new image from a Dockerfile.
 
         Build a Dockerfile at the given path with the given name, then
         return the associated Image instance.
@@ -102,7 +102,7 @@ class Image:
         no_cache: bool = ...,
     ) -> Self:
         """
-        Builds a new image from a string in dockerfile syntax.
+        Builds a new image from a string in Dockerfile syntax.
 
         Parameters
         ----------
@@ -132,7 +132,7 @@ class Image:
         DockerBuildError
             If the Docker build command fails.
         ValueError
-            If both `dockerfile` and `dockerfile_string` are defined.
+            If both `Dockerfile` and `dockerfile_string` are defined.
         """
         ...
 
@@ -154,7 +154,7 @@ class Image:
                 "Both dockerfile and dockerfile_string passed as arguments."
             )
 
-        # Build with dockerfile if dockerfile_string is None
+        # Build with Dockerfile if dockerfile_string is None
         dockerfile_build = dockerfile_string is None
 
         context_str = os.fspath(".") if context is None else os.fspath(context)
@@ -164,7 +164,7 @@ class Image:
             cmd += ["--no-cache"]
 
         if dockerfile_build:
-            # If a dockerfile path is given, include it.
+            # If a Dockerfile path is given, include it.
             # Else, Docker build will default to "./Dockerfile"
             if dockerfile is not None:
                 cmd += [f"--file={os.fspath(dockerfile)}"]
@@ -189,7 +189,7 @@ class Image:
                 ) from err
             else:
                 raise DockerBuildError(
-                    f"String dockerfile {tag} failed to build."
+                    f"String Dockerfile {tag} failed to build."
                 ) from err
 
         return cls(tag)

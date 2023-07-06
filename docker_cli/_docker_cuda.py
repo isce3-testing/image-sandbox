@@ -10,10 +10,10 @@ from ._url_reader import URLReader
 
 class CUDADockerfileGenerator(ABC):
     """
-    An abstract base class for CUDA dockerfile generators.
+    An abstract base class for CUDA Dockerfile generators.
 
-    CUDA dockerfile generators receive a cuda version and base image, and can
-    produce a dockerfile that contains instructions for building CUDA on the
+    CUDA Dockerfile generators receive a CUDA version and base image, and can
+    produce a Dockerfile that contains instructions for building CUDA on the
     given system.
     """
 
@@ -37,7 +37,7 @@ class CUDADockerfileGenerator(ABC):
         nvidia_driver_capabilities: str = "compute,utility",
     ) -> str:
         """
-        Generates a dockerfile for the CUDA runtime image.
+        Generates a Dockerfile for the CUDA runtime image.
 
         Parameters
         ----------
@@ -55,7 +55,7 @@ class CUDADockerfileGenerator(ABC):
         Returns
         -------
         str
-            The generated dockerfile body
+            The generated Dockerfile body
 
         Raises
         ------
@@ -92,12 +92,12 @@ class CUDADockerfileGenerator(ABC):
 
     def generate_dev_dockerfile(self) -> str:
         """
-        Generates a dockerfile for the CUDA Dev image.
+        Generates a Dockerfile for the CUDA Dev image.
 
         Returns
         -------
         str
-            The generated dockerfile body.
+            The generated Dockerfile body.
         """
         body = self.generate_install_lines(build_targets=self._dev_build_targets)
 
@@ -120,7 +120,7 @@ class CUDADockerfileGenerator(ABC):
     @abstractmethod
     def _generate_initial_lines(self, repo_ver: str, *, arch: str = "x86_64") -> str:
         """
-        Generates the first lines of the cuda install dockerfile.
+        Generates the first lines of the CUDA install Dockerfile.
 
         These lines typically acquire the necessary CUDA repo and configure the
         image to install CUDA.
@@ -128,14 +128,14 @@ class CUDADockerfileGenerator(ABC):
         Returns
         -------
         str
-            The initial lines of the CUDA install dockerfile.
+            The initial lines of the CUDA install Dockerfile.
         """
         ...
 
     @abstractmethod
     def generate_install_lines(self, build_targets: Iterable[str]) -> str:
         """
-        Generates the install lines for the cuda install dockerfile.
+        Generates the install lines for the CUDA install Dockerfile.
 
         These lines typically use the packet manager to install the given CUDA
         libraries and then clean the packet manager cache.
@@ -143,14 +143,14 @@ class CUDADockerfileGenerator(ABC):
         Returns
         -------
         str
-            The install lines of the CUDA install dockerfile.
+            The install lines of the CUDA install Dockerfile.
         """
         ...
 
     @property
     def package_manager(self) -> PackageManager:
         """
-        The package manager used by this dockerfile generator.
+        The package manager used by this Dockerfile generator.
 
         This ensures that all subclasses of this class will have a package manager
         property, but doesn't require the abstract base class to specify it.
@@ -169,7 +169,7 @@ class CUDADockerfileGenerator(ABC):
 
 class AptGetCUDADockerfileGen(CUDADockerfileGenerator):
     """
-    A CUDA dockerfile generator for debian-based apt-get systems
+    A CUDA Dockerfile generator for debian-based apt-get systems
     """
 
     _dev_build_targets = [
@@ -210,7 +210,7 @@ class AptGetCUDADockerfileGen(CUDADockerfileGenerator):
 
 class YumCUDADockerfileGen(CUDADockerfileGenerator):
     """
-    A CUDA dockerfile generator for rpm-based yum systems
+    A CUDA Dockerfile generator for rpm-based yum systems
     """
 
     _dev_build_targets = [
@@ -245,7 +245,7 @@ def get_cuda_dockerfile_generator(
     pkg_mgr: PackageManager | str, url_reader: URLReader
 ) -> CUDADockerfileGenerator:
     """
-    Returns the appropriate dockerfile generator for a system.
+    Returns the appropriate Dockerfile generator for a system.
 
     Parameters
     ----------

@@ -9,7 +9,7 @@ def mamba_install_dockerfile(
     env_specfile: os.PathLike[str] | str = "spec-file.txt",
 ) -> Tuple[str, str]:
     """
-    Creates and returns a dockerfile for installing micromamba.
+    Creates and returns a Dockerfile for installing micromamba.
 
     Parameters
     ----------
@@ -19,7 +19,7 @@ def mamba_install_dockerfile(
     Returns
     -------
     str
-        The generated dockerfile body.
+        The generated Dockerfile body.
     """
     body = _mamba_install_body(env_specfile=env_specfile)
     header = _mamba_install_prefix()
@@ -30,7 +30,7 @@ def mamba_add_specs_dockerfile(
     env_specfile: os.PathLike[str] | str = "spec-file.txt",
 ) -> str:
     """
-    Creates a dockerfile for adding micromamba environment specs.
+    Creates a Dockerfile for adding micromamba environment specs.
 
     Parameters
     ----------
@@ -40,7 +40,7 @@ def mamba_add_specs_dockerfile(
     Returns
     -------
     str
-        The generated dockerfile body.
+        The generated Dockerfile body.
     """
     return _mamba_spec_command(
         specfile=env_specfile, command="install", channels=["conda-forge"]
@@ -51,7 +51,7 @@ def mamba_add_packages_dockerfile(
     packages: Iterable[str], channels: Optional[Iterable[str]]
 ) -> str:
     """
-    Creates a dockerfile body for adding the given packages to a micromamba environment.
+    Creates a Dockerfile body for adding the given packages to a micromamba environment.
 
     Parameters
     ----------
@@ -63,7 +63,7 @@ def mamba_add_packages_dockerfile(
     Returns
     -------
     str
-        The dockerfile body.
+        The Dockerfile body.
     """
     return _mamba_spec_command(packages=packages, channels=channels, command="install")
 
@@ -77,7 +77,7 @@ def mamba_lockfile_command(
     Parameters
     ----------
     env_name : str
-        The name of the environment for which a dockerfile should be generated.
+        The name of the environment for which a Dockerfile should be generated.
 
     Returns
     -------
@@ -162,7 +162,7 @@ def _mamba_spec_command(
         ]
 
     command_list += [" && micromamba clean --all --yes"]
-    # Assemble this command into a portion of a dockerfile string.
+    # Assemble this command into a portion of a Dockerfile string.
     cmd: str = "\n".join(command_list)
 
     return cmd

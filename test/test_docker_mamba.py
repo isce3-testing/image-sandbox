@@ -19,14 +19,14 @@ from .utils import (
 @fixture(scope=determine_scope)
 def mamba_runtime_dockerfile() -> Tuple[str, str]:
     """
-    Returns a runtime dockerfile for mamba.
+    Returns a runtime Dockerfile for mamba.
 
     Returns
     -------
     header : str
-        The dockerfile header.
+        The Dockerfile header.
     body : str
-        The dockerfile body.
+        The Dockerfile body.
     """
     return mamba_install_dockerfile(env_specfile="test-runtime-lock-file.txt")
 
@@ -57,7 +57,7 @@ def mamba_runtime_image(
     Parameters
     ----------
     mamba_runtime_dockerfile : str
-        The mamba runtime dockerfile.
+        The mamba runtime Dockerfile.
     init_tag : str
         The initialization image tag.
     mamba_runtime_tag : str
@@ -81,12 +81,12 @@ def mamba_runtime_image(
 @fixture(scope=determine_scope)
 def mamba_dev_dockerfile() -> str:
     """
-    Returns a mamba dev dockerfile.
+    Returns a mamba dev Dockerfile.
 
     Returns
     -------
     str
-        The dockerfile body.
+        The Dockerfile body.
     """
     return mamba_add_specs_dockerfile(env_specfile="test-dev-lock-file.txt")
 
@@ -117,7 +117,7 @@ def mamba_dev_image(
     Parameters
     ----------
     mamba_dev_dockerfile : str
-        The dockerfile body for the image.
+        The Dockerfile body for the image.
     mamba_runtime_tag : str
         The runtime image tag.
     mamba_dev_tag : str
@@ -138,7 +138,7 @@ def mamba_dev_image(
 
 @mark.mamba
 class TestMambaGenerators:
-    """Test the mamba environment dockerfile generators"""
+    """Test the mamba environment Dockerfile generators"""
 
     @mark.dockerfiles
     def test_mamba_install_dockerfile(self, mamba_runtime_dockerfile: Tuple[str, str]):

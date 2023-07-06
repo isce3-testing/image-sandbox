@@ -77,7 +77,7 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
         metavar="ENVIRONMENT",
         type=str,
         default="base",
-        help="The name of the environment used to create the dockerfile.",
+        help="The name of the environment used to create the Dockerfile.",
     )
 
     return
