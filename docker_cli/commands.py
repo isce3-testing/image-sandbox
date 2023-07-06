@@ -4,7 +4,6 @@ from subprocess import DEVNULL, PIPE, CalledProcessError, run
 from typing import Iterable, List, Union
 
 from ._docker_mamba import mamba_lockfile_command
-from ._exceptions import ImageNotFoundError
 from ._image import Image
 from ._utils import is_conda_pkg_name, universal_tag_prefix
 
@@ -18,15 +17,9 @@ def dropin(tag: str) -> None:
     tag : str
         The tag or ID of the image.
     """
-    try:
-        image: Image = Image(tag)
-    except ImageNotFoundError as err:
-        print(f"Error: {str(err)}")
-        exit(1)
+    image: Image = Image(tag)
 
     image.drop_in()
-    print("Drop-in session ended.")
-    exit()
 
 
 def remove(
@@ -36,23 +29,23 @@ def remove(
     ignore_prefix: bool = False,
 ) -> None:
     """
-    Remove all Docker images that fit a given tag or wildcard.
+    Remove all Docker images that match a given tag or wildcard pattern.
 
     This tag or wildcard will take the form [UNIVERSAL PREFIX]-[tag or wildcard] if the
-    prefix does not already fit this.
+    prefix does not already match this.
 
     Parameters
     ----------
-    force : bool, optional
-        Whether or not to force the removal. Defaults to True.
     tags : Iterable[str]
         An iterable of tags or wildcards to be removed.
+    force : bool, optional
+        Whether or not to force the removal. Defaults to True.
     quiet : bool, optional
         Whether or not to run quietly. Defaults to False.
     ignore_prefix: bool, optional
         Whether or not to ignore the universal prefix and only use the tag or wildcard.
         Use with caution, as this will remove ALL images matching the wildcard.
-        e.g. remove(["*"], ignore_prefix = True) will remove all images.
+        e.g. ``remove(["*"], ignore_prefix = True)`` will remove all images.
     """
     force_arg = "--force " if force else ""
     output = DEVNULL if quiet else None
@@ -83,11 +76,10 @@ def remove(
             continue
         # The names come in a list delimited by newlines. Reform this to be delimited
         # by spaces to use with `Docker rmi`.
-        search_result_str = " ".join(search_result.stdout.split("\n"))
+        search_result_str = search_result.stdout.replace("\n", " ")
 
         # Remove all images in the list
         command = split(f"docker rmi {force_arg}{search_result_str}")
-        command += []
         try:
             run(command, stdout=output, stderr=output)
         except CalledProcessError as err:
@@ -112,13 +104,13 @@ def make_lockfile(
     Parameters
     ----------
     tag : str
-        The tag of the image
+        The tag or ID of the image.
     filename : Union[str, os.PathLike[str]]
         The file to be output to.
     env_name: str
         The name of the environment. Defaults to "base".
     """
-    cmd: str = str(mamba_lockfile_command(env_name=env_name))
+    cmd: str = mamba_lockfile_command(env_name=env_name)
     image: Image = Image(tag)
     lockfile: str = image.run(command=cmd, stdout=PIPE)
     assert isinstance(lockfile, str)
@@ -134,10 +126,8 @@ def make_lockfile(
 
     # Sort the conda packages, then join the parts back together.
     lockfile_conda_packages.sort()
-    lockfile_list = lockfile_other_lines
-    lockfile_list.extend(lockfile_conda_packages)
+    lockfile_list = lockfile_other_lines + lockfile_conda_packages
     lockfile = "\n".join(lockfile_list) + "\n"
-    # print (lockfile)
 
     with open(file, mode="w") as f:
         f.write(lockfile)
