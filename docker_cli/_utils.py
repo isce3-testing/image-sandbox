@@ -59,6 +59,11 @@ def temp_image(
     ValueError
         If the image is not recognized.
     """
+    # This image is generated using "FROM {base}" in a Dockerfile instead of just
+    # building from the base image directly, because building from a dockerfile
+    # inherently pulls from the internet if the base image isn't already present on
+    # the local environment. This ensures that, if the image exists anywhere accessible,
+    # it will be found automatically without the need for additional logic.
     tag = f"{universal_tag_prefix()}-temp-{generate_random_string(k=10)}"
     try:
         temp: Image = Image.build(  # type: ignore
