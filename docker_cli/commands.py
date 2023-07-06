@@ -1,6 +1,6 @@
 import os
 from shlex import split
-from subprocess import DEVNULL, PIPE, CalledProcessError, run
+from subprocess import DEVNULL, PIPE, run
 from typing import Iterable, List, Union
 
 from ._docker_mamba import mamba_lockfile_command
@@ -50,29 +50,20 @@ def remove(
     force_arg = "--force " if force else ""
     output = DEVNULL if quiet else None
 
-    # Search for and delete all images fitting each tag or wildcard.
+    # Search for and delete all images matching each tag or wildcard.
     for tag in tags:
         prefix = universal_tag_prefix()
         search = tag if (tag.startswith(prefix) or ignore_prefix) else f"{prefix}-{tag}"
         if not quiet:
             print(f"Attempting removal for tag: {search}")
 
-        # Search for all images whose name fits this tag, acquire a list
+        # Search for all images whose name matches this tag, acquire a list
         search_command = split(f'docker images --filter=reference="{search}" -q')
-        try:
-            search_result = run(search_command, text=True, stdout=PIPE, stderr=output)
-        # A CalledProcessError here indicates that the search failed. Skip to the next.
-        except CalledProcessError as err:
-            if not quiet:
-                print(
-                    f"Search for {search} failed with error code {err.returncode}. "
-                    "Proceeding."
-                )
-            continue
+        search_result = run(search_command, text=True, stdout=PIPE, stderr=output)
         # An empty return indicates that no such images were found. Skip to the next.
         if search_result.stdout == "":
             if not quiet:
-                print(f"No images found fitting pattern {search}. Proceeding.")
+                print(f"No images found matching pattern {search}. Proceeding.")
             continue
         # The names come in a list delimited by newlines. Reform this to be delimited
         # by spaces to use with `Docker rmi`.
@@ -80,14 +71,7 @@ def remove(
 
         # Remove all images in the list
         command = split(f"docker rmi {force_arg}{search_result_str}")
-        try:
-            run(command, stdout=output, stderr=output)
-        except CalledProcessError as err:
-            if not quiet:
-                print(
-                    f"Removal of {tag} failed with error code {err.returncode}. "
-                    "Proceeding."
-                )
+        run(command, stdout=output, stderr=output)
     if not quiet:
         print("Docker removal process completed.")
 
