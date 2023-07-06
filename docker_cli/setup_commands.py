@@ -11,7 +11,12 @@ from ._docker_mamba import (
 from ._image import Image
 from ._package_manager import PackageManager
 from ._url_reader import URLReader, get_url_reader
-from ._utils import image_command_check, parse_cuda_info, universal_tag_prefix
+from ._utils import (
+    image_command_check,
+    parse_cuda_info,
+    temp_image,
+    universal_tag_prefix,
+)
 
 
 def setup_init(
@@ -38,7 +43,8 @@ def setup_init(
     url_reader : URLReader
         The URL Reader present on the image
     """
-    package_mgr, url_reader, dockerfile = image_command_check(base, True)
+    with temp_image(base) as temp_img:
+        package_mgr, url_reader, dockerfile = image_command_check(temp_img, True)
 
     dockerfile = (
         f"FROM {base}\n\n"
@@ -118,7 +124,8 @@ def setup_cuda_runtime(
             "defined or neither."
         )
     else:
-        package_mgr, url_program, init_lines = image_command_check(base)
+        with temp_image(base) as temp_img:
+            package_mgr, url_program, init_lines = image_command_check(temp_img)
     cuda_major, cuda_minor = parse_cuda_info(cuda_version=cuda_version)
 
     cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
@@ -182,7 +189,8 @@ def setup_cuda_dev(
             "defined or neither."
         )
     else:
-        package_mgr, url_program, init_lines = image_command_check(base)
+        with temp_image(base) as temp_img:
+            package_mgr, url_program, init_lines = image_command_check(temp_img)
 
     if isinstance(url_reader, str):
         reader: URLReader = get_url_reader(url_program)

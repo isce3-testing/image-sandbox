@@ -1,11 +1,12 @@
 import io
 import random
 import re
+from contextlib import contextmanager
 from shlex import split
 from string import ascii_lowercase, digits
 from subprocess import DEVNULL, CalledProcessError, run
 from threading import Lock
-from typing import Optional, Tuple
+from typing import Generator, Optional, Tuple
 
 from ._image import Image
 from ._package_manager import (
@@ -28,30 +29,69 @@ def universal_tag_prefix() -> str:
     return "dcli"
 
 
-def image_command_check(
-    image_name: str,
-    configure: bool = False,
+@contextmanager
+def temp_image(
+    base: str,
     stdout: Optional[io.TextIOBase] = None,
     stderr: Optional[io.TextIOBase] = None,
-) -> Tuple[PackageManager, URLReader, str]:
+) -> Generator[Image, None, None]:
     """
-    Determine what relevant commands are present on the image.
-
-    Determines what package manager and URL reader are on the image, and
-    returns a set of initial lines to install a URL reader if none is present.
+    Generates a temporary image while the context manager is active, then deletes it.
 
     Parameters
     ----------
-    image_name : str
-        The tag or ID by which the image can be found
-    configure : bool
-        Add configuration commands to the returned string if True. Defaults to False.
+    base : str
+        The tag or ID by which the base image can be found.
     stdout : io.TextIOBase, optional
         A file-like object to redirect stdout to. If None, no redirection will
         occur. By default None
     stderr : io.TextIOBase, optional
         A file-like object to redirect stderr to. If None, no redirection will
         occur. By default None
+
+    Yields
+    -------
+    temp
+        The temporary Image.
+
+    Raises
+    ------
+    ValueError
+        If the image is not recognized.
+    """
+    tag = f"{universal_tag_prefix()}-temp-{generate_random_string(k=10)}"
+    try:
+        temp: Image = Image.build(  # type: ignore
+            tag=tag,
+            dockerfile_string=f"FROM {base}",
+            stdout=stdout,
+            stderr=stderr,
+        )
+    except CalledProcessError:
+        raise ValueError(f"Image not found: {base}")
+
+    try:
+        yield temp
+    finally:
+        run(split(f"docker rmi {tag}"), stdout=DEVNULL, stderr=DEVNULL)
+
+
+def image_command_check(
+    image: Image,
+    configure: bool = False,
+) -> Tuple[PackageManager, URLReader, str]:
+    """
+    Determine what relevant commands are present on an image.
+
+    Determines what package manager and URL reader are on the image, and
+    returns a set of initial lines to install a URL reader if none is present.
+
+    Parameters
+    ----------
+    image: Image
+        The image to test.
+    configure : bool
+        Add configuration commands to the returned string if True. Defaults to False.
 
     Returns
     -------
@@ -61,37 +101,19 @@ def image_command_check(
         The URL Reader object.
     config_commands : str
         Any install and configuration lines required by the Dockerfile.
-
-    Raises
-    ------
-    ValueError
-        If the parent image does not have a recognized package manager.
     """
 
-    tag = f"{universal_tag_prefix()}-temp-{generate_random_string(k=10)}"
-    try:
-        base: Image = Image.build(  # type: ignore
-            tag=tag,
-            dockerfile_string=f"FROM {image_name}\nRUN mkdir {tag}",
-            stdout=stdout,
-            stderr=stderr,
-        )
-    except CalledProcessError:
-        raise ValueError(f"Image not found: {image_name}")
-
-    package_mgr = _package_manager_check(image=base)
+    package_mgr = _package_manager_check(image=image)
 
     if configure:
         init_lines: str = "RUN " + str(package_mgr.generate_configure_command()) + "\n"
     else:
         init_lines = ""
 
-    url_program = _url_reader_check(image=base)
+    url_program = _url_reader_check(image=image)
     if url_program is None:
         url_program, url_init = _get_reader_install_lines(package_mgr=package_mgr)
         init_lines += url_init
-
-    run(split(f"docker image rm {tag}"), stdout=DEVNULL, stderr=DEVNULL)
 
     return package_mgr, url_program, init_lines
 
