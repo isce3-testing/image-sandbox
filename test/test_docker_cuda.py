@@ -23,13 +23,13 @@ from .utils import (
 @mark.cuda
 def test_get_cuda_dockerfile_generator():
     """Tests that the get_cuda_dockerfile_generator returns the right generator."""
-    gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(AptGet(), Curl)
+    gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(AptGet(), Curl())
     assert isinstance(gen, AptGetCUDADockerfileGen)
-    assert gen.url_reader == Curl
+    assert isinstance(gen.url_reader, Curl)
 
-    gen = get_cuda_dockerfile_generator(Yum(), Wget)
+    gen = get_cuda_dockerfile_generator(Yum(), Wget())
     assert isinstance(gen, YumCUDADockerfileGen)
-    assert gen.url_reader == Wget
+    assert isinstance(gen.url_reader, Wget)
 
 
 @fixture(scope=determine_scope)
