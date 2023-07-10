@@ -3,7 +3,7 @@ import os
 from shlex import split
 from subprocess import DEVNULL, CalledProcessError, run
 from sys import stdin
-from typing import Any, Iterable, List, Optional, Type, TypeVar, Union, overload
+from typing import Any, List, Optional, Type, TypeVar, Union, overload
 
 from ._exceptions import CommandNotFoundError, DockerBuildError, ImageNotFoundError
 
@@ -309,23 +309,6 @@ class Image:
         self.run(
             "bash", interactive=True, network=network, check=False
         )  # pragma: no cover
-
-    def check_command_availability(self, commands: Iterable[str]) -> List[str]:
-        """
-        Determines which of the commands in a list are present on the image.
-
-        Parameters
-        ----------
-        commands : Iterable[str]
-            The commands to be checked.
-
-        Returns
-        -------
-        List[str]
-            The names of all commands in `commands` that were present on the
-            image.
-        """
-        return list(filter(self.has_command, commands))
 
     def has_command(self, command: str) -> bool:
         """
