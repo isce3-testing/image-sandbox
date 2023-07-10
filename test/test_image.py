@@ -290,55 +290,6 @@ class TestImage:
 
         assert img.id == id
 
-    def test_check_command_availability(self, image_id, image_tag):
-        """
-        Tests that a check_command_availability properly returns the set of
-        commands that exist on an Image and not ones that don't.
-        """
-        check_me = ["apk", "apt-get", "yum", "curl", "wget", "python", "sh", "bash"]
-        check_me_2 = ["apt-get"]
-
-        img = Image(image_id)
-        retvals_1 = img.check_command_availability(check_me)
-
-        try:
-            run(
-                split(
-                    "docker build . --file=dockerfiles/alpine_functional.dockerfile "
-                    f"-t {image_tag}_2"
-                )
-            )
-            img = Image(f"{image_tag}_2")
-
-            retvals_2 = img.check_command_availability(check_me)
-            retvals_3 = img.check_command_availability(check_me_2)
-
-            assert retvals_1 == ["apt-get", "sh", "bash"]
-            assert retvals_2 == ["apk", "wget", "sh", "bash"]
-            assert len(retvals_3) == 0
-        finally:
-            remove_docker_image(f"{image_tag}_2")
-
-    def test_check_command_availability_no_bash_exception(self, image_tag):
-        """
-        Validates that a check_command_availability throws the
-        CommandNotFoundError when called on an image that doesn't have
-        bash installed.
-        """
-        check_me = ["apk"]
-        try:
-            run(
-                split(
-                    "docker build ./ --file=dockerfiles/alpine_broken.dockerfile "
-                    f"-t {image_tag}"
-                )
-            )
-            img = Image(image_tag)
-            with raises(CommandNotFoundError):
-                img.check_command_availability(check_me)
-        finally:
-            remove_docker_image(image_tag)
-
     def test_repr(self, image_id, image_tag):
         """
         Tests that the __repr__() method of the Image class correctly produces
