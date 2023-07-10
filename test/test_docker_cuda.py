@@ -44,6 +44,20 @@ def cuda_repo_ver(base_tag: str) -> str:
 
 
 @fixture(scope=determine_scope)
+def cuda_version() -> Tuple[int, int]:
+    """Returns two integers that represent CUDA major and minor versions.
+
+    Returns
+    -------
+    cuda_ver_major : int
+        The CUDA major version.
+    cuda_ver_minor : int
+        The CUDA minor version.
+    """
+    return (11, 4)
+
+
+@fixture(scope=determine_scope)
 def cuda_generator(
     base_properties: Tuple[PackageManager, URLReader]
 ) -> CUDADockerfileGenerator:
@@ -67,7 +81,9 @@ def cuda_generator(
 
 @fixture(scope=determine_scope)
 def cuda_runtime_dockerfile(
-    cuda_generator: CUDADockerfileGenerator, cuda_repo_ver: str
+    cuda_generator: CUDADockerfileGenerator,
+    cuda_repo_ver: str,
+    cuda_version: Tuple[int, int],
 ) -> str:
     """
     Returns a runtime Dockerfile for CUDA.
@@ -77,8 +93,11 @@ def cuda_runtime_dockerfile(
     str
         The Dockerfile body.
     """
+    cuda_ver_major, cuda_ver_minor = cuda_version
     dockerfile: str = cuda_generator.generate_runtime_dockerfile(
-        cuda_ver_major=11, cuda_ver_minor=4, repo_ver=cuda_repo_ver
+        cuda_ver_major=cuda_ver_major,
+        cuda_ver_minor=cuda_ver_minor,
+        repo_ver=cuda_repo_ver,
     )
     return dockerfile
 
@@ -129,7 +148,10 @@ def cuda_runtime_image(
 
 
 @fixture(scope=determine_scope)
-def cuda_dev_dockerfile(cuda_generator: CUDADockerfileGenerator) -> str:
+def cuda_dev_dockerfile(
+    cuda_generator: CUDADockerfileGenerator,
+    cuda_version: Tuple[int, int],
+) -> str:
     """
     Returns a CUDA dev Dockerfile.
 
@@ -138,7 +160,8 @@ def cuda_dev_dockerfile(cuda_generator: CUDADockerfileGenerator) -> str:
     str
         The Dockerfile body.
     """
-    dockerfile = cuda_generator.generate_dev_dockerfile()
+    cuda_ver_major, cuda_ver_minor = cuda_version
+    dockerfile = cuda_generator.generate_dev_dockerfile(cuda_ver_major, cuda_ver_minor)
     return dockerfile
 
 
@@ -233,9 +256,17 @@ class TestCudaGen:
         rough_dockerfile_validity_check(dockerfile)
 
     @mark.dockerfiles
-    def test_generate_dev_dockerfile(self, cuda_generator: CUDADockerfileGenerator):
+    def test_generate_dev_dockerfile(
+        self,
+        cuda_generator: CUDADockerfileGenerator,
+        cuda_version: Tuple[int, int],
+    ):
         """Tests the generation of a dev CUDA Dockerfile."""
-        dockerfile: str = cuda_generator.generate_dev_dockerfile()
+        cuda_ver_major, cuda_ver_minor = cuda_version
+        dockerfile: str = cuda_generator.generate_dev_dockerfile(
+            cuda_ver_major,
+            cuda_ver_minor,
+        )
         assert isinstance(dockerfile, str)
 
         dockerfile = f"FROM %DUMMY_BASE%\n\n{dockerfile}"

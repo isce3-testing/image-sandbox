@@ -78,10 +78,12 @@ class CUDADockerfileGenerator(ABC):
             )
         init_lines = self._generate_initial_lines(repo_ver, arch=arch)
         install_lines = self.generate_install_lines(
-            build_targets=self._runtime_build_targets
+            build_targets=self._runtime_build_targets(
+                cuda_ver_major=cuda_ver_major,
+                cuda_ver_minor=cuda_ver_minor,
+            )
         )
 
-        cuda_pkg_version = f'"{cuda_ver_major}-{cuda_ver_minor}"'
         version_name = f'"{cuda_ver_major}.{cuda_ver_minor}"'
         nvidia_req_cuda: str = f"cuda>={version_name}"
 
@@ -93,7 +95,6 @@ class CUDADockerfileGenerator(ABC):
             ENV NVIDIA_VISIBLE_DEVICES {nvidia_visible_devices}
             ENV NVIDIA_DRIVER_CAPABILITIES {nvidia_driver_capabilities}
             ENV CUDA_VERSION {version_name}
-            ENV CUDA_PKG_VERSION {cuda_pkg_version}
             ENV NVIDIA_REQUIRE_CUDA {nvidia_req_cuda}
         """
             ).strip()
@@ -103,9 +104,16 @@ class CUDADockerfileGenerator(ABC):
 
         return retval
 
-    def generate_dev_dockerfile(self) -> str:
+    def generate_dev_dockerfile(self, cuda_ver_major: int, cuda_ver_minor: int) -> str:
         """
         Generates a Dockerfile for the CUDA dev image.
+
+        Parameters
+        ----------
+        cuda_ver_major : int
+            The major CUDA version.
+        cuda_ver_minor : int
+            The minor CUDA version.
 
         Returns
         -------
@@ -113,7 +121,10 @@ class CUDADockerfileGenerator(ABC):
             The generated Dockerfile body.
         """
         install_lines = self.generate_install_lines(
-            build_targets=self._dev_build_targets
+            build_targets=self._dev_build_targets(
+                cuda_ver_major=cuda_ver_major,
+                cuda_ver_minor=cuda_ver_minor,
+            )
         )
 
         return textwrap.dedent(
@@ -195,16 +206,44 @@ class CUDADockerfileGenerator(ABC):
             )
         return getattr(self, "_package_manager")
 
-    @property
     @abstractmethod
-    def _runtime_build_targets(self) -> List[str]:
-        """The set of targets to build onto the runtime image."""
+    def _runtime_build_targets(
+        self, cuda_ver_major: int, cuda_ver_minor: int
+    ) -> List[str]:
+        """
+        The set of targets to build onto the runtime image.
+
+        Parameters
+        ----------
+        cuda_ver_major : int
+            The major CUDA version.
+        cuda_ver_minor : int
+            The minor CUDA version.
+
+        Returns
+        -------
+        List[str]
+            A list of packages to install for the CUDA runtime build.
+        """
         ...
 
-    @property
     @abstractmethod
-    def _dev_build_targets(self) -> List[str]:
-        """The set of targets to build onto the dev image."""
+    def _dev_build_targets(self, cuda_ver_major: int, cuda_ver_minor: int) -> List[str]:
+        """
+        The set of targets to build onto the dev image.
+
+        Parameters
+        ----------
+        cuda_ver_major : int
+            The major CUDA version.
+        cuda_ver_minor : int
+            The minor CUDA version.
+
+        Returns
+        -------
+        List[str]
+            A list of packages to install for the CUDA dev build.
+        """
         ...
 
 
@@ -246,19 +285,19 @@ class AptGetCUDADockerfileGen(CUDADockerfileGenerator):
         )
         return install_line
 
-    @property
-    def _runtime_build_targets(self):
+    def _runtime_build_targets(self, cuda_ver_major: int, cuda_ver_minor: int):
+        cuda_package_ver: str = f"{cuda_ver_major}-{cuda_ver_minor}"
         return [
-            "cuda-cudart-$CUDA_PKG_VERSION",
-            "libcufft-$CUDA_PKG_VERSION",
+            f"cuda-cudart-{cuda_package_ver}",
+            f"libcufft-{cuda_package_ver}",
         ]
 
-    @property
-    def _dev_build_targets(self):
+    def _dev_build_targets(self, cuda_ver_major: int, cuda_ver_minor: int):
+        cuda_package_ver: str = f"{cuda_ver_major}-{cuda_ver_minor}"
         return [
-            "cuda-cudart-dev-$CUDA_PKG_VERSION",
-            "cuda-nvcc-$CUDA_PKG_VERSION",
-            "libcufft-dev-$CUDA_PKG_VERSION",
+            f"cuda-cudart-dev-{cuda_package_ver}",
+            f"cuda-nvcc-{cuda_package_ver}",
+            f"libcufft-dev-{cuda_package_ver}",
         ]
 
 
@@ -285,19 +324,19 @@ class YumCUDADockerfileGen(CUDADockerfileGenerator):
         )
         return "RUN " + install_line
 
-    @property
-    def _runtime_build_targets(self):
+    def _runtime_build_targets(self, cuda_ver_major: int, cuda_ver_minor: int):
+        cuda_package_ver: str = f"{cuda_ver_major}-{cuda_ver_minor}"
         return [
-            "cuda-cudart-$CUDA_PKG_VERSION",
-            "libcufft-$CUDA_PKG_VERSION",
+            f"cuda-cudart-{cuda_package_ver}",
+            f"libcufft-{cuda_package_ver}",
         ]
 
-    @property
-    def _dev_build_targets(self):
+    def _dev_build_targets(self, cuda_ver_major: int, cuda_ver_minor: int):
+        cuda_package_ver: str = f"{cuda_ver_major}-{cuda_ver_minor}"
         return [
-            "cuda-cudart-devel-$CUDA_PKG_VERSION",
-            "cuda-nvcc-$CUDA_PKG_VERSION",
-            "libcufft-devel-$CUDA_PKG_VERSION",
+            f"cuda-cudart-devel-{cuda_package_ver}",
+            f"cuda-nvcc-{cuda_package_ver}",
+            f"libcufft-devel-{cuda_package_ver}",
             "rpm-build",
         ]
 

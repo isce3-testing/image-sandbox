@@ -1,4 +1,5 @@
 import os
+from subprocess import PIPE
 from textwrap import dedent
 from typing import Dict, Iterable, Optional, Tuple, Union
 
@@ -179,17 +180,27 @@ def setup_cuda_dev(
     ValueError
         If one of package_manager and url_reader is defined, but not both.
     """
-    if (package_manager is not None) and (url_reader) is not None:
-        package_mgr = package_manager
-        url_program = url_reader
-        init_lines = ""
-    elif (package_manager is not None) or (url_reader is not None):
-        raise ValueError(
-            "Either both package_manager and url_reader must both be "
-            "defined or neither."
-        )
-    else:
-        with temp_image(base) as temp_img:
+    with temp_image(base) as temp_img:
+        cuda_ver: str = temp_img.run("echo $CUDA_VERSION", stdout=PIPE)
+        try:
+            cuda_ver_major_str, cuda_ver_minor_str = ".".split(cuda_ver)
+            cuda_ver_major: int = int(cuda_ver_major_str)
+            cuda_ver_minor: int = int(cuda_ver_minor_str)
+        except Exception as err:
+            raise ValueError(
+                f"CUDA version in base image is:'{cuda_ver}'. "
+                "This value could not be read."
+            ) from err
+        if (package_manager is not None) and (url_reader) is not None:
+            package_mgr = package_manager
+            url_program = url_reader
+            init_lines = ""
+        elif (package_manager is not None) or (url_reader is not None):
+            raise ValueError(
+                "Either both package_manager and url_reader must both be "
+                "defined or neither."
+            )
+        else:
             package_mgr, url_program, init_lines = image_command_check(temp_img)
 
     if isinstance(url_reader, str):
@@ -199,7 +210,9 @@ def setup_cuda_dev(
     cuda_gen: CUDADockerfileGenerator = get_cuda_dockerfile_generator(
         pkg_mgr=package_mgr, url_reader=reader
     )
-    body = cuda_gen.generate_dev_dockerfile()
+    body = cuda_gen.generate_dev_dockerfile(
+        cuda_ver_major=cuda_ver_major, cuda_ver_minor=cuda_ver_minor
+    )
 
     dockerfile = f"FROM {base}\n\n{init_lines}\n\n{body}"
 
