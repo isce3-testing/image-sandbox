@@ -25,7 +25,7 @@ def dropin(tag: str) -> None:
 def remove(
     tags: Iterable[str],
     force: bool = True,
-    quiet: bool = False,
+    verbose: bool = False,
     ignore_prefix: bool = False,
 ) -> None:
     """
@@ -40,21 +40,24 @@ def remove(
         An iterable of tags or wildcards to be removed.
     force : bool, optional
         Whether or not to force the removal. Defaults to True.
-    quiet : bool, optional
-        Whether or not to run quietly. Defaults to False.
+    verbose : bool, optional
+        Whether or not to print output for removals verbosely. Defaults to False.
     ignore_prefix: bool, optional
         Whether or not to ignore the universal prefix and only use the tag or wildcard.
         Use with caution, as this will remove ALL images matching the wildcard.
         e.g. ``remove(["*"], ignore_prefix = True)`` will remove all images.
     """
     force_arg = "--force " if force else ""
-    output = DEVNULL if quiet else None
+
+    # The None below corresponds to printing outputs to the console. DEVNULL causes the
+    # outputs to be discarded.
+    output = None if verbose else DEVNULL
 
     # Search for and delete all images matching each tag or wildcard.
     for tag in tags:
         prefix = universal_tag_prefix()
         search = tag if (tag.startswith(prefix) or ignore_prefix) else f"{prefix}-{tag}"
-        if not quiet:
+        if verbose:
             print(f"Attempting removal for tag: {search}")
 
         # Search for all images whose name matches this tag, acquire a list
@@ -62,7 +65,7 @@ def remove(
         search_result = run(search_command, text=True, stdout=PIPE, stderr=output)
         # An empty return indicates that no such images were found. Skip to the next.
         if search_result.stdout == "":
-            if not quiet:
+            if verbose:
                 print(f"No images found matching pattern {search}. Proceeding.")
             continue
         # The names come in a list delimited by newlines. Reform this to be delimited
@@ -72,8 +75,7 @@ def remove(
         # Remove all images in the list
         command = split(f"docker rmi {force_arg}{search_result_str}")
         run(command, stdout=output, stderr=output)
-    if not quiet:
-        print("Docker removal process completed.")
+    print("Docker removal process completed.")
 
 
 def make_lockfile(

@@ -35,7 +35,10 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
         "--force", "-f", action="store_true", help="Force the image removal."
     )
     remove_parser.add_argument(
-        "--quiet", "-q", action="store_true", help="Run the removal quietly."
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Run the removal with verbose output and error messages.",
     )
     remove_parser.add_argument(
         "--ignore-prefix",
