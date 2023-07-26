@@ -1,5 +1,4 @@
 import argparse
-import textwrap
 
 from ..setup_commands import (
     setup_all,
@@ -104,6 +103,13 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
+    setup_all_parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        default=False,
+        help="If used, output informational messages upon completion.",
+    )
 
     setup_init_parser = setup_subparsers.add_parser(
         "init",
@@ -143,6 +149,14 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
         parents=[setup_parse, no_cache_parse],
         help="Set up the CUDA dev image.",
         formatter_class=help_formatter,
+    )
+    setup_cuda_dev_parser.add_argument(
+        "--cuda-version",
+        "-c",
+        default="11.4",
+        type=str,
+        help="The CUDA version.",
+        metavar="VERSION",
     )
     add_tag_argument(parser=setup_cuda_dev_parser, default="cuda-dev")
 
@@ -213,10 +227,7 @@ def run_setup(args: argparse.Namespace) -> None:
     setup_subcommand: str = args.setup_subcommand
     del args.setup_subcommand
     if setup_subcommand == "all":
-        images = setup_all(**vars(args))
-        print("IMAGES GENERATED:")
-        for image_tag in images:
-            print(textwrap.indent(image_tag, "\t"))
+        setup_all(**vars(args))
     elif setup_subcommand == "init":
         setup_init(**vars(args))
     elif setup_subcommand == "cuda":

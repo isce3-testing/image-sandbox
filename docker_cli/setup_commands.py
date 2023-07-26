@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import os
-from subprocess import PIPE
-from textwrap import dedent
+from textwrap import dedent, indent
 from typing import Dict, Iterable, Optional, Tuple, Union
 
 from ._docker_cuda import CUDADockerfileGenerator, get_cuda_dockerfile_generator
@@ -24,7 +25,7 @@ def setup_init(
     base: str, tag: str, no_cache: bool
 ) -> Tuple[Image, PackageManager, URLReader]:
     """
-    Set up the initial configuration image
+    Set up the initial configuration image.
 
     Parameters
     ----------
@@ -38,11 +39,11 @@ def setup_init(
     Returns
     -------
     image : Image
-        The generated image
+        The generated image.
     package_mgr : PackageManager
-        The package manager present on the image
+        The package manager present on the image.
     url_reader : URLReader
-        The URL Reader present on the image
+        The URL Reader present on the image.
     """
     with temp_image(base) as temp_img:
         package_mgr, url_reader, dockerfile = image_command_check(temp_img, True)
@@ -100,10 +101,12 @@ def setup_cuda_runtime(
     cuda_repo : str
         The name of the CUDA repository for this distro.
         (e.g. 'rhel8', 'ubuntu2004')
-    package_manager : PackageManager
-        The package manager in use by the base image.
-    url_reader : URLReader
-        The URL reader in use by the base image.
+    package_manager : PackageManager or None, optional
+        The package manager in use by the base image. Defaults to None.
+    url_reader : URLReader or None, optional
+        The URL reader in use by the base image. Defaults to None.
+    arch : str
+        The computer architecture to use. Defaults to "x86_64".
 
     Returns
     -------
@@ -120,9 +123,14 @@ def setup_cuda_runtime(
         url_program = url_reader
         init_lines = ""
     elif (package_manager is not None) or (url_reader is not None):
+        # It would be possible to have a user call this knowing only one of the URL
+        # reader or package manager, but this use case is not present anywhere in the
+        # current codebase, and implementing both possibilities of package_manager XOR
+        # url_reader would require additional complexity that is not currently
+        # necessary.
         raise ValueError(
-            "Either both package_manager and url_reader must both be "
-            "defined or neither."
+            "Either both package_manager and url_reader must both be defined, "
+            "or neither."
         )
     else:
         with temp_image(base) as temp_img:
@@ -151,6 +159,7 @@ def setup_cuda_dev(
     base: str,
     tag: str,
     no_cache: bool,
+    cuda_version: str,
     package_manager: Optional[PackageManager] = None,
     url_reader: Optional[URLReader] = None,
 ) -> Image:
@@ -165,6 +174,8 @@ def setup_cuda_dev(
         The tag of the image to be built.
     no_cache : bool
         Run Docker build with no cache if True.
+    cuda_version: int
+        The major part of the CUDA version.
     package_manager : PackageManager
         The package manager in use by the base image.
     url_reader : URLReader
@@ -181,17 +192,7 @@ def setup_cuda_dev(
         If one of package_manager and url_reader is defined, but not both.
     """
     with temp_image(base) as temp_img:
-        cuda_ver: str = temp_img.run("echo $CUDA_VERSION", stdout=PIPE)
-        try:
-            cuda_ver_major_str, cuda_ver_minor_str = ".".split(cuda_ver)
-            cuda_ver_major: int = int(cuda_ver_major_str)
-            cuda_ver_minor: int = int(cuda_ver_minor_str)
-        except Exception as err:
-            raise ValueError(
-                f"CUDA version in base image is:'{cuda_ver}'. "
-                "This value could not be read."
-            ) from err
-        if (package_manager is not None) and (url_reader) is not None:
+        if (package_manager is not None) and (url_reader is not None):
             package_mgr = package_manager
             url_program = url_reader
             init_lines = ""
@@ -202,6 +203,7 @@ def setup_cuda_dev(
             )
         else:
             package_mgr, url_program, init_lines = image_command_check(temp_img)
+    cuda_major, cuda_minor = parse_cuda_info(cuda_version=cuda_version)
 
     if isinstance(url_reader, str):
         reader: URLReader = get_url_reader(url_program)
@@ -211,7 +213,7 @@ def setup_cuda_dev(
         pkg_mgr=package_mgr, url_reader=reader
     )
     body = cuda_gen.generate_dev_dockerfile(
-        cuda_ver_major=cuda_ver_major, cuda_ver_minor=cuda_ver_minor
+        cuda_ver_major=cuda_major, cuda_ver_minor=cuda_minor
     )
 
     dockerfile = f"FROM {base}\n\n{init_lines}\n\n{body}"
@@ -223,7 +225,7 @@ def setup_cuda_dev(
 
 
 def setup_conda_runtime(
-    base: str, tag: str, no_cache: bool, env_file: Union[str, os.PathLike[str]]
+    base: str, tag: str, no_cache: bool, env_file: str | os.PathLike[str]
 ) -> Image:
     """
     Builds the Conda runtime environment image with micromamba.
@@ -236,7 +238,7 @@ def setup_conda_runtime(
         The tag of the image to be built.
     no_cache : bool
         Run Docker build with no cache if True.
-    env_file : str
+    env_file : str or os.PathLike[str]
         The location of the runtime environment spec-file.
 
     Returns
@@ -340,6 +342,7 @@ def setup_all(
     cuda_repo: str,
     runtime_env_file: os.PathLike,
     dev_env_file: os.PathLike,
+    verbose: bool = False,
 ) -> Dict[str, Image]:
     """
     Builds the entire Docker image stack.
@@ -361,6 +364,8 @@ def setup_all(
         The location of the runtime environment spec-file.
     dev_env_file : os.PathLike
         The location of the dev environment spec-file.
+    verbose : bool
+        If True, output informational messages upon completion. Defaults to False.
 
     Returns
     -------
@@ -408,6 +413,7 @@ def setup_all(
         base=mamba_run_tag,
         tag=cuda_dev_tag,
         no_cache=no_cache,
+        cuda_version=cuda_version,
         package_manager=package_mgr,
         url_reader=url_program,
     )
@@ -419,5 +425,10 @@ def setup_all(
         base=cuda_dev_tag, tag=mamba_dev_tag, no_cache=no_cache, env_file=dev_env_file
     )
     images[mamba_dev_tag] = mamba_dev_image
+
+    if verbose:
+        print("IMAGES GENERATED:")
+        for image_tag in images:
+            print(indent(image_tag, "\t"))
 
     return images

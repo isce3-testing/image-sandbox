@@ -24,7 +24,7 @@ def dropin(tag: str) -> None:
 
 def remove(
     tags: Iterable[str],
-    force: bool = True,
+    force: bool = False,
     verbose: bool = False,
     ignore_prefix: bool = False,
 ) -> None:
@@ -39,7 +39,7 @@ def remove(
     tags : Iterable[str]
         An iterable of tags or wildcards to be removed.
     force : bool, optional
-        Whether or not to force the removal. Defaults to True.
+        Whether or not to force the removal. Defaults to False.
     verbose : bool, optional
         Whether or not to print output for removals verbosely. Defaults to False.
     ignore_prefix: bool, optional
@@ -75,7 +75,8 @@ def remove(
         # Remove all images in the list
         command = split(f"docker rmi {force_arg}{search_result_str}")
         run(command, stdout=output, stderr=output)
-    print("Docker removal process completed.")
+    if verbose:
+        print("Docker removal process completed.")
 
 
 def make_lockfile(
@@ -91,7 +92,7 @@ def make_lockfile(
     ----------
     tag : str
         The tag or ID of the image.
-    filename : Union[str, os.PathLike[str]]
+    file : Union[str, os.PathLike[str]]
         The file to be output to.
     env_name: str
         The name of the environment. Defaults to "base".
