@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from ..setup_commands import (
     setup_all,
@@ -9,7 +10,7 @@ from ..setup_commands import (
     setup_init,
 )
 from ._utils import add_tag_argument, help_formatter
-from .defaults import dev_reqs_path_str, run_reqs_path_str
+from .defaults import default_dev_reqs_file, default_run_reqs_file
 
 
 def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> None:
@@ -90,15 +91,15 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     setup_all_parser.add_argument(
         "--runtime-env-file",
-        default=run_reqs_path_str,
-        type=str,
+        default=default_run_reqs_file,
+        type=Path,
         help="The location of the runtime requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
     setup_all_parser.add_argument(
         "--dev-env-file",
-        default=dev_reqs_path_str,
-        type=str,
+        default=default_run_reqs_file,
+        type=Path,
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
@@ -121,7 +122,6 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
         "-b",
         default="oraclelinux:8.4",
         type=str,
-        required=True,
         help="The name of the parent Docker image.",
     )
     add_tag_argument(parser=setup_init_parser, default="init")
@@ -176,8 +176,8 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     setup_conda_runtime_parser.add_argument(
         "--env-file",
-        default=run_reqs_path_str,
-        type=str,
+        default=default_run_reqs_file,
+        type=Path,
         help="The location of the runtime requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
@@ -191,14 +191,12 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     setup_conda_dev_parser.add_argument(
         "--env-file",
-        default=dev_reqs_path_str,
-        type=str,
+        default=default_dev_reqs_file,
+        type=Path,
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
     )
     add_tag_argument(parser=setup_conda_dev_parser, default="conda-dev")
-
-    return
 
 
 def run_setup(args: argparse.Namespace) -> None:

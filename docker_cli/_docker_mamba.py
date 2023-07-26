@@ -1,50 +1,50 @@
 from __future__ import annotations
 
-import os
 import shlex
 import textwrap
-from typing import Iterable, Optional, Tuple, overload
+from pathlib import Path
+from typing import Iterable, Tuple, overload
 
 
 def mamba_install_dockerfile(
-    env_specfile: os.PathLike[str] | str = "spec-file.txt",
+    env_reqs_file: Path,
 ) -> Tuple[str, str]:
     """
     Creates and returns a Dockerfile for installing micromamba.
 
     Parameters
     ----------
-    env_specfile : os.PathLike, optional
-        The path to the specfile, by default "spec-file.txt"
+    env_reqs_file : Path, optional
+        The path to the requirements file.
 
     Returns
     -------
     str
         The generated Dockerfile body.
     """
-    body = _mamba_install_body(env_specfile=env_specfile)
+    body = _mamba_install_body(env_reqs_file=env_reqs_file)
     header = _mamba_install_prefix()
     return header, body
 
 
-def mamba_add_specs_dockerfile(
-    env_specfile: os.PathLike[str] | str = "spec-file.txt",
+def mamba_add_reqs_dockerfile(
+    env_reqs_file: Path,
 ) -> str:
     """
     Creates a Dockerfile for adding micromamba environment specs.
 
     Parameters
     ----------
-    env_specfile : os.PathLike, optional
-        The path to the specfile, by default "spec-file.txt"
+    env_reqs_file : Path
+        The path to the requirements file.
 
     Returns
     -------
     str
         The generated Dockerfile body.
     """
-    return _mamba_spec_command(
-        specfile=env_specfile, command="install", channels=["conda-forge"]
+    return _mamba_reqs_command(
+        reqs_file=env_reqs_file, command="install", channels=["conda-forge"]
     )
 
 
@@ -79,35 +79,35 @@ def micromamba_docker_lines():
 
 
 @overload
-def _mamba_spec_command(
+def _mamba_reqs_command(
     command: str,
     *,
-    channels: Optional[Iterable[str]],
+    channels: Iterable[str] | None,
     packages: Iterable[str],
-    env_name: Optional[str] = ...,
+    env_name: str | None = ...,
 ) -> str:
     ...
 
 
 @overload
-def _mamba_spec_command(
+def _mamba_reqs_command(
     command: str,
     *,
-    channels: Optional[Iterable[str]],
-    specfile: os.PathLike[str] | str,
-    env_name: Optional[str] = ...,
+    channels: Iterable[str] | None,
+    reqs_file: Path,
+    env_name: str | None = ...,
 ) -> str:
     ...
 
 
-def _mamba_spec_command(
-    command, *, channels, specfile=None, packages=None, env_name=None
+def _mamba_reqs_command(
+    command, *, channels, reqs_file=None, packages=None, env_name=None
 ) -> str:
-    if (specfile is not None) and (packages is not None):
+    if (reqs_file is not None) and (packages is not None):
         raise ValueError("Specfile and packages both given. Use only one.")
     if command not in ["install", "create"]:
         raise ValueError(
-            "Improper value given for micromamba specs installation. "
+            "Improper value given for micromamba requirements installation. "
             'Please use one of "install" or "create".'
         )
 
@@ -122,14 +122,14 @@ def _mamba_spec_command(
     if channels is not None:
         channels_arg = f" -c {shlex.join(channels)} --override-channels"
 
-    # If a specfile is given, give the instructions for copying and installing a
-    # specfile.
-    if specfile is not None:
+    # If a reqs_file is given, give the instructions for copying and installing a
+    # requirements file.
+    if reqs_file is not None:
         install_command = textwrap.dedent(
             f"""
-            COPY {specfile} /tmp/spec-file.txt
-            RUN micromamba {command}{name_arg}{channels_arg} -y -f /tmp/spec-file.txt \\
-             && rm /tmp/spec-file.txt \\
+            COPY {str(reqs_file)} /tmp/reqs-file.txt
+            RUN micromamba {command}{name_arg}{channels_arg} -y -f /tmp/reqs-file.txt \\
+             && rm /tmp/reqs-file.txt \\
         """
         ).strip()
     # Otherwise packages were given, so give the instructions for installing the
@@ -158,7 +158,7 @@ def _mamba_install_prefix():
     return "FROM mambaorg/micromamba:1.3.1 as micromamba"
 
 
-def _mamba_install_body(env_specfile: os.PathLike[str] | str = "spec-file.txt"):
+def _mamba_install_body(env_reqs_file: Path):
     # String variables to keep some of the COPY lines short
     bin = "/usr/local/bin/"
     activate_current_env = f"{bin}_activate_current_env.sh"
@@ -207,8 +207,8 @@ def _mamba_install_body(env_specfile: os.PathLike[str] | str = "spec-file.txt"):
         ).strip()
         + "\n"
     )
-    body += _mamba_spec_command(
-        specfile=str(env_specfile), command="install", channels=["conda-forge"]
+    body += _mamba_reqs_command(
+        reqs_file=env_reqs_file, command="install", channels=["conda-forge"]
     )
 
     return body

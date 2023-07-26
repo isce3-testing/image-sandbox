@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from textwrap import dedent, indent
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
 
 from ._docker_cuda import CUDADockerfileGenerator, get_cuda_dockerfile_generator
-from ._docker_mamba import mamba_add_specs_dockerfile, mamba_install_dockerfile
+from ._docker_mamba import mamba_add_reqs_dockerfile, mamba_install_dockerfile
 from ._image import Image
 from ._package_manager import PackageManager
 from ._url_reader import URLReader, get_url_reader
@@ -220,9 +220,7 @@ def setup_cuda_dev(
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
-def setup_conda_runtime(
-    base: str, tag: str, no_cache: bool, env_file: str | os.PathLike[str]
-) -> Image:
+def setup_conda_runtime(base: str, tag: str, no_cache: bool, env_file: Path) -> Image:
     """
     Builds the Conda runtime environment image with micromamba.
 
@@ -234,8 +232,8 @@ def setup_conda_runtime(
         The tag of the image to be built.
     no_cache : bool
         Run Docker build with no cache if True.
-    env_file : str or os.PathLike[str]
-        The location of the runtime environment spec-file.
+    env_file : Path
+        The location of the runtime environment requirements file.
 
     Returns
     -------
@@ -243,7 +241,7 @@ def setup_conda_runtime(
         The generated image.
     """
 
-    header, body = mamba_install_dockerfile(env_specfile=env_file)
+    header, body = mamba_install_dockerfile(env_reqs_file=env_file)
     full_dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
 
     prefix = universal_tag_prefix()
@@ -254,9 +252,7 @@ def setup_conda_runtime(
     )
 
 
-def setup_conda_dev(
-    base: str, tag: str, no_cache: bool, env_file: Union[str, os.PathLike[str]]
-) -> Image:
+def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Image:
     """
     Set up the development environment.
 
@@ -268,8 +264,8 @@ def setup_conda_dev(
         The tag of the image to be built.
     no_cache : bool
         Run Docker build with no cache if True.
-    env_file : str
-        The location of the runtime environment spec-file.
+    env_file : Path
+        The location of the dev environment requirements file.
 
     Returns
     -------
@@ -277,7 +273,7 @@ def setup_conda_dev(
         The generated image.
     """
 
-    body = mamba_add_specs_dockerfile(env_specfile=env_file)
+    body = mamba_add_reqs_dockerfile(env_reqs_file=env_file)
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
@@ -295,8 +291,8 @@ def setup_all(
     no_cache: bool,
     cuda_version: str,
     cuda_repo: str,
-    runtime_env_file: os.PathLike,
-    dev_env_file: os.PathLike,
+    runtime_env_file: Path,
+    dev_env_file: Path,
     verbose: bool = False,
 ) -> Dict[str, Image]:
     """
@@ -315,10 +311,10 @@ def setup_all(
     cuda_repo : str
         The name of the CUDA repository for this distro.
         (e.g. 'rhel8', 'ubuntu2004')
-    runtime_env_file : os.PathLike
-        The location of the runtime environment spec-file.
-    dev_env_file : os.PathLike
-        The location of the dev environment spec-file.
+    runtime_env_file : Path
+        The location of the runtime environment requirements file.
+    dev_env_file : Path
+        The location of the dev environment requirements file.
     verbose : bool
         If True, output informational messages upon completion. Defaults to False.
 

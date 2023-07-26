@@ -1,12 +1,10 @@
+from pathlib import Path
 from typing import Iterator, Tuple
 
 from pytest import fixture, mark
 
 from docker_cli import Image
-from docker_cli._docker_mamba import (
-    mamba_add_specs_dockerfile,
-    mamba_install_dockerfile,
-)
+from docker_cli._docker_mamba import mamba_add_reqs_dockerfile, mamba_install_dockerfile
 
 from .utils import (
     determine_scope,
@@ -28,7 +26,7 @@ def mamba_runtime_dockerfile() -> Tuple[str, str]:
     body : str
         The Dockerfile body.
     """
-    return mamba_install_dockerfile(env_specfile="test-runtime-lock-file.txt")
+    return mamba_install_dockerfile(env_reqs_file=Path("test-runtime-lock-file.txt"))
 
 
 @fixture(scope=determine_scope)
@@ -88,7 +86,7 @@ def mamba_dev_dockerfile() -> str:
     str
         The Dockerfile body.
     """
-    return mamba_add_specs_dockerfile(env_specfile="test-dev-lock-file.txt")
+    return mamba_add_reqs_dockerfile(env_reqs_file=Path("test-dev-lock-file.txt"))
 
 
 @fixture(scope=determine_scope)
