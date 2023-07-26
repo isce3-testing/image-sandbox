@@ -38,7 +38,7 @@ def mamba_add_reqs_dockerfile(
     Parameters
     ----------
     env_reqs_file : Path
-        The path to the requirements file.
+        The path to the requirements file, relative to the dockerfile context.
 
     Returns
     -------
@@ -129,7 +129,7 @@ def _mamba_reqs_command(
     if reqs_file is not None:
         install_command = textwrap.dedent(
             f"""
-            COPY {str(reqs_file)} /tmp/reqs-file.txt
+            COPY {reqs_file} /tmp/reqs-file.txt
             RUN micromamba {command}{name_arg}{channels_arg} -y -f /tmp/reqs-file.txt \\
              && rm /tmp/reqs-file.txt \\
              && micromamba clean --all --yes

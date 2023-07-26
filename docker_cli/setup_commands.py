@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
+import os
+from pathlib import Path, PurePosixPath
 from textwrap import dedent, indent
 from typing import Dict, Optional, Tuple
 
@@ -240,8 +241,10 @@ def setup_conda_runtime(base: str, tag: str, no_cache: bool, env_file: Path) -> 
     Image
         The generated image.
     """
+    # Get the path to the environment file, relative to the context.
+    env_file_relative = PurePosixPath(env_file).relative_to(os.getcwd())
 
-    header, body = mamba_install_dockerfile(env_reqs_file=env_file)
+    header, body = mamba_install_dockerfile(env_reqs_file=Path(env_file_relative))
     full_dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
 
     prefix = universal_tag_prefix()
@@ -272,8 +275,10 @@ def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Imag
     Image
         The generated image.
     """
+    # Get the path to the environment file, relative to the context.
+    env_file_relative = PurePosixPath(env_file).relative_to(os.getcwd())
 
-    body = mamba_add_reqs_dockerfile(env_reqs_file=env_file)
+    body = mamba_add_reqs_dockerfile(env_reqs_file=Path(env_file_relative))
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"

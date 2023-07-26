@@ -88,7 +88,8 @@ class CUDADockerfileGenerator(ABC):
         nvidia_req_cuda: str = f"cuda>={version_name}"
 
         retval = (
-            init_lines
+            "USER root\n\n"
+            + init_lines
             + "\n\n"
             + textwrap.dedent(
                 f"""
@@ -100,6 +101,7 @@ class CUDADockerfileGenerator(ABC):
             ).strip()
             + "\n\n"
             + install_lines
+            + "USER $DEFAULT_USER"
         )
 
         return retval
