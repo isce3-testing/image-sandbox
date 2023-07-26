@@ -19,7 +19,9 @@ def mamba_install_dockerfile(
 
     Returns
     -------
-    str
+    header : str
+        The initial lines of the generated Dockerfile.
+    body : str
         The generated Dockerfile body.
     """
     body = _mamba_install_body(env_reqs_file=env_reqs_file)
@@ -130,6 +132,7 @@ def _mamba_reqs_command(
             COPY {str(reqs_file)} /tmp/reqs-file.txt
             RUN micromamba {command}{name_arg}{channels_arg} -y -f /tmp/reqs-file.txt \\
              && rm /tmp/reqs-file.txt \\
+             && micromamba clean --all --yes
         """
         ).strip()
     # Otherwise packages were given, so give the instructions for installing the
@@ -139,23 +142,18 @@ def _mamba_reqs_command(
         install_command = textwrap.dedent(
             f"""
             RUN micromamba {command}{name_arg}{channels_arg} -y {packages_str} \\
-             && micromamba update --all \\
+             && micromamba clean --all --yes
         """
         ).strip()
 
     # Assemble this command into a portion of a Dockerfile string.
-    cmd: str = (
-        "ARG MAMBA_DOCKERFILE_ACTIVATE=1\n\n"
-        + install_command
-        + "\n"
-        + " && micromamba clean --all --yes"
-    )
+    cmd: str = f"ARG MAMBA_DOCKERFILE_ACTIVATE=1\n\n{install_command}"
 
     return cmd
 
 
 def _mamba_install_prefix():
-    return "FROM mambaorg/micromamba:1.3.1 as micromamba"
+    return "FROM mambaorg/micromamba:1.3.1 AS micromamba"
 
 
 def _mamba_install_body(env_reqs_file: Path):
@@ -167,6 +165,7 @@ def _mamba_install_body(env_reqs_file: Path):
     initialize_user_account = f"{bin}_dockerfile_initialize_user_accounts.sh"
     setup_root_prefix = f"{bin}_dockerfile_setup_root_prefix.sh"
 
+    # Adapted from: https://micromamba-docker.readthedocs.io/en/latest/advanced_usage.html#adding-micromamba-to-an-existing-docker-image     # noqa: E501 # type: ignore
     body: str = (
         textwrap.dedent(
             f"""
@@ -179,7 +178,6 @@ def _mamba_install_body(env_reqs_file: Path):
         ENV MAMBA_USER_ID=$DEFAULT_UID
         ENV MAMBA_USER_GID=$DEFAULT_GID
 
-        # ENV MAMBA_USER=$MAMBA_USER
         ENV MAMBA_ROOT_PREFIX="/opt/conda"
         ENV MAMBA_EXE="/bin/micromamba"
 
