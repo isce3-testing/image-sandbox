@@ -44,14 +44,14 @@ def temp_image(
         The tag or ID by which the base image can be found.
     stdout : io.TextIOBase, optional
         A file-like object to redirect stdout to. If None, no redirection will
-        occur. By default None
+        occur. Defaults to None.
     stderr : io.TextIOBase, optional
         A file-like object to redirect stderr to. If None, no redirection will
-        occur. By default None
+        occur. Defaults to None.
 
     Yields
     -------
-    temp
+    temp : Image
         The temporary Image.
 
     Raises
