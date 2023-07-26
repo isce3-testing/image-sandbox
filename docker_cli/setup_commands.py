@@ -2,14 +2,10 @@ from __future__ import annotations
 
 import os
 from textwrap import dedent, indent
-from typing import Dict, Iterable, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 from ._docker_cuda import CUDADockerfileGenerator, get_cuda_dockerfile_generator
-from ._docker_mamba import (
-    mamba_add_packages_dockerfile,
-    mamba_add_specs_dockerfile,
-    mamba_install_dockerfile,
-)
+from ._docker_mamba import mamba_add_specs_dockerfile, mamba_install_dockerfile
 from ._image import Image
 from ._package_manager import PackageManager
 from ._url_reader import URLReader, get_url_reader
@@ -282,47 +278,6 @@ def setup_conda_dev(
     """
 
     body = mamba_add_specs_dockerfile(env_specfile=env_file)
-
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
-
-    full_dockerfile = f"FROM {base}\n\n{body}"
-
-    return Image.build(
-        tag=img_tag, dockerfile_string=full_dockerfile, no_cache=no_cache
-    )
-
-
-def setup_conda_add(
-    base: str,
-    tag: str,
-    no_cache: bool,
-    packages: Iterable[str],
-    channels: Optional[Iterable[str]],
-) -> Image:
-    """
-    Create an image that adds packages to another image's micromamba environment.
-
-    Parameters
-    ----------
-    base : str
-        The name of the image upon this one will be based.
-    tag : str
-        The tag of the image to be built.
-    no_cache : bool
-        Run Docker build with no cache if True.
-    packages : Iterable[str]
-        The packages to be added.
-    channels: Iterable[str], optional
-        Channels to look for packages in.
-
-    Returns
-    -------
-    Image
-        The generated image.
-    """
-
-    body = mamba_add_packages_dockerfile(packages=packages, channels=channels)
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"

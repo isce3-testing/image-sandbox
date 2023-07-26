@@ -2,7 +2,6 @@ import argparse
 
 from ..setup_commands import (
     setup_all,
-    setup_conda_add,
     setup_conda_dev,
     setup_conda_runtime,
     setup_cuda_dev,
@@ -199,27 +198,6 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     add_tag_argument(parser=setup_conda_dev_parser, default="conda-dev")
 
-    # This command has been commented out due to buggy implementation, but may
-    # later be recovered once a better implementation has been found.
-    """setup_conda_add_parser = conda_subparsers.add_parser(
-        "add",
-        parents=[setup_parse, no_cache_parse],
-        help="Set up the runtime conda environment image",
-        formatter_class=help_formatter,
-    )
-    setup_conda_add_parser.add_argument(
-        "packages",
-        nargs="+",
-        help="A list of conda packages to add to the environment.",
-    )
-    setup_conda_add_parser.add_argument(
-        "--channels",
-        "-c",
-        nargs="+",
-        help="A list of channels to look for conda packages in.",
-    )
-    add_tag_argument(parser=setup_conda_add_parser, default="conda-pkgs")"""
-
     return
 
 
@@ -244,5 +222,3 @@ def run_setup(args: argparse.Namespace) -> None:
             setup_conda_runtime(**vars(args))
         elif conda_subcommand == "dev":
             setup_conda_dev(**vars(args))
-        elif conda_subcommand == "add":
-            setup_conda_add(**vars(args))
