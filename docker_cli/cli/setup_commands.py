@@ -98,7 +98,7 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     setup_all_parser.add_argument(
         "--dev-env-file",
-        default=default_run_reqs_file,
+        default=default_dev_reqs_file,
         type=Path,
         help="The location of the dev requirements file. Can be a pip-style "
         "requirements.txt file, a conda-style environment.yml file, or a lockfile.",
