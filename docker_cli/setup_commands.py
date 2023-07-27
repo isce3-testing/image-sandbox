@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from textwrap import dedent, indent
 from typing import Dict, Optional, Tuple
 
@@ -221,7 +220,13 @@ def setup_cuda_dev(
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
-def setup_conda_runtime(base: str, tag: str, no_cache: bool, env_file: Path) -> Image:
+def setup_conda_runtime(
+    base: str,
+    tag: str,
+    no_cache: bool,
+    env_file: Path,
+    context: Path = Path("."),
+) -> Image:
     """
     Builds the Conda runtime environment image with micromamba.
 
@@ -235,6 +240,8 @@ def setup_conda_runtime(base: str, tag: str, no_cache: bool, env_file: Path) -> 
         Run Docker build with no cache if True.
     env_file : Path
         The location of the runtime environment requirements file.
+    context: Path
+        The location of the context to build from. Defaults to "."
 
     Returns
     -------
@@ -242,7 +249,7 @@ def setup_conda_runtime(base: str, tag: str, no_cache: bool, env_file: Path) -> 
         The generated image.
     """
     # Get the path to the environment file, relative to the context.
-    env_file_relative = PurePosixPath(env_file).relative_to(os.getcwd())
+    env_file_relative = env_file.resolve().relative_to(context.resolve())
 
     header, body = mamba_install_dockerfile(env_reqs_file=Path(env_file_relative))
     full_dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
@@ -251,11 +258,16 @@ def setup_conda_runtime(base: str, tag: str, no_cache: bool, env_file: Path) -> 
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
     return Image.build(
-        tag=img_tag, dockerfile_string=full_dockerfile, no_cache=no_cache
+        tag=img_tag,
+        dockerfile_string=full_dockerfile,
+        no_cache=no_cache,
+        context=context,
     )
 
 
-def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Image:
+def setup_conda_dev(
+    base: str, tag: str, no_cache: bool, env_file: Path, context: Path = Path(".")
+) -> Image:
     """
     Set up the development environment.
 
@@ -269,6 +281,8 @@ def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Imag
         Run Docker build with no cache if True.
     env_file : Path
         The location of the dev environment requirements file.
+    context: Path
+        The location of the context to build from. Defaults to "."
 
     Returns
     -------
@@ -276,7 +290,7 @@ def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Imag
         The generated image.
     """
     # Get the path to the environment file, relative to the context.
-    env_file_relative = PurePosixPath(env_file).relative_to(os.getcwd())
+    env_file_relative = env_file.resolve().relative_to(context.resolve())
 
     body = mamba_add_reqs_dockerfile(env_reqs_file=Path(env_file_relative))
 
@@ -286,7 +300,10 @@ def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Imag
     full_dockerfile = f"FROM {base}\n\n{body}"
 
     return Image.build(
-        tag=img_tag, dockerfile_string=full_dockerfile, no_cache=no_cache
+        tag=img_tag,
+        dockerfile_string=full_dockerfile,
+        no_cache=no_cache,
+        context=context,
     )
 
 
