@@ -136,7 +136,7 @@ class CUDADockerfileGenerator(ABC):
             {install_lines}
 
             ENV CUDAHOSTCXX=x86_64-conda-linux-gnu-c++
-            ENV CUDACXX=/usr/local/cuda-$CUDA_VERSION/bin/nvcc
+            ENV CUDACXX=/usr/local/cuda-{cuda_ver_major}.{cuda_ver_minor}/bin/nvcc
 
             USER $DEFAULT_USER
         """
