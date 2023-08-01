@@ -225,7 +225,6 @@ def setup_conda_runtime(
     tag: str,
     no_cache: bool,
     env_file: Path,
-    context: Path = Path("."),
 ) -> Image:
     """
     Builds the Conda runtime environment image with micromamba.
@@ -240,34 +239,34 @@ def setup_conda_runtime(
         Run Docker build with no cache if True.
     env_file : Path
         The location of the runtime environment requirements file.
-    context: Path
-        The location of the context to build from. Defaults to "."
 
     Returns
     -------
     Image
         The generated image.
     """
+    # Set the context at the parent of the given environment file.
+    env_file_absolute = env_file.resolve()
+    context = env_file_absolute.parent
+
     # Get the path to the environment file, relative to the context.
-    env_file_relative = env_file.resolve().relative_to(context.resolve())
+    env_file_relative = env_file_absolute.relative_to(context)
 
     header, body = mamba_install_dockerfile(env_reqs_file=Path(env_file_relative))
-    full_dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
+    dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
     return Image.build(
         tag=img_tag,
-        dockerfile_string=full_dockerfile,
+        dockerfile_string=dockerfile,
         no_cache=no_cache,
         context=context,
     )
 
 
-def setup_conda_dev(
-    base: str, tag: str, no_cache: bool, env_file: Path, context: Path = Path(".")
-) -> Image:
+def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Image:
     """
     Set up the development environment.
 
@@ -281,14 +280,16 @@ def setup_conda_dev(
         Run Docker build with no cache if True.
     env_file : Path
         The location of the dev environment requirements file.
-    context: Path
-        The location of the context to build from. Defaults to "."
 
     Returns
     -------
     Image
         The generated image.
     """
+    # Set the context at the parent of the given environment file.
+    env_file_absolute = env_file.resolve()
+    context = env_file_absolute.parent
+
     # Get the path to the environment file, relative to the context.
     env_file_relative = env_file.resolve().relative_to(context.resolve())
 
@@ -297,11 +298,11 @@ def setup_conda_dev(
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
-    full_dockerfile = f"FROM {base}\n\n{body}"
+    dockerfile = f"FROM {base}\n\n{body}"
 
     return Image.build(
         tag=img_tag,
-        dockerfile_string=full_dockerfile,
+        dockerfile_string=dockerfile,
         no_cache=no_cache,
         context=context,
     )
