@@ -10,7 +10,7 @@ from docker_cli import Image
 class TestImageInternals:
     def test_inspect(self, image_tag, image_id):
         """
-        Tests that the _inspect method correctly retrieves data from the docker
+        Tests that the _inspect method correctly retrieves data from the Docker
         image.
         """
         inspect_process = run(

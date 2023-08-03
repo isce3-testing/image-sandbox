@@ -18,8 +18,7 @@ class CommandNotFoundError(Exception):
 
 
 class DockerBuildError(Exception):
-    """Raised when a docker image fails to build"""
-    pass
+    """Raised when a Docker image fails to build"""
 
 
 class ImageNotFoundError(Exception):
@@ -28,10 +27,7 @@ class ImageNotFoundError(Exception):
     exist.
     """
 
-    def __init__(
-        self,
-        tag_or_id: str
-    ):
+    def __init__(self, tag_or_id: str):
         """
         Raise this exception when unable to find an image.
 
@@ -41,6 +37,4 @@ class ImageNotFoundError(Exception):
             The tag or ID of the image.
         """
         self.tag_or_id = tag_or_id
-        super().__init__(
-            f"Docker image \"{tag_or_id}\" not found."
-        )
+        super().__init__(f'Docker image "{tag_or_id}" not found.')

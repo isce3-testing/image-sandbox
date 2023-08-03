@@ -17,7 +17,7 @@ class TestImage:
     def test_init(self, image_tag, image_id):
         """
         Tests that the __init__ function on the Image class is correctly
-        receiving and remembering the ID of a docker image.
+        receiving and remembering the ID of a Docker image.
         """
         id = image_id
         print("ID: " + id)
@@ -49,7 +49,8 @@ class TestImage:
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -66,10 +67,7 @@ class TestImage:
         try:
             with open(tmp.name, "w") as file:
                 img = Image.build(
-                    tag=image_tag,
-                    dockerfile="",
-                    stdout=file,
-                    stderr=file
+                    tag=image_tag, dockerfile="", stdout=file, stderr=file
                 )
             with open(tmp.name) as file:
                 assert len(file.read()) > 0
@@ -77,7 +75,8 @@ class TestImage:
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -87,18 +86,18 @@ class TestImage:
 
     def test_build_from_dockerfile_dockerfile_in_different_location(self, image_tag):
         """
-        Tests that the build method can build an image from a dockerfile in a
+        Tests that the build method can build an image from a Dockerfile in a
         different location than the context root directory.
         """
         try:
             img = Image.build(
-                tag=image_tag,
-                dockerfile="dockerfiles/alpine_functional.dockerfile"
+                tag=image_tag, dockerfile="dockerfiles/alpine_functional.dockerfile"
             )
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -115,12 +114,13 @@ class TestImage:
             img = Image.build(
                 context="dockerfiles",
                 tag=image_tag,
-                dockerfile="dockerfiles/alpine_functional.dockerfile"
+                dockerfile="dockerfiles/alpine_functional.dockerfile",
             )
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -131,29 +131,28 @@ class TestImage:
     def test_build_from_dockerfile_in_malformed_location(self, image_tag):
         """
         Tests that the build method raises a DockerBuildError when a malformed
-        dockerfile location is given.
+        Dockerfile location is given.
         """
         img = None
         with raises(DockerBuildError):
             img = Image.build(
-                tag=image_tag,
-                dockerfile="non_existent_directory/Dockerfile")
+                tag=image_tag, dockerfile="non_existent_directory/dockerfile"
+            )
         assert img is None
 
     def test_build_from_string(self, image_tag):
         """
         Tests that the build method builds and returns an Image when given a
-        dockerfile-formatted string.
+        Dockerfile-formatted string.
         """
         dockerfile = Path("Dockerfile").read_text() + f"\nRUN mkdir {image_tag}"
         try:
-            img: Image = Image.build(
-                tag=image_tag,
-                dockerfile_string=dockerfile)
+            img: Image = Image.build(tag=image_tag, dockerfile_string=dockerfile)
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -164,7 +163,7 @@ class TestImage:
     def test_build_from_string_output_to_file(self, image_tag):
         """
         Tests that the build method writes to a file when formatted to do so and
-        given a dockerfile string.
+        given a Dockerfile string.
         """
         tmp = NamedTemporaryFile()
         dockerfile: str = Path("Dockerfile").read_text() + f"\nRUN mkdir {image_tag}"
@@ -174,13 +173,15 @@ class TestImage:
                     tag=image_tag,
                     dockerfile_string=dockerfile,
                     stdout=file,
-                    stderr=file)
+                    stderr=file,
+                )
             with open(tmp.name) as file:
                 assert len(file.read()) > 0
             inspect_process = run(
                 split("docker inspect -f='{{.Id}}' " + image_tag),
                 text=True,
-                capture_output=True)
+                capture_output=True,
+            )
             id = inspect_process.stdout.strip()
 
             assert img is not None
@@ -196,38 +197,27 @@ class TestImage:
         malformed_string: str = "qwerty"
         img = None
         with raises(DockerBuildError):
-            Image.build(
-                tag=image_tag,
-                dockerfile_string=malformed_string
-            )
+            Image.build(tag=image_tag, dockerfile_string=malformed_string)
         assert img is None
 
     def test_run_interactive(self, image_id):
         """
-        Tests that the run method performs a simple action on a docker container
+        Tests that the run method performs a simple action on a Docker container
         when called with interactive = True.
         """
         img: Image = Image(image_id)
 
-        retval = img.run(
-            'echo "Hello, World!"',
-            interactive=True,
-            stdout=PIPE
-        )
+        retval = img.run('echo "Hello, World!"', interactive=True, stdout=PIPE)
         assert "Hello, World!\n" in retval
 
     def test_run_noninteractive(self, image_id):
         """
-        Tests that the run method performs a simple action on a docker container
+        Tests that the run method performs a simple action on a Docker container
         when called with interactive = False.
         """
         img: Image = Image(image_id)
 
-        retval = img.run(
-            'echo "Hello, World!"',
-            interactive=False,
-            stdout=PIPE
-        )
+        retval = img.run('echo "Hello, World!"', interactive=False, stdout=PIPE)
         assert "Hello, World!\n" in retval
 
     def test_run_noninteractive_output_redirect(self, image_id):
@@ -238,10 +228,7 @@ class TestImage:
         img: Image = Image(image_id)
 
         retval = img.run(
-            'echo "Hello, World!"',
-            interactive=True,
-            stdout=PIPE,
-            stderr=None
+            'echo "Hello, World!"', interactive=True, stdout=PIPE, stderr=None
         )
         assert retval == "Hello, World!\n"
 
@@ -252,13 +239,7 @@ class TestImage:
         img: Image = Image(image_id)
         tmp = NamedTemporaryFile()
         with open(tmp.name, "w") as file:
-
-            img.run(
-                'echo "Hello, World!"',
-                interactive=True,
-                stdout=file,
-                stderr=file
-            )
+            img.run('echo "Hello, World!"', interactive=True, stdout=file, stderr=file)
         with open(tmp.name) as file:
             file_txt = file.read()
             print(file_txt)
@@ -278,7 +259,7 @@ class TestImage:
     def test_tags(self, image_tag, image_id):
         """
         Tests that an Image.tag call returns the same .RepoTags value as a
-        typical docker inspect call.
+        typical Docker inspect call.
         """
         img: Image = Image(image_id)
 
@@ -288,13 +269,13 @@ class TestImage:
             text=True,
             check=True,
         )
-        tags = inspect_process.stdout.strip('][\n').split(', ')
+        tags = inspect_process.stdout.strip("][\n").split(", ")
 
         assert img.tags == tags
 
     def test_id(self, image_tag, image_id):
         """
-        Tests that an Image.id call returns the same ID value as given by a docker
+        Tests that an Image.id call returns the same ID value as given by a Docker
         inspect call.
         """
         img = Image(image_id)
@@ -309,53 +290,6 @@ class TestImage:
 
         assert img.id == id
 
-    def test_check_command_availability(self, image_id, image_tag):
-        """
-        Tests that a check_command_availability properly returns the set of
-        commands that exist on an Image and not ones that don't.
-        """
-        check_me = [
-            "apk", "apt-get", "yum", "curl", "wget", "python", "sh", "bash"
-        ]
-        check_me_2 = ["apt-get"]
-
-        img = Image(image_id)
-        retvals_1 = img.check_command_availability(check_me)
-
-        try:
-            run(split(
-                "docker build . --file=dockerfiles/alpine_functional.dockerfile "
-                f"-t {image_tag}_2")
-                )
-            img = Image(f"{image_tag}_2")
-
-            retvals_2 = img.check_command_availability(check_me)
-            retvals_3 = img.check_command_availability(check_me_2)
-
-            assert retvals_1 == ['apt-get', 'sh', 'bash']
-            assert retvals_2 == ['apk', 'wget', 'sh', 'bash']
-            assert len(retvals_3) == 0
-        finally:
-            remove_docker_image(f"{image_tag}_2")
-
-    def test_check_command_availability_no_bash_exception(self, image_tag):
-        """
-        Validates that a check_command_availability throws the
-        CommandNotFoundError when called on an image that doesn't have
-        bash installed.
-        """
-        check_me = ["apk"]
-        try:
-            run(split(
-                "docker build ./ --file=dockerfiles/alpine_broken.dockerfile "
-                f"-t {image_tag}")
-                )
-            img = Image(image_tag)
-            with raises(CommandNotFoundError):
-                img.check_command_availability(check_me)
-        finally:
-            remove_docker_image(image_tag)
-
     def test_repr(self, image_id, image_tag):
         """
         Tests that the __repr__() method of the Image class correctly produces
@@ -369,7 +303,7 @@ class TestImage:
             text=True,
             check=True,
         )
-        tags = inspect_process.stdout.strip('][\n').split(", ")
+        tags = inspect_process.stdout.strip("][\n").split(", ")
 
         img = Image(id)
         representation = repr(img)
@@ -395,7 +329,7 @@ class TestImage:
         try:
             img_2 = Image.build(
                 tag=image_tag + "_2",
-                dockerfile="dockerfiles/alpine_functional.dockerfile"
+                dockerfile="dockerfiles/alpine_functional.dockerfile",
             )
 
             assert img != "String"
@@ -407,7 +341,7 @@ class TestImage:
     def test_get_image_id(self, image_id, image_tag):
         """
         Tests that the get_image_id method returns the correct ID when given a
-        properly-formed ID or docker image name.
+        properly-formed ID or Docker image name.
         """
         id = image_id
 
