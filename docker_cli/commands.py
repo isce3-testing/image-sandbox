@@ -1,11 +1,64 @@
+from __future__ import annotations
+
 import os
+import re
 from shlex import split
 from subprocess import DEVNULL, PIPE, run
-from typing import Iterable, List, Union
+from typing import Iterable, List
 
+from ._docker_git import git_clone_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
 from ._utils import is_conda_pkg_name, universal_tag_prefix
+
+
+def clone(tag: str, base: str, repo: str, branch: str = ""):
+    """
+    Builds a docker image containing the requested Git repository.
+
+    .. note:
+        With this image, the workdir is moved to the github repo's root directory.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag.
+    base : str
+        The base image tag.
+    repo : str
+        The name of the Git repo (in [USER]/[REPO_NAME] format)
+    branch : str
+        The branch of the Git repo. Defaults to "".
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+
+    # Check that the repo pattern matches the given repo string.
+    github_repo_pattern = re.compile(
+        pattern=r"^(?P<user>[a-zA-Z0-9-]+)\/(?P<repo>[a-zA-Z0-9-]+)$", flags=re.I
+    )
+    github_repo_match = re.match(github_repo_pattern, repo)
+    if not github_repo_match:
+        raise ValueError(
+            f"Malformed GitHub repo name: {repo} - "
+            "Please use form [USER]/[REPO_NAME]."
+        )
+    match_dict = github_repo_match.groupdict()
+    repo_name = match_dict["repo"]
+
+    prefix = universal_tag_prefix()
+    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+
+    header, body = git_clone_dockerfile(
+        git_repo=repo, repo_branch=branch, folder_name=repo_name
+    )
+
+    dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
+
+    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=True)
 
 
 def dropin(tag: str) -> None:
@@ -80,7 +133,7 @@ def remove(
 
 
 def make_lockfile(
-    tag: str, file: Union[str, os.PathLike[str]], env_name: str = "base"
+    tag: str, file: os.PathLike[str] | str, env_name: str = "base"
 ) -> None:
     """
     Makes a lockfile from an image.
@@ -91,8 +144,8 @@ def make_lockfile(
     Parameters
     ----------
     tag : str
-        The tag or ID of the image.
-    file : Union[str, os.PathLike[str]]
+        The tag of the image
+    file : os.PathLike[str] | str
         The file to be output to.
     env_name: str
         The name of the environment. Defaults to "base".
