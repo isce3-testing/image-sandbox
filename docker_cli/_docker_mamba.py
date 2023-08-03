@@ -165,7 +165,7 @@ def _mamba_install_body(env_reqs_file: Path):
     initialize_user_account = f"{bin}_dockerfile_initialize_user_accounts.sh"
     setup_root_prefix = f"{bin}_dockerfile_setup_root_prefix.sh"
 
-    # Adapted from: https://micromamba-docker.readthedocs.io/en/latest/advanced_usage.html#adding-micromamba-to-an-existing-docker-image     # noqa: E501 # type: ignore
+    # Adapted from: https://micromamba-docker.readthedocs.io/en/latest/advanced_usage.html#adding-micromamba-to-an-existing-docker-image     # noqa: E501
     body: str = (
         textwrap.dedent(
             f"""

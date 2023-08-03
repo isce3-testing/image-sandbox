@@ -170,8 +170,8 @@ def setup_cuda_dev(
         The tag of the image to be built.
     no_cache : bool
         Run Docker build with no cache if True.
-    cuda_version: int
-        The major part of the CUDA version.
+    cuda_version: str
+        The CUDA version, in "<major>.<minor>" format.
     package_manager : PackageManager
         The package manager in use by the base image.
     url_reader : URLReader
@@ -291,7 +291,7 @@ def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Imag
     context = env_file_absolute.parent
 
     # Get the path to the environment file, relative to the context.
-    env_file_relative = env_file.resolve().relative_to(context.resolve())
+    env_file_relative = env_file.relative_to(context)
 
     body = mamba_add_reqs_dockerfile(env_reqs_file=Path(env_file_relative))
 
@@ -338,7 +338,7 @@ def setup_all(
         The location of the runtime environment requirements file.
     dev_env_file : Path
         The location of the dev environment requirements file.
-    verbose : bool
+    verbose : bool, optional
         If True, output informational messages upon completion. Defaults to False.
 
     Returns
