@@ -120,6 +120,9 @@ def image_command_check(
         url_program, url_init = _get_reader_install_lines(package_mgr=package_mgr)
         init_lines += url_init
 
+    if not image.has_command("tar"):
+        init_lines += "RUN " + package_mgr.generate_install_command(["tar"])
+
     return package_mgr, url_program, init_lines
 
 
@@ -224,8 +227,7 @@ def _package_manager_check(image: Image) -> PackageManager:
 
 def _url_reader_check(image: Image) -> Optional[URLReader]:
     """
-    Return the URL reader on a given image, and a string to install one if there is
-    none.
+    Return the URL reader on a given image, or None if there is none present.
 
     Parameters
     ----------
