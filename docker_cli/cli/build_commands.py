@@ -1,7 +1,8 @@
 import argparse
+from pathlib import Path
 from typing import List
 
-from ..commands import clone
+from ..commands import get_archive
 from ._utils import add_tag_argument, help_formatter
 
 
@@ -16,21 +17,23 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     prefix : str
         The image tag prefix.
     """
+    isce3_github = "https://github.com/isce-framework/isce3"
+
     clone_params = argparse.ArgumentParser(add_help=False)
     clone_params.add_argument(
-        "--repo",
+        "--archive-url",
         type=str,
-        metavar="GIT_REPO",
-        default="isce-framework/isce3",
-        help="The name of the GitHub repository to be installed. "
-        'Default: "isce-framework/isce3"',
+        metavar="GIT_ARCHIVE",
+        default=f"{isce3_github}/archive/refs/tags/v0.14.0.tar.gz",
+        help='The URL of the Git archive to be fetched. Must be a "tar.gz" file.',
     )
-    # This argument currently disabled as this code does not presently support git
-    # branches. For consideration on this topic, see _docker_git.py in the parent folder
-    """clone_params.add_argument(
-        "--branch", type=str, metavar="REPO_BRANCH", default="",
-        help="The name of the branch to checkout. Defaults to \"\"."
-    )"""
+    clone_params.add_argument(
+        "--folder-path",
+        type=Path,
+        metavar="FOLDER_PATH",
+        default=Path("/src"),
+        help="The path to place the contents of the Git archive at on the image.",
+    )
 
     setup_parse = argparse.ArgumentParser(add_help=False)
     setup_parse.add_argument(
@@ -42,7 +45,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
 
     clone_parser = subparsers.add_parser(
-        "clone",
+        "get-archive",
         parents=[setup_parse, clone_params],
         help="Set up the GitHub repository image, in [USER]/[REPO_NAME] format.",
         formatter_class=help_formatter,
@@ -52,9 +55,9 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
 
 def build_command_names() -> List[str]:
     """Returns a list of all build command names."""
-    return ["clone"]
+    return ["get-archive"]
 
 
 def run_build(args: argparse.Namespace, command: str) -> None:
-    if command == "clone":
-        clone(**vars(args))
+    if command == "get-archive":
+        get_archive(**vars(args))

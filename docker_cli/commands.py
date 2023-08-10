@@ -1,23 +1,34 @@
 from __future__ import annotations
 
 import os
-import re
 from shlex import split
 from subprocess import DEVNULL, PIPE, run
 from typing import Iterable, List
 
-from ._docker_git import git_clone_dockerfile
+from ._docker_git import git_extract_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
-from ._utils import is_conda_pkg_name, universal_tag_prefix
+from ._url_reader import URLReader
+from ._utils import (
+    image_command_check,
+    is_conda_pkg_name,
+    temp_image,
+    universal_tag_prefix,
+)
 
 
-def clone(tag: str, base: str, repo: str, branch: str = ""):
+def get_archive(
+    tag: str,
+    base: str,
+    archive_url: str,
+    folder_path: os.PathLike[str],
+    url_reader: URLReader | None = None,
+):
     """
     Builds a docker image containing the requested Git repository.
 
     .. note:
-        With this image, the workdir is moved to the github repo's root directory.
+        With this image, the workdir is moved to `folder_path`.
 
     Parameters
     ----------
@@ -25,38 +36,32 @@ def clone(tag: str, base: str, repo: str, branch: str = ""):
         The image tag.
     base : str
         The base image tag.
-    repo : str
-        The name of the Git repo (in [USER]/[REPO_NAME] format)
-    branch : str
-        The branch of the Git repo. Defaults to "".
+    archive_url : str
+        The URL of the Git archive to add to the image. Must be a `tar.gz` file.
+    folder_path : path-like
+        The path to the folder that the archive will be held at within the image.
+    url_reader : URLReader | None, optional
+        If given, will use the given URL reader to acquire the Git archive. If None,
+        will check the base image and use whichever one it can find. Defaults to None.
 
     Returns
     -------
     Image
         The generated image.
     """
-
-    # Check that the repo pattern matches the given repo string.
-    github_repo_pattern = re.compile(
-        pattern=r"^(?P<user>[a-zA-Z0-9-]+)\/(?P<repo>[a-zA-Z0-9-]+)$", flags=re.I
-    )
-    github_repo_match = re.match(github_repo_pattern, repo)
-    if not github_repo_match:
-        raise ValueError(
-            f"Malformed GitHub repo name: {repo} - "
-            "Please use form [USER]/[REPO_NAME]."
-        )
-    match_dict = github_repo_match.groupdict()
-    repo_name = match_dict["repo"]
+    if url_reader is None:
+        with temp_image(base) as temp_img:
+            _, url_reader, _ = image_command_check(temp_img)
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
-    header, body = git_clone_dockerfile(
-        git_repo=repo, repo_branch=branch, folder_name=repo_name
+    dockerfile = git_extract_dockerfile(
+        base=base,
+        folder_path=folder_path,
+        archive_url=archive_url,
+        url_reader=url_reader,
     )
-
-    dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
 
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=True)
 
@@ -144,7 +149,7 @@ def make_lockfile(
     Parameters
     ----------
     tag : str
-        The tag of the image
+        The tag of the image.
     file : os.PathLike[str] | str
         The file to be output to.
     env_name: str
