@@ -10,24 +10,28 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     """
     Augment an argument parser with build commands.
 
+    The build commands are the group of commands to be completed after the CUDA and
+    conda environments have been installed to the image, with the purpose of acquiring
+    and building the ISCE3 repository and any further repositories.
+    These commands consist of the "get-archive" command, and more are being added.
+
     Parameters
-    -------
+    -----------
     parser : argparse.ArgumentParser
         The parser to add setup commands to.
     prefix : str
         The image tag prefix.
     """
-    isce3_github = "https://github.com/isce-framework/isce3"
 
-    clone_params = argparse.ArgumentParser(add_help=False)
-    clone_params.add_argument(
+    archive_params = argparse.ArgumentParser(add_help=False)
+    archive_params.add_argument(
         "--archive-url",
         type=str,
         metavar="GIT_ARCHIVE",
-        default=f"{isce3_github}/archive/refs/tags/v0.14.0.tar.gz",
+        required=True,
         help='The URL of the Git archive to be fetched. Must be a "tar.gz" file.',
     )
-    clone_params.add_argument(
+    archive_params.add_argument(
         "--folder-path",
         type=Path,
         metavar="FOLDER_PATH",
@@ -44,13 +48,13 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="The name of the base Docker image.",
     )
 
-    clone_parser = subparsers.add_parser(
+    archive_parser = subparsers.add_parser(
         "get-archive",
-        parents=[setup_parse, clone_params],
+        parents=[setup_parse, archive_params],
         help="Set up the GitHub repository image, in [USER]/[REPO_NAME] format.",
         formatter_class=help_formatter,
     )
-    add_tag_argument(parser=clone_parser, default="repo")
+    add_tag_argument(parser=archive_parser, default="repo")
 
 
 def build_command_names() -> List[str]:
