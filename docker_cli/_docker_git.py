@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from textwrap import dedent
@@ -10,7 +12,7 @@ def git_extract_dockerfile(
     base: str,
     archive_url: str,
     url_reader: URLReader,
-    folder_path: os.PathLike[str] = Path("repo"),
+    directory: str | os.PathLike[str] = Path("repo"),
 ) -> str:
     """
     Returns a Dockerfile-formatted string with instructions to fetch a Git archive.
@@ -23,7 +25,7 @@ def git_extract_dockerfile(
         The URL of the Git archive. Must be a `tar.gz` file.
     url_reader : URLReader
         The URL reader program to fetch the archive with.
-    folder_name : path-like, optional
+    directory : path-like, optional
         The name of the folder to store the repository in. Defaults to "repo".
 
     Returns
@@ -31,22 +33,21 @@ def git_extract_dockerfile(
     dockerfile : str
         The generated Dockerfile.
     """
-    folder_path_str = str(folder_path)
+    folder_path_str = os.fspath(directory)
 
     # Dockerfile preparation:
     # Prepare the repository file, ensure proper ownership and permissions.
     dockerfile = (
         dedent(
             f"""
-        FROM {base}
+                FROM {base}
 
-        USER root
+                USER root
 
-        RUN mkdir -p {folder_path_str}
-        RUN chown -R $MAMBA_USER_ID:$MAMBA_USER_GID {folder_path_str}
-        RUN chmod -R 755 {folder_path_str}
-
-    """
+                RUN mkdir -p {folder_path_str}
+                RUN chown -R $MAMBA_USER_ID:$MAMBA_USER_GID {folder_path_str}
+                RUN chmod -R 755 {folder_path_str}
+            """
         ).strip()
         + "\n"
     )
@@ -66,7 +67,7 @@ def git_extract_dockerfile(
             f"""
         RUN {fetch_command} | tar -xvz -C {folder_path_str} --strip-components 1
 
-        WORKDIR {folder_path}
+        WORKDIR {directory}
         USER $DEFAULT_USER
     """
         ).strip()

@@ -21,14 +21,14 @@ def get_archive(
     tag: str,
     base: str,
     archive_url: str,
-    folder_path: os.PathLike[str],
+    directory: os.PathLike[str],
     url_reader: URLReader | None = None,
 ):
     """
-    Builds a docker image containing the requested Git repository.
+    Builds a docker image containing the requested Git archive.
 
     .. note:
-        With this image, the workdir is moved to `folder_path`.
+        With this image, the workdir is moved to `directory`.
 
     Parameters
     ----------
@@ -38,7 +38,7 @@ def get_archive(
         The base image tag.
     archive_url : str
         The URL of the Git archive to add to the image. Must be a `tar.gz` file.
-    folder_path : path-like
+    directory : path-like
         The path to the folder that the archive will be held at within the image.
     url_reader : URLReader | None, optional
         If given, will use the given URL reader to acquire the Git archive. If None,
@@ -58,7 +58,7 @@ def get_archive(
 
     dockerfile = git_extract_dockerfile(
         base=base,
-        folder_path=folder_path,
+        directory=directory,
         archive_url=archive_url,
         url_reader=url_reader,
     )

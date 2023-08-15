@@ -20,7 +20,7 @@ def test_git_dockerfile():
         dockerfile = git_extract_dockerfile(
             base="base",
             archive_url="www.url.com/a.tar.gz",
-            folder_path="/",
+            directory="/",
             url_reader=url_reader,
         )
         rough_dockerfile_validity_check(dockerfile=dockerfile)
@@ -42,7 +42,7 @@ def test_docker_git(
     dockerfile = git_extract_dockerfile(
         base=init_tag,
         archive_url=archive,
-        folder_path=Path("/src/"),
+        directory=Path("/src/"),
         url_reader=url_reader,
     )
 

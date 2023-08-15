@@ -32,9 +32,8 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help='The URL of the Git archive to be fetched. Must be a "tar.gz" file.',
     )
     archive_params.add_argument(
-        "--folder-path",
+        "--directory",
         type=Path,
-        metavar="FOLDER_PATH",
         default=Path("/src"),
         help="The path to place the contents of the Git archive at on the image.",
     )
