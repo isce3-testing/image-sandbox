@@ -1,5 +1,3 @@
-from subprocess import PIPE
-
 from pytest import mark
 
 from docker_cli._docker_insert import insert_dir_dockerfile
