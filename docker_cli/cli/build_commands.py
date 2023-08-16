@@ -62,7 +62,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="Insert the contents of a directory at the given path.",
         formatter_class=help_formatter,
     )
-    add_tag_argument(parser=insert_dir_parser, default="file-copy")
+    add_tag_argument(parser=insert_dir_parser, default="dir-copy")
     insert_dir_parser.add_argument(
         "--directory",
         "-d",
