@@ -65,11 +65,11 @@ def git_extract_dockerfile(
     dockerfile += (
         dedent(
             f"""
-        RUN {fetch_command} | tar -xvz -C {folder_path_str} --strip-components 1
+                RUN {fetch_command} | tar -xvz -C {folder_path_str} --strip-components 1
 
-        WORKDIR {directory}
-        USER $DEFAULT_USER
-    """
+                WORKDIR {directory}
+                USER $DEFAULT_USER
+            """
         ).strip()
         + "\n"
     )
