@@ -1,11 +1,69 @@
+from __future__ import annotations
+
 import os
 from shlex import split
 from subprocess import DEVNULL, PIPE, run
-from typing import Iterable, List, Union
+from typing import Iterable, List
 
+from ._docker_git import git_extract_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
-from ._utils import is_conda_pkg_name, universal_tag_prefix
+from ._url_reader import URLReader
+from ._utils import (
+    image_command_check,
+    is_conda_pkg_name,
+    temp_image,
+    universal_tag_prefix,
+)
+
+
+def get_archive(
+    tag: str,
+    base: str,
+    archive_url: str,
+    directory: os.PathLike[str],
+    url_reader: URLReader | None = None,
+):
+    """
+    Builds a docker image containing the requested Git archive.
+
+    .. note:
+        With this image, the workdir is moved to `directory`.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag.
+    base : str
+        The base image tag.
+    archive_url : str
+        The URL of the Git archive to add to the image. Must be a `tar.gz` file.
+    directory : path-like
+        The path to the folder that the archive will be held at within the image.
+    url_reader : URLReader | None, optional
+        If given, will use the given URL reader to acquire the Git archive. If None,
+        will check the base image and use whichever one it can find. Defaults to None.
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+    if url_reader is None:
+        with temp_image(base) as temp_img:
+            _, url_reader, _ = image_command_check(temp_img)
+
+    prefix = universal_tag_prefix()
+    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+
+    dockerfile = git_extract_dockerfile(
+        base=base,
+        directory=directory,
+        archive_url=archive_url,
+        url_reader=url_reader,
+    )
+
+    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=True)
 
 
 def dropin(tag: str) -> None:
@@ -80,7 +138,7 @@ def remove(
 
 
 def make_lockfile(
-    tag: str, file: Union[str, os.PathLike[str]], env_name: str = "base"
+    tag: str, file: os.PathLike[str] | str, env_name: str = "base"
 ) -> None:
     """
     Makes a lockfile from an image.
@@ -91,8 +149,8 @@ def make_lockfile(
     Parameters
     ----------
     tag : str
-        The tag or ID of the image.
-    file : Union[str, os.PathLike[str]]
+        The tag of the image.
+    file : os.PathLike[str] | str
         The file to be output to.
     env_name: str
         The name of the environment. Defaults to "base".

@@ -63,6 +63,9 @@ class Wget(URLReader):
         retval = f"wget {target}"
         if output_file is not None:
             retval += f" -O {os.fspath(output_file)}"
+        else:
+            # Suppress program output and redirect output to command line.
+            retval += " -qO- "
         return retval
 
     @property
@@ -80,6 +83,8 @@ class Curl(URLReader):
         retval = f"curl --ssl {target}"
         if output_file is not None:
             retval += f" -o {os.fspath(output_file)}"
+        else:
+            retval += " -L"
         return retval
 
     @property
