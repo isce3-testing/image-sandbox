@@ -13,7 +13,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     The build commands are the group of commands to be completed after the CUDA and
     conda environments have been installed to the image, with the purpose of acquiring
     and building the ISCE3 repository and any further repositories.
-    These commands consist of the "get-archive" and "insert" commands, and more are
+    These commands consist of the "get-archive" and "copydir" commands, and more are
     being added.
 
     Parameters
