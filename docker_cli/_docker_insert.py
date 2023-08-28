@@ -13,14 +13,14 @@ def insert_dir_dockerfile(
     Returns a Dockerfile-formatted string which inserts a given directory on the
     host machine into the image.
 
-    This Dockerfile also places the workdir into the inserted file.
+    This Dockerfile also changes the working directory to the copied directory.
 
     Parameters
     ----------
     base : str
         The base image tag.
     target_dir : str | os.PathLike[str]
-        The position on the image to copy to.
+        The path in the image filesystem to copy to.
     source_dir : str | os.PathLike[str]
         The local directory to be copied onto the image, relative to the build context.
          Defaults to "."

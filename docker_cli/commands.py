@@ -67,7 +67,12 @@ def get_archive(
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=True)
 
 
-def insert(tag: str, base: str, directory: str | os.PathLike[str]):
+def copy_dir(
+    tag: str,
+    base: str,
+    directory: str | os.PathLike[str],
+    target_path: str | os.PathLike[str] | None = None,
+):
     """
     Builds a Docker image with the contents of the given directory copied onto it.
 
@@ -75,7 +80,7 @@ def insert(tag: str, base: str, directory: str | os.PathLike[str]):
     of the given path. e.g. giving path "/tmp/dir/subdir" will result in the contents of
     this path being saved in "/subdir" on the generated image.
 
-    This Dockerfile also places the working directory of the image inside of the copied
+    This Dockerfile also changes the working directory of the image to the copied
     directory.
 
     Parameters
@@ -86,6 +91,11 @@ def insert(tag: str, base: str, directory: str | os.PathLike[str]):
         The base image tag.
     directory : path-like
         The directory to be copied.
+    target_path : path-like or None
+        The directory to copy to, on the image, or None. If given, the contents of the
+        source directory will be copied to the given path. If None, the target path will
+        default to the lowest directory of the path given by the `directory` argument.
+        Defaults to None.
 
     Returns
     -------
@@ -96,27 +106,36 @@ def insert(tag: str, base: str, directory: str | os.PathLike[str]):
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
 
-    dir_str = str(directory)
+    dir_str = os.fspath(directory)
 
     # The absolute path of the given directory will be the build context.
     # This is necessary because otherwise docker may be unable to find the directory if
     # the build context is at the current working directory.
-    path_absolute = os.path.abspath(str(dir_str))
-    # Additionally, the top directory of the given path will be the name of the
-    # directory in the image.
-    if os.path.isdir(dir_str):
-        target_dir = os.path.basename(path_absolute)
-    else:
-        target_dir = os.path.basename(os.path.dirname(path_absolute))
+    path_absolute = os.path.abspath(dir_str)
 
-    # Generate the dockerfile.
+    if target_path is None:
+        # No argument was passed to target_path, so the lowest-level directory of the
+        # input path will be the name of the directory in the image.
+        if os.path.isdir(dir_str):
+            target_dir = os.path.basename(path_absolute)
+        else:
+            raise ValueError(f"{dir_str} is not a valid directory on this machine.")
+            target_dir = os.path.basename(os.path.dirname(path_absolute))
+    else:
+        target_dir = os.fspath(target_path)
+
+    # Generate the dockerfile. The source directory will be "." since the build context
+    # will be at the source path when the image is built.
     dockerfile: str = insert_dir_dockerfile(
         base=base,
         target_dir=target_dir,
         source_dir=".",
     )
 
-    # Build the image with the context at the absolute path of the given path.
+    # Build the image with the context at the absolute path of the given path. This
+    # allows a directory to be copied from anywhere that is visible to this user on
+    # the machine, whereas a context at "." would be unable to see any directory that is
+    # not downstream of the working directory from which the program is called.
     return Image.build(
         tag=img_tag, context=path_absolute, dockerfile_string=dockerfile, no_cache=True
     )

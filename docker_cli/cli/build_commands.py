@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 from typing import List
 
-from ..commands import get_archive, insert
+from ..commands import copy_dir, get_archive
 from ._utils import add_tag_argument, help_formatter
 
 
@@ -56,19 +56,28 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=archive_parser, default="repo")
 
-    insert_dir_parser = subparsers.add_parser(
-        "insert",
+    copy_dir_parser = subparsers.add_parser(
+        "copydir",
         parents=[setup_parse],
         help="Insert the contents of a directory at the given path.",
         formatter_class=help_formatter,
     )
-    add_tag_argument(parser=insert_dir_parser, default="dir-copy")
-    insert_dir_parser.add_argument(
+    add_tag_argument(parser=copy_dir_parser, default="dir-copy")
+    copy_dir_parser.add_argument(
         "--directory",
         "-d",
         type=Path,
         required=True,
         help="The directory to be copied to the image.",
+    )
+    copy_dir_parser.add_argument(
+        "--target-path",
+        "-p",
+        type=Path,
+        default=None,
+        help="The path on the image to copy the source directory to. If not given, "
+        "the lowest level directory of the path given by the directory argument "
+        "will be used.",
     )
 
 
@@ -80,5 +89,5 @@ def build_command_names() -> List[str]:
 def run_build(args: argparse.Namespace, command: str) -> None:
     if command == "get-archive":
         get_archive(**vars(args))
-    if command == "insert":
-        insert(**vars(args))
+    if command == "copydir":
+        copy_dir(**vars(args))
