@@ -92,7 +92,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
 
 def build_command_names() -> List[str]:
     """Returns a list of all build command names."""
-    return ["get-archive", "insert"]
+    return ["get-archive", "copydir"]
 
 
 def run_build(args: argparse.Namespace, command: str) -> None:

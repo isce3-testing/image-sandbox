@@ -45,7 +45,7 @@ def get_archive(
     url_reader : URLReader | None, optional
         If given, will use the given URL reader to acquire the Git archive. If None,
         will check the base image and use whichever one it can find. Defaults to None.
-    no_cache : bool
+    no_cache : bool, optional
         Run Docker build with no cache if True. Defaults to False.
 
     Returns
@@ -100,7 +100,7 @@ def copy_dir(
         source directory will be copied to the given path. If None, the target path will
         default to the base name of the path given by the `directory` argument.
         Defaults to None.
-    no_cache : bool
+    no_cache : bool, optional
         Run Docker build with no cache if True. Defaults to False.
 
     Returns
