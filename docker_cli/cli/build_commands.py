@@ -55,6 +55,11 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         formatter_class=help_formatter,
     )
     add_tag_argument(parser=archive_parser, default="repo")
+    archive_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Run Docker build with no cache if used.",
+    )
 
     copy_dir_parser = subparsers.add_parser(
         "copydir",
@@ -76,8 +81,12 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         type=Path,
         default=None,
         help="The path on the image to copy the source directory to. If not given, "
-        "the lowest level directory of the path given by the directory argument "
-        "will be used.",
+        "the base name of the path given by the directory argument will be used.",
+    )
+    copy_dir_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Run Docker build with no cache if used.",
     )
 
 

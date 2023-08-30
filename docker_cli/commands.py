@@ -24,6 +24,7 @@ def get_archive(
     archive_url: str,
     directory: os.PathLike[str],
     url_reader: URLReader | None = None,
+    no_cache: bool = False,
 ):
     """
     Builds a docker image containing the requested Git archive.
@@ -44,6 +45,8 @@ def get_archive(
     url_reader : URLReader | None, optional
         If given, will use the given URL reader to acquire the Git archive. If None,
         will check the base image and use whichever one it can find. Defaults to None.
+    no_cache : bool
+        Run Docker build with no cache if True. Defaults to False.
 
     Returns
     -------
@@ -64,7 +67,7 @@ def get_archive(
         url_reader=url_reader,
     )
 
-    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=True)
+    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
 def copy_dir(
@@ -72,6 +75,7 @@ def copy_dir(
     base: str,
     directory: str | os.PathLike[str],
     target_path: str | os.PathLike[str] | None = None,
+    no_cache: bool = False,
 ):
     """
     Builds a Docker image with the contents of the given directory copied onto it.
@@ -94,8 +98,10 @@ def copy_dir(
     target_path : path-like or None
         The directory to copy to, on the image, or None. If given, the contents of the
         source directory will be copied to the given path. If None, the target path will
-        default to the lowest directory of the path given by the `directory` argument.
+        default to the base name of the path given by the `directory` argument.
         Defaults to None.
+    no_cache : bool
+        Run Docker build with no cache if True. Defaults to False.
 
     Returns
     -------
@@ -120,7 +126,6 @@ def copy_dir(
             target_dir = os.path.basename(path_absolute)
         else:
             raise ValueError(f"{dir_str} is not a valid directory on this machine.")
-            target_dir = os.path.basename(os.path.dirname(path_absolute))
     else:
         target_dir = os.fspath(target_path)
 
@@ -137,7 +142,10 @@ def copy_dir(
     # the machine, whereas a context at "." would be unable to see any directory that is
     # not downstream of the working directory from which the program is called.
     return Image.build(
-        tag=img_tag, context=path_absolute, dockerfile_string=dockerfile, no_cache=True
+        tag=img_tag,
+        context=path_absolute,
+        dockerfile_string=dockerfile,
+        no_cache=no_cache,
     )
 
 
