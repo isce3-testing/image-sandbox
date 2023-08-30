@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 from typing import List
 
-from ..commands import get_archive
+from ..commands import copy_dir, get_archive
 from ._utils import add_tag_argument, help_formatter
 
 
@@ -13,7 +13,8 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     The build commands are the group of commands to be completed after the CUDA and
     conda environments have been installed to the image, with the purpose of acquiring
     and building the ISCE3 repository and any further repositories.
-    These commands consist of the "get-archive" command, and more are being added.
+    These commands consist of the "get-archive" and "copydir" commands, and more are
+    being added.
 
     Parameters
     -----------
@@ -54,13 +55,48 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         formatter_class=help_formatter,
     )
     add_tag_argument(parser=archive_parser, default="repo")
+    archive_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Run Docker build with no cache if used.",
+    )
+
+    copy_dir_parser = subparsers.add_parser(
+        "copydir",
+        parents=[setup_parse],
+        help="Insert the contents of a directory at the given path.",
+        formatter_class=help_formatter,
+    )
+    add_tag_argument(parser=copy_dir_parser, default="dir-copy")
+    copy_dir_parser.add_argument(
+        "--directory",
+        "-d",
+        type=Path,
+        required=True,
+        help="The directory to be copied to the image.",
+    )
+    copy_dir_parser.add_argument(
+        "--target-path",
+        "-p",
+        type=Path,
+        default=None,
+        help="The path on the image to copy the source directory to. If not given, "
+        "the base name of the path given by the directory argument will be used.",
+    )
+    copy_dir_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Run Docker build with no cache if used.",
+    )
 
 
 def build_command_names() -> List[str]:
     """Returns a list of all build command names."""
-    return ["get-archive"]
+    return ["get-archive", "copydir"]
 
 
 def run_build(args: argparse.Namespace, command: str) -> None:
     if command == "get-archive":
         get_archive(**vars(args))
+    if command == "copydir":
+        copy_dir(**vars(args))

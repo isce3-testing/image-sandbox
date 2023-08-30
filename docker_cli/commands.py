@@ -6,6 +6,7 @@ from subprocess import DEVNULL, PIPE, run
 from typing import Iterable, List
 
 from ._docker_git import git_extract_dockerfile
+from ._docker_insert import insert_dir_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
 from ._url_reader import URLReader
@@ -23,6 +24,7 @@ def get_archive(
     archive_url: str,
     directory: os.PathLike[str],
     url_reader: URLReader | None = None,
+    no_cache: bool = False,
 ):
     """
     Builds a docker image containing the requested Git archive.
@@ -43,6 +45,8 @@ def get_archive(
     url_reader : URLReader | None, optional
         If given, will use the given URL reader to acquire the Git archive. If None,
         will check the base image and use whichever one it can find. Defaults to None.
+    no_cache : bool, optional
+        Run Docker build with no cache if True. Defaults to False.
 
     Returns
     -------
@@ -63,7 +67,86 @@ def get_archive(
         url_reader=url_reader,
     )
 
-    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=True)
+    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
+
+
+def copy_dir(
+    tag: str,
+    base: str,
+    directory: str | os.PathLike[str],
+    target_path: str | os.PathLike[str] | None = None,
+    no_cache: bool = False,
+):
+    """
+    Builds a Docker image with the contents of the given directory copied onto it.
+
+    The directory path on the image has the same name as the topmost directory
+    of the given path. e.g. giving path "/tmp/dir/subdir" will result in the contents of
+    this path being saved in "/subdir" on the generated image.
+
+    This Dockerfile also changes the working directory of the image to the copied
+    directory.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag.
+    base : str
+        The base image tag.
+    directory : path-like
+        The directory to be copied.
+    target_path : path-like or None
+        The directory to copy to, on the image, or None. If given, the contents of the
+        source directory will be copied to the given path. If None, the target path will
+        default to the base name of the path given by the `directory` argument.
+        Defaults to None.
+    no_cache : bool, optional
+        Run Docker build with no cache if True. Defaults to False.
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+
+    prefix = universal_tag_prefix()
+    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+
+    dir_str = os.fspath(directory)
+
+    # The absolute path of the given directory will be the build context.
+    # This is necessary because otherwise docker may be unable to find the directory if
+    # the build context is at the current working directory.
+    path_absolute = os.path.abspath(dir_str)
+
+    if target_path is None:
+        # No argument was passed to target_path, so the lowest-level directory of the
+        # input path will be the name of the directory in the image.
+        if os.path.isdir(dir_str):
+            target_dir = os.path.basename(path_absolute)
+        else:
+            raise ValueError(f"{dir_str} is not a valid directory on this machine.")
+    else:
+        target_dir = os.fspath(target_path)
+
+    # Generate the dockerfile. The source directory will be "." since the build context
+    # will be at the source path when the image is built.
+    dockerfile: str = insert_dir_dockerfile(
+        base=base,
+        target_dir=target_dir,
+        source_dir=".",
+    )
+
+    # Build the image with the context at the absolute path of the given path. This
+    # allows a directory to be copied from anywhere that is visible to this user on
+    # the machine, whereas a context at "." would be unable to see any directory that is
+    # not downstream of the working directory from which the program is called.
+    return Image.build(
+        tag=img_tag,
+        context=path_absolute,
+        dockerfile_string=dockerfile,
+        no_cache=no_cache,
+    )
 
 
 def dropin(tag: str) -> None:
