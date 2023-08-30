@@ -5,17 +5,14 @@ from shlex import split
 from subprocess import DEVNULL, PIPE, run
 from typing import Iterable, List
 
+from ._docker_cmake import cmake_config_dockerfile
 from ._docker_git import git_extract_dockerfile
 from ._docker_insert import insert_dir_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
 from ._url_reader import URLReader
-from ._utils import (
-    image_command_check,
-    is_conda_pkg_name,
-    temp_image,
-    universal_tag_prefix,
-)
+from ._utils import image_command_check, is_conda_pkg_name, temp_image
+from .defaults import universal_tag_prefix
 
 
 def get_archive(
@@ -147,6 +144,45 @@ def copy_dir(
         dockerfile_string=dockerfile,
         no_cache=no_cache,
     )
+
+
+def configure_cmake(
+    tag: str,
+    base: str,
+    build_type: str,
+    no_cuda: bool = False,
+    no_cache: bool = False,
+) -> Image:
+    """
+    Produces an image with CMAKE configured.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag.
+    base : str
+        The base image tag.
+    build_type : str
+        The type of CMAKE build.
+    no_cuda : bool, optional
+        If True, build without CUDA. Defaults to False.
+    no_cache : bool, optional
+        Run Docker build with no cache if True. Defaults to False.
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+    dockerfile: str = cmake_config_dockerfile(
+        base=base,
+        build_type=build_type,
+        with_cuda=not no_cuda,
+    )
+
+    prefix = universal_tag_prefix()
+    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
 def dropin(tag: str) -> None:

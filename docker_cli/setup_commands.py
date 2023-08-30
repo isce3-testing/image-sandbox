@@ -9,12 +9,8 @@ from ._docker_mamba import mamba_add_reqs_dockerfile, mamba_install_dockerfile
 from ._image import Image
 from ._package_manager import PackageManager
 from ._url_reader import URLReader, get_url_reader
-from ._utils import (
-    image_command_check,
-    parse_cuda_info,
-    temp_image,
-    universal_tag_prefix,
-)
+from ._utils import image_command_check, parse_cuda_info, temp_image
+from .defaults import universal_tag_prefix
 
 
 def setup_init(
