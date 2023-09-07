@@ -163,7 +163,9 @@ def configure_cmake(
     base : str
         The base image tag.
     build_type : str
-        The type of CMAKE build.
+        The CMake build type. See
+        `here <https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html>`_
+        for possible values.
     no_cuda : bool, optional
         If True, build without CUDA. Defaults to False.
     no_cache : bool, optional

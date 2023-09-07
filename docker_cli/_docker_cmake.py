@@ -1,24 +1,22 @@
 from textwrap import dedent
 
 from ._docker_mamba import micromamba_docker_lines
-from .defaults import build_prefix, install_prefix
+from .defaults import build_prefix, install_prefix, src_prefix
 
 
-def cmake_config_dockerfile(
-    base: str,
-    build_type: str,
-    with_cuda: bool = True,
-) -> str:
+def cmake_config_dockerfile(base: str, build_type: str, with_cuda: bool = True) -> str:
     """
-    Creates a dockerfile for configuring CMAKE.
+    Creates a Dockerfile for configuring CMake Build.
 
     Parameters
     ----------
     base : str
         The base image tag.
     build_type : str
-        The CMAKE build type.
-    with_cuda : bool
+        The CMake build type. See
+        `here <https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html>`_
+        for possible values.
+    with_cuda : bool, optional
         Whether or not to use CUDA in the build. Defaults to True.
 
     Returns
@@ -31,7 +29,9 @@ def cmake_config_dockerfile(
     # process of adding them.
     additional_args = []
     if with_cuda:
-        additional_args += ["-DWITH_CUDA=YES"]
+        additional_args += ["-D WITH_CUDA=YES"]
+    else:
+        additional_args += ["-D WITH_CUDA=NO"]
     cmake_extra_args = " ".join(additional_args)
 
     # Begin constructing the dockerfile with the initial FROM line.
@@ -43,18 +43,16 @@ def cmake_config_dockerfile(
         f"""
             ENV INSTALL_PREFIX {str(install_prefix())}
             ENV BUILD_PREFIX {str(build_prefix())}
-            ENV PYTHONPATH $INSTALL_PREFIX/packages:$PYTHONPATH
 
             RUN cmake \\
+                -S {src_prefix()}
                 -B $BUILD_PREFIX \\
                 -G Ninja \\
-                -DISCE3_FETCH_DEPS=NO \\
-                -DCMAKE_BUILD_TYPE={build_type} \\
-                -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \\
-                -DCMAKE_PREFIX_PATH=$MAMBA_ROOT_PREFIX \\
-                -DWITH_CUDA=YES \\
-                {cmake_extra_args} \\
-                .
+                -D ISCE3_FETCH_DEPS=NO \\
+                -D CMAKE_BUILD_TYPE={build_type} \\
+                -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \\
+                -D CMAKE_PREFIX_PATH=$MAMBA_ROOT_PREFIX \\
+                {cmake_extra_args}
         """
     ).strip()
 
