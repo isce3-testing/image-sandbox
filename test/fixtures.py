@@ -7,8 +7,8 @@ from typing import Iterator, Tuple
 from pytest import fixture
 
 from docker_cli import Image, PackageManager, URLReader
+from docker_cli._docker_init import init_dockerfile
 from docker_cli._utils import image_command_check, temp_image
-from docker_cli.setup_commands import setup_init
 
 from .utils import determine_scope, generate_tag, remove_docker_image
 
@@ -92,7 +92,20 @@ def init_image(base_tag: str, init_tag: str) -> Iterator[Image]:
     Iterator[Image]
         The initialization tag generator.
     """
-    img, _, _ = setup_init(base=base_tag, tag=init_tag, no_cache=False)
+    # Get some initial install lines to ensure that the appropriate software is
+    # installed on the init image.
+    with temp_image(base_tag) as temp_img:
+        _, _, initial_lines = image_command_check(temp_img, True)
+
+    # Get the init image dockerfile.
+    dockerfile = init_dockerfile(base=base_tag, custom_lines=initial_lines)
+
+    # Creates a unique directory in the image. This causes the image to be unique,
+    # preventing unintentional deletion of init images that are not for testing.
+    dockerfile += f"\n\nRUN mkdir {init_tag}"
+
+    # Build and yield the image.
+    img = Image.build(tag=init_tag, dockerfile_string=dockerfile)
     yield img
     remove_docker_image(init_tag)
 

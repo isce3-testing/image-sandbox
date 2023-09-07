@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from textwrap import dedent, indent
+from textwrap import indent
 from typing import Dict, Optional, Tuple
 
 from ._docker_cuda import CUDADockerfileGenerator, get_cuda_dockerfile_generator
+from ._docker_init import init_dockerfile
 from ._docker_mamba import mamba_add_reqs_dockerfile, mamba_install_dockerfile
 from ._image import Image
 from ._package_manager import PackageManager
@@ -38,26 +39,9 @@ def setup_init(
         The URL Reader present on the image.
     """
     with temp_image(base) as temp_img:
-        package_mgr, url_reader, dockerfile = image_command_check(temp_img, True)
+        package_mgr, url_reader, initial_lines = image_command_check(temp_img, True)
 
-    dockerfile = (
-        f"FROM {base}\n\n"
-        + dockerfile
-        + "\n"
-        + dedent(
-            """
-        ENV DEFAULT_GROUP defaultgroup
-        ENV DEFAULT_USER defaultuser
-        ENV DEFAULT_GID 1000
-        ENV DEFAULT_UID 1000
-
-        RUN groupadd -g $DEFAULT_GID $DEFAULT_GROUP
-        RUN useradd -g $DEFAULT_GID -u $DEFAULT_UID -m $DEFAULT_USER
-
-        RUN chmod -R 777 /tmp
-        """
-        ).strip()
-    )
+    dockerfile = init_dockerfile(base=base, custom_lines=initial_lines)
 
     prefix = universal_tag_prefix()
     img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
