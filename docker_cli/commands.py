@@ -154,7 +154,7 @@ def configure_cmake(
     no_cache: bool = False,
 ) -> Image:
     """
-    Produces an image with CMAKE configured.
+    Produces an image with CMake configured.
 
     Parameters
     ----------
