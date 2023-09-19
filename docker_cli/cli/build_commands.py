@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 from typing import List
 
-from ..commands import copy_dir, get_archive
+from ..commands import configure_cmake, copy_dir, get_archive
 from ._utils import add_tag_argument, help_formatter
 
 
@@ -13,8 +13,8 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     The build commands are the group of commands to be completed after the CUDA and
     conda environments have been installed to the image, with the purpose of acquiring
     and building the ISCE3 repository and any further repositories.
-    These commands consist of the "get-archive" and "copydir" commands, and more are
-    being added.
+    These commands consist of the "get-archive", "copydir", and "cmake-config" commands,
+    and more are being added.
 
     Parameters
     -----------
@@ -37,6 +37,24 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         type=Path,
         default=Path("/src"),
         help="The path to place the contents of the Git archive at on the image.",
+    )
+
+    build_type_choices = ["Release", "Debug", "RelWithDebInfo", "MinSizeRel"]
+    config_params = argparse.ArgumentParser(add_help=False)
+    config_params.add_argument(
+        "--build-type",
+        type=str,
+        default="Release",
+        metavar="CMAKE_BUILD_TYPE",
+        choices=build_type_choices,
+        help="The CMAKE_BUILD_TYPE argument for CMake. Valid options are: "
+        + f"{', '.join(build_type_choices)}. Defaults to \"Release\".",
+    )
+    config_params.add_argument(
+        "--no-cuda",
+        action="store_true",
+        default=False,
+        help="If used, the build configuration will not use CUDA.",
     )
 
     setup_parse = argparse.ArgumentParser(add_help=False)
@@ -89,10 +107,23 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="Run Docker build with no cache if used.",
     )
 
+    config_parser = subparsers.add_parser(
+        "cmake-config",
+        parents=[setup_parse, config_params],
+        help="Creates an image with a configured compiler.",
+        formatter_class=help_formatter,
+    )
+    add_tag_argument(parser=config_parser, default="configured")
+    config_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Run Docker build with no cache if used.",
+    )
+
 
 def build_command_names() -> List[str]:
     """Returns a list of all build command names."""
-    return ["get-archive", "copydir"]
+    return ["get-archive", "copydir", "cmake-config"]
 
 
 def run_build(args: argparse.Namespace, command: str) -> None:
@@ -100,3 +131,5 @@ def run_build(args: argparse.Namespace, command: str) -> None:
         get_archive(**vars(args))
     if command == "copydir":
         copy_dir(**vars(args))
+    if command == "cmake-config":
+        configure_cmake(**vars(args))

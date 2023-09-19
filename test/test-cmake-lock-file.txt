@@ -1,0 +1,46 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: linux-64
+@EXPLICIT
+https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-2_gnu.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/binutils-2.40-hdd6e379_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.40-hf600244_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/binutils_linux-64-2.40-hbdbef99_1.conda
+https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-h7f98852_4.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.19.1-hd590300_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/c-compiler-1.6.0-hd590300_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/ca-certificates-2023.7.22-hbcca054_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/cmake-3.27.4-hcfe8598_4.conda
+https://conda.anaconda.org/conda-forge/linux-64/cxx-compiler-1.6.0-h00ab1b0_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/gcc-12.3.0-h8d2909c_1.conda
+https://conda.anaconda.org/conda-forge/linux-64/gcc_impl_linux-64-12.3.0-he2b93b0_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/gcc_linux-64-12.3.0-h76fc315_1.conda
+https://conda.anaconda.org/conda-forge/linux-64/gxx-12.3.0-h8d2909c_1.conda
+https://conda.anaconda.org/conda-forge/linux-64/gxx_impl_linux-64-12.3.0-he2b93b0_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/gxx_linux-64-12.3.0-h8a814eb_1.conda
+https://conda.anaconda.org/conda-forge/linux-64/keyutils-1.6.1-h166bdaf_0.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/krb5-1.21.2-h659d440_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.40-h41732ed_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libcurl-8.2.1-hca28451_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libedit-3.1.20191231-he28a2e2_2.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/libev-4.33-h516909a_1.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.5.0-hcb278e6_1.conda
+https://conda.anaconda.org/conda-forge/linux-64/libgcc-devel_linux-64-12.3.0-h8bca6fd_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libgcc-ng-13.1.0-he5830b7_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libgomp-13.1.0-he5830b7_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libnghttp2-1.52.0-h61bc06f_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libsanitizer-12.3.0-h0f45ef3_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libssh2-1.11.0-h0841786_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-devel_linux-64-12.3.0-h8bca6fd_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-ng-13.1.0-hfd8a6a1_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libuv-1.46.0-hd590300_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.2.13-hd590300_5.conda
+https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.4-hcb278e6_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/ninja-1.11.1-h924138e_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/openssl-3.1.2-hd590300_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.4-hd590300_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/xz-5.2.6-h166bdaf_0.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.5-hfc55251_0.conda
+https://conda.anaconda.org/conda-forge/noarch/kernel-headers_linux-64-2.6.32-he073ed8_16.conda
+https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.12-he073ed8_16.conda
