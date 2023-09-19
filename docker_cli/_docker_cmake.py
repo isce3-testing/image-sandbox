@@ -1,12 +1,15 @@
 from textwrap import dedent
 
 from ._docker_mamba import micromamba_docker_lines
-from .defaults import build_prefix, install_prefix, src_prefix
+from .defaults import build_prefix, install_prefix
 
 
 def cmake_config_dockerfile(base: str, build_type: str, with_cuda: bool = True) -> str:
     """
     Creates a Dockerfile for configuring CMake Build.
+
+    This function assumes that the working directory on the image is at the
+    source directory where the top-level CMakeLists.txt file is contained.
 
     Parameters
     ----------
@@ -45,7 +48,7 @@ def cmake_config_dockerfile(base: str, build_type: str, with_cuda: bool = True) 
             ENV BUILD_PREFIX {str(build_prefix())}
 
             RUN cmake \\
-                -S {src_prefix()} \\
+                -S . \\
                 -B $BUILD_PREFIX \\
                 -G Ninja \\
                 -D ISCE3_FETCH_DEPS=NO \\

@@ -14,8 +14,3 @@ def install_prefix() -> Path:
 def build_prefix() -> Path:
     """Returns the build system's default build prefix path."""
     return Path("/tmp/build")
-
-
-def src_prefix() -> str:
-    """Returns the filesystem prefix to the source code."""
-    return "."
