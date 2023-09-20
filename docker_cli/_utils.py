@@ -18,6 +18,13 @@ from ._url_reader import URLReader, get_supported_url_readers, get_url_reader
 from .defaults import universal_tag_prefix
 
 
+def prefix_image_tag(tag: str):
+    """Prepends the image tag prefix to the tag if it is not already there."""
+    prefix = universal_tag_prefix()
+    prefixed_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    return prefixed_tag
+
+
 @contextmanager
 def temp_image(
     base: str,
@@ -53,7 +60,7 @@ def temp_image(
     # inherently pulls from the internet if the base image isn't already present on
     # the local environment. This ensures that, if the image exists anywhere accessible,
     # it will be found automatically without the need for additional logic.
-    tag = f"{universal_tag_prefix()}-temp-{generate_random_string(k=10)}"
+    tag = prefix_image_tag(f"temp-{generate_random_string(k=10)}")
     try:
         temp: Image = Image.build(  # type: ignore
             tag=tag,

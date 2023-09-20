@@ -10,8 +10,7 @@ from ._docker_mamba import mamba_add_reqs_dockerfile, mamba_install_dockerfile
 from ._image import Image
 from ._package_manager import PackageManager
 from ._url_reader import URLReader, get_url_reader
-from ._utils import image_command_check, parse_cuda_info, temp_image
-from .defaults import universal_tag_prefix
+from ._utils import image_command_check, parse_cuda_info, prefix_image_tag, temp_image
 
 
 def setup_init(
@@ -43,8 +42,7 @@ def setup_init(
 
     dockerfile = init_dockerfile(base=base, custom_lines=initial_lines)
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
 
     image = Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
@@ -124,10 +122,10 @@ def setup_cuda_runtime(
         arch=arch,
     )
 
-    dockerfile = f"FROM {base}\n\n{init_lines}\n\n{body}"
+    base_tag = prefix_image_tag(base)
+    dockerfile = f"FROM {base_tag}\n\n{init_lines}\n\n{body}"
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
@@ -192,10 +190,10 @@ def setup_cuda_dev(
         cuda_ver_major=cuda_major, cuda_ver_minor=cuda_minor
     )
 
-    dockerfile = f"FROM {base}\n\n{init_lines}\n\n{body}"
+    base_tag = prefix_image_tag(base)
+    dockerfile = f"FROM {base_tag}\n\n{init_lines}\n\n{body}"
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
 
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
@@ -233,10 +231,10 @@ def setup_conda_runtime(
     env_file_relative = env_file_absolute.relative_to(context)
 
     header, body = mamba_install_dockerfile(env_reqs_file=Path(env_file_relative))
-    dockerfile = f"{header}\n\nFROM {base}\n\n{body}"
+    base_tag = prefix_image_tag(base)
+    dockerfile = f"{header}\n\nFROM {base_tag}\n\n{body}"
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
 
     return Image.build(
         tag=img_tag,
@@ -275,10 +273,10 @@ def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Imag
 
     body = mamba_add_reqs_dockerfile(env_reqs_file=Path(env_file_relative))
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
 
-    dockerfile = f"FROM {base}\n\n{body}"
+    base_tag = prefix_image_tag(base)
+    dockerfile = f"FROM {base_tag}\n\n{body}"
 
     return Image.build(
         tag=img_tag,
@@ -326,20 +324,19 @@ def setup_all(
     Dict[str, Image]
         A dictionary of all images generated, indexed by tag.
     """
-    prefix = universal_tag_prefix()
     cuda_major, cuda_minor = parse_cuda_info(cuda_version=cuda_version)
 
     images: Dict[str, Image] = {}
 
     # Build the initial image and append it to the image list
-    base_image_tag = f"{prefix}-{tag}-init"
+    base_image_tag = prefix_image_tag(f"{tag}-init")
     base_image, package_mgr, url_program = setup_init(
         base=base, tag=base_image_tag, no_cache=no_cache
     )
     images[base_image_tag] = base_image
 
     # Build the CUDA runtime image and append it to the image list
-    cuda_run_tag = f"{prefix}-{tag}-cuda-" + f"{cuda_major}-{cuda_minor}-runtime"
+    cuda_run_tag = prefix_image_tag(f"{tag}-cuda-{cuda_major}-{cuda_minor}-runtime")
     cuda_run_image = setup_cuda_runtime(
         base=base_image_tag,
         tag=cuda_run_tag,
@@ -352,7 +349,7 @@ def setup_all(
     images[cuda_run_tag] = cuda_run_image
 
     # Build the Mamba runtime image and append it to the image list
-    mamba_run_tag = f"{prefix}-{tag}-mamba-runtime"
+    mamba_run_tag = prefix_image_tag(f"{tag}-mamba-runtime")
     mamba_run_image = setup_conda_runtime(
         base=cuda_run_tag,
         tag=mamba_run_tag,
@@ -362,7 +359,7 @@ def setup_all(
     images[mamba_run_tag] = mamba_run_image
 
     # Build the CUDA dev image and append it to the image list
-    cuda_dev_tag = f"{prefix}-{tag}-cuda-" + f"{cuda_major}-{cuda_minor}-dev"
+    cuda_dev_tag = prefix_image_tag(f"{tag}-cuda-{cuda_major}-{cuda_minor}-dev")
     cuda_dev_image = setup_cuda_dev(
         base=mamba_run_tag,
         tag=cuda_dev_tag,
@@ -374,7 +371,7 @@ def setup_all(
     images[cuda_dev_tag] = cuda_dev_image
 
     # Build the Mamba dev image and append it to the image list
-    mamba_dev_tag = f"{prefix}-{tag}-mamba-dev"
+    mamba_dev_tag = prefix_image_tag(f"{tag}-mamba-dev")
     mamba_dev_image = setup_conda_dev(
         base=cuda_dev_tag, tag=mamba_dev_tag, no_cache=no_cache, env_file=dev_env_file
     )

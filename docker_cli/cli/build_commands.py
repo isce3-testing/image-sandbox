@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 from typing import List
 
-from ..commands import configure_cmake, copy_dir, get_archive
+from ..commands import compile_cmake, configure_cmake, copy_dir, get_archive
 from ._utils import add_tag_argument, help_formatter
 
 
@@ -13,7 +13,11 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     The build commands are the group of commands to be completed after the CUDA and
     conda environments have been installed to the image, with the purpose of acquiring
     and building the ISCE3 repository and any further repositories.
-    These commands consist of the "get-archive", "copydir", and "cmake-config" commands,
+    These commands consist of the following commands:
+        get-archive,
+        copydir,
+        cmake-config,
+        cmake-compile,
     and more are being added.
 
     Parameters
@@ -57,8 +61,8 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="If used, the build configuration will not use CUDA.",
     )
 
-    setup_parse = argparse.ArgumentParser(add_help=False)
-    setup_parse.add_argument(
+    setup_params = argparse.ArgumentParser(add_help=False)
+    setup_params.add_argument(
         "--base",
         "-b",
         type=str,
@@ -66,22 +70,24 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="The name of the base Docker image.",
     )
 
-    archive_parser = subparsers.add_parser(
-        "get-archive",
-        parents=[setup_parse, archive_params],
-        help="Set up the GitHub repository image, in [USER]/[REPO_NAME] format.",
-        formatter_class=help_formatter,
-    )
-    add_tag_argument(parser=archive_parser, default="repo")
-    archive_parser.add_argument(
+    no_cache_params = argparse.ArgumentParser(add_help=False)
+    no_cache_params.add_argument(
         "--no-cache",
         action="store_true",
         help="Run Docker build with no cache if used.",
     )
 
+    archive_parser = subparsers.add_parser(
+        "get-archive",
+        parents=[setup_params, archive_params, no_cache_params],
+        help="Set up the GitHub repository image, in [USER]/[REPO_NAME] format.",
+        formatter_class=help_formatter,
+    )
+    add_tag_argument(parser=archive_parser, default="repo")
+
     copy_dir_parser = subparsers.add_parser(
         "copydir",
-        parents=[setup_parse],
+        parents=[setup_params, no_cache_params],
         help="Insert the contents of a directory at the given path.",
         formatter_class=help_formatter,
     )
@@ -101,24 +107,22 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="The path on the image to copy the source directory to. If not given, "
         "the base name of the path given by the directory argument will be used.",
     )
-    copy_dir_parser.add_argument(
-        "--no-cache",
-        action="store_true",
-        help="Run Docker build with no cache if used.",
-    )
 
     config_parser = subparsers.add_parser(
         "cmake-config",
-        parents=[setup_parse, config_params],
+        parents=[setup_params, config_params, no_cache_params],
         help="Creates an image with a configured compiler.",
         formatter_class=help_formatter,
     )
     add_tag_argument(parser=config_parser, default="configured")
-    config_parser.add_argument(
-        "--no-cache",
-        action="store_true",
-        help="Run Docker build with no cache if used.",
+
+    compile_parser = subparsers.add_parser(
+        "cmake-compile",
+        parents=[setup_params, no_cache_params],
+        help="Creates an image with the project built.",
+        formatter_class=help_formatter,
     )
+    add_tag_argument(parser=compile_parser, default="compiled")
 
 
 def build_command_names() -> List[str]:
@@ -133,3 +137,5 @@ def run_build(args: argparse.Namespace, command: str) -> None:
         copy_dir(**vars(args))
     if command == "cmake-config":
         configure_cmake(**vars(args))
+    if command == "cmake-compile":
+        compile_cmake(**vars(args))

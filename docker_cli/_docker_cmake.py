@@ -60,3 +60,29 @@ def cmake_config_dockerfile(base: str, build_type: str, with_cuda: bool = True) 
     ).strip()
 
     return dockerfile
+
+
+def cmake_build_dockerfile(base: str) -> str:
+    """
+    Creates a dockerfile for compiling with CMake.
+
+    Parameters
+    ----------
+    base : str
+        The base image tag.
+
+    Returns
+    -------
+    dockerfile: str
+        The generated Dockerfile.
+    """
+    # Begin constructing the dockerfile with the initial FROM line.
+    dockerfile = f"FROM {base}\n\n"
+
+    # Run as the $MAMBA_USER and activate the micromamba environment.
+    dockerfile += f"{micromamba_docker_lines()}\n\n"
+
+    # build the project.
+    dockerfile += "RUN cmake --build $BUILD_PREFIX --parallel"
+
+    return dockerfile
