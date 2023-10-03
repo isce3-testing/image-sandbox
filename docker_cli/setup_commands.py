@@ -269,7 +269,7 @@ def setup_conda_dev(base: str, tag: str, no_cache: bool, env_file: Path) -> Imag
     context = env_file_absolute.parent
 
     # Get the path to the environment file, relative to the context.
-    env_file_relative = env_file.relative_to(context)
+    env_file_relative = env_file_absolute.relative_to(context)
 
     body = mamba_add_reqs_dockerfile(env_reqs_file=Path(env_file_relative))
 
