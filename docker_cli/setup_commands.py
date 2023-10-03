@@ -14,7 +14,7 @@ from ._utils import image_command_check, parse_cuda_info, prefix_image_tag, temp
 
 
 def setup_init(
-    base: str, tag: str, no_cache: bool
+    base: str, tag: str, no_cache: bool, test: bool = False
 ) -> Tuple[Image, PackageManager, URLReader]:
     """
     Set up the initial configuration image.
@@ -27,6 +27,9 @@ def setup_init(
         The tag of the image to be built.
     no_cache : bool
         Run Docker build with no cache if True.
+    no_cache : bool, optional
+        Add a "test" directory to the image if True. Used for test images.
+        Defaults to False.
 
     Returns
     -------
@@ -40,7 +43,7 @@ def setup_init(
     with temp_image(base) as temp_img:
         package_mgr, url_reader, initial_lines = image_command_check(temp_img, True)
 
-    dockerfile = init_dockerfile(base=base, custom_lines=initial_lines)
+    dockerfile = init_dockerfile(base=base, custom_lines=initial_lines, test=test)
 
     img_tag = prefix_image_tag(tag)
 
@@ -295,6 +298,7 @@ def setup_all(
     runtime_env_file: Path,
     dev_env_file: Path,
     verbose: bool = False,
+    test: bool = False,
 ) -> Dict[str, Image]:
     """
     Builds the entire Docker image stack.
@@ -318,6 +322,8 @@ def setup_all(
         The location of the dev environment requirements file.
     verbose : bool, optional
         If True, output informational messages upon completion. Defaults to False.
+        Add a "test" directory to the init image if True. Used for test images.
+        Defaults to False.
 
     Returns
     -------
@@ -331,7 +337,10 @@ def setup_all(
     # Build the initial image and append it to the image list
     base_image_tag = prefix_image_tag(f"{tag}-init")
     base_image, package_mgr, url_program = setup_init(
-        base=base, tag=base_image_tag, no_cache=no_cache
+        base=base,
+        tag=base_image_tag,
+        no_cache=no_cache,
+        test=test,
     )
     images[base_image_tag] = base_image
 
