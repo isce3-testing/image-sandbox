@@ -9,6 +9,7 @@ from docker_cli.commands import remove
 # dependencies, since a fixture that depends on other fixtures will not automatically
 # import them.
 from .fixtures import *
+from .fixtures_isce3 import *
 from .utils import image_tag_prefix
 
 

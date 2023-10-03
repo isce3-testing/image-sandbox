@@ -33,31 +33,6 @@ def test_get_cuda_dockerfile_generator():
 
 
 @fixture(scope=determine_scope)
-def cuda_repo_ver(base_tag: str) -> str:
-    """The basic information about the CUDA Dockerfile or image to be generated."""
-    if base_tag == "ubuntu":
-        return "ubuntu2004"
-    if base_tag == "oraclelinux:8.4":
-        return "rhel8"
-    else:
-        raise ValueError(f"Unknown base tag: {base_tag}")
-
-
-@fixture(scope=determine_scope)
-def cuda_version() -> Tuple[int, int]:
-    """Returns two integers that represent CUDA major and minor versions.
-
-    Returns
-    -------
-    cuda_ver_major : int
-        The CUDA major version.
-    cuda_ver_minor : int
-        The CUDA minor version.
-    """
-    return (11, 4)
-
-
-@fixture(scope=determine_scope)
 def cuda_generator(
     base_properties: Tuple[PackageManager, URLReader]
 ) -> CUDADockerfileGenerator:
