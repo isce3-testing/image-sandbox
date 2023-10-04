@@ -76,17 +76,11 @@ def isce3_env_dev_image_tag(
 ) -> str:
     """Return the tag of the ISCE3 development environment image."""
     pattern = re.compile(rf".*{isce3_build_tag}.*mamba-dev")
-
-    env_dev_image_tag: str = ""
-
     for tag in isce3_setup_images:
         if pattern.match(tag):
-            env_dev_image_tag = tag
+            return tag
 
-    if not env_dev_image_tag:
-        raise ValueError("No development environment image tag found.")
-
-    return env_dev_image_tag
+    raise ValueError("No development environment image tag found.")
 
 
 @fixture(scope=determine_scope)
@@ -113,7 +107,7 @@ def isce3_git_repo_image(
     )
 
     yield Image.build(
-        tag=isce3_git_repo_tag, dockerfile_string=dockerfile, no_cache=True
+        tag=isce3_git_repo_tag, dockerfile_string=dockerfile, no_cache=False
     )
 
     remove_docker_image(isce3_git_repo_image)

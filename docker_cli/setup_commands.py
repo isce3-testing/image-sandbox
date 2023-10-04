@@ -27,7 +27,7 @@ def setup_init(
         The tag of the image to be built.
     no_cache : bool
         Run Docker build with no cache if True.
-    no_cache : bool, optional
+    test : bool, optional
         Add a "test" directory to the image if True. Used for test images.
         Defaults to False.
 
@@ -322,6 +322,7 @@ def setup_all(
         The location of the dev environment requirements file.
     verbose : bool, optional
         If True, output informational messages upon completion. Defaults to False.
+    test : bool, optional
         Add a "test" directory to the init image if True. Used for test images.
         Defaults to False.
 

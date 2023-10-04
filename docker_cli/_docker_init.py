@@ -11,7 +11,7 @@ def init_dockerfile(base: str, custom_lines: str, test: bool = False) -> str:
         The name of the image upon this one will be based.
     custom_lines : str
         Custom installation and configuration lines to be added to the Dockerfile.
-    no_cache : bool, optional
+    test : bool, optional
         Add a "test" directory mkdir command to the Dockerfile if True. Used for test
         images. Defaults to False.
 
