@@ -5,14 +5,13 @@ from shlex import split
 from subprocess import DEVNULL, PIPE, run
 from typing import Iterable, List
 
-from ._docker_cmake import cmake_config_dockerfile
+from ._docker_cmake import cmake_build_dockerfile, cmake_config_dockerfile
 from ._docker_git import git_extract_dockerfile
 from ._docker_insert import insert_dir_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
 from ._url_reader import URLReader
-from ._utils import image_command_check, is_conda_pkg_name, temp_image
-from .defaults import universal_tag_prefix
+from ._utils import image_command_check, is_conda_pkg_name, prefix_image_tag, temp_image
 
 
 def get_archive(
@@ -54,11 +53,11 @@ def get_archive(
         with temp_image(base) as temp_img:
             _, url_reader, _ = image_command_check(temp_img)
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
+    base_tag = prefix_image_tag(base)
 
     dockerfile = git_extract_dockerfile(
-        base=base,
+        base=base_tag,
         directory=directory,
         archive_url=archive_url,
         url_reader=url_reader,
@@ -106,8 +105,7 @@ def copy_dir(
         The generated image.
     """
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
 
     dir_str = os.fspath(directory)
 
@@ -128,8 +126,9 @@ def copy_dir(
 
     # Generate the dockerfile. The source directory will be "." since the build context
     # will be at the source path when the image is built.
+    base_tag = prefix_image_tag(base)
     dockerfile: str = insert_dir_dockerfile(
-        base=base,
+        base=base_tag,
         target_dir=target_dir,
         source_dir=".",
     )
@@ -176,15 +175,47 @@ def configure_cmake(
     Image
         The generated image.
     """
+    base_tag = prefix_image_tag(base)
+
     dockerfile: str = cmake_config_dockerfile(
-        base=base,
+        base=base_tag,
         build_type=build_type,
         with_cuda=not no_cuda,
     )
 
-    prefix = universal_tag_prefix()
-    img_tag = tag if tag.startswith(prefix) else f"{prefix}-{tag}"
+    img_tag = prefix_image_tag(tag)
     return Image.build(tag=img_tag, dockerfile_string=dockerfile, no_cache=no_cache)
+
+
+def compile_cmake(tag: str, base: str, no_cache: bool = False) -> Image:
+    """
+    Produces an image with the working directory compiled.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag.
+    base : str
+        The base image tag.
+    no_cache : bool, optional
+        Run Docker build with no cache if True. Defaults to False.
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+
+    prefixed_tag: str = prefix_image_tag(tag)
+    prefixed_base_tag: str = prefix_image_tag(base)
+
+    dockerfile: str = cmake_build_dockerfile(base=prefixed_base_tag)
+
+    return Image.build(
+        tag=prefixed_tag,
+        dockerfile_string=dockerfile,
+        no_cache=no_cache,
+    )
 
 
 def dropin(tag: str) -> None:
@@ -196,6 +227,7 @@ def dropin(tag: str) -> None:
     tag : str
         The tag or ID of the image.
     """
+    tag = prefix_image_tag(tag)
     image: Image = Image(tag)
 
     image.drop_in()
@@ -234,18 +266,18 @@ def remove(
 
     # Search for and delete all images matching each tag or wildcard.
     for tag in tags:
-        prefix = universal_tag_prefix()
-        search = tag if (tag.startswith(prefix) or ignore_prefix) else f"{prefix}-{tag}"
+        if not ignore_prefix:
+            tag = prefix_image_tag(tag)
         if verbose:
-            print(f"Attempting removal for tag: {search}")
+            print(f"Attempting removal for tag: {tag}")
 
         # Search for all images whose name matches this tag, acquire a list
-        search_command = split(f'docker images --filter=reference="{search}" -q')
+        search_command = split(f'docker images --filter=reference="{tag}" -q')
         search_result = run(search_command, text=True, stdout=PIPE, stderr=output)
         # An empty return indicates that no such images were found. Skip to the next.
         if search_result.stdout == "":
             if verbose:
-                print(f"No images found matching pattern {search}. Proceeding.")
+                print(f"No images found matching pattern {tag}. Proceeding.")
             continue
         # The names come in a list delimited by newlines. Reform this to be delimited
         # by spaces to use with `Docker rmi`.
@@ -277,6 +309,7 @@ def make_lockfile(
         The name of the environment. Defaults to "base".
     """
     cmd: str = mamba_lockfile_command(env_name=env_name)
+    tag = prefix_image_tag(tag)
     image: Image = Image(tag)
     lockfile: str = image.run(command=cmd, stdout=PIPE)
     assert isinstance(lockfile, str)

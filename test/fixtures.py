@@ -1,4 +1,4 @@
-"""This file contains all fixtures that are needed by multiple test files."""
+"""This file contains fixtures that are needed by multiple test files."""
 from shlex import split
 from subprocess import run
 from textwrap import dedent
@@ -97,12 +97,10 @@ def init_image(base_tag: str, init_tag: str) -> Iterator[Image]:
     with temp_image(base_tag) as temp_img:
         _, _, initial_lines = image_command_check(temp_img, True)
 
-    # Get the init image dockerfile.
-    dockerfile = init_dockerfile(base=base_tag, custom_lines=initial_lines)
-
-    # Creates a unique directory in the image. This causes the image to be unique,
-    # preventing unintentional deletion of init images that are not for testing.
-    dockerfile += f"\n\nRUN mkdir {init_tag}"
+    # Get the init image testing dockerfile. This image will have a testing directory
+    # which will prevent it, or any other image based on it, from causing the deletion
+    # of other non-test images when deleted with the `remove` command.
+    dockerfile = init_dockerfile(base=base_tag, custom_lines=initial_lines, test=True)
 
     # Build and yield the image.
     img = Image.build(tag=init_tag, dockerfile_string=dockerfile)
@@ -130,3 +128,28 @@ def base_properties(base_tag: str) -> Tuple[PackageManager, URLReader]:
     with temp_image(base_tag) as temp_img:
         package_mgr, url_reader, _ = image_command_check(temp_img)
     return (package_mgr, url_reader)
+
+
+@fixture(scope=determine_scope)
+def cuda_version() -> Tuple[int, int]:
+    """Returns two integers that represent CUDA major and minor versions.
+
+    Returns
+    -------
+    cuda_ver_major : int
+        The CUDA major version.
+    cuda_ver_minor : int
+        The CUDA minor version.
+    """
+    return (11, 4)
+
+
+@fixture(scope=determine_scope)
+def cuda_repo_ver(base_tag: str) -> str:
+    """The basic information about the CUDA Dockerfile or image to be generated."""
+    if base_tag == "ubuntu":
+        return "ubuntu2004"
+    if base_tag == "oraclelinux:8.4":
+        return "rhel8"
+    else:
+        raise ValueError(f"Unknown base tag: {base_tag}")
