@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-from docker_cli.commands import remove
+from wigwam.commands import remove
 
 # This import is necessary for the fixtures to be visible to the test files.
 # Importing fixtures directly into a file can cause some non-trivial problems with
@@ -20,7 +20,7 @@ def pytest_sessionstart(session):
     os.chdir(Path(__file__).parent)
 
     # Set the system to look for files in the repository root path so it can see the
-    # docker_cli module without having to install it.
+    # wigwam module without having to install it.
     sys.path.insert(0, str(Path(__file__).parents[1]))
 
 

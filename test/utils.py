@@ -1,8 +1,8 @@
 import re
 from typing import List
 
-from docker_cli._utils import generate_random_string
-from docker_cli.defaults import universal_tag_prefix
+from wigwam._utils import generate_random_string
+from wigwam.defaults import universal_tag_prefix
 
 
 def image_tag_prefix() -> str:

@@ -3,9 +3,9 @@ from typing import Any, Tuple
 
 from pytest import mark
 
-from docker_cli._docker_git import git_extract_dockerfile
-from docker_cli._image import Image
-from docker_cli._url_reader import URLReader, get_supported_url_readers, get_url_reader
+from wigwam._docker_git import git_extract_dockerfile
+from wigwam._image import Image
+from wigwam._url_reader import URLReader, get_supported_url_readers, get_url_reader
 
 from .utils import generate_tag, rough_dockerfile_validity_check
 

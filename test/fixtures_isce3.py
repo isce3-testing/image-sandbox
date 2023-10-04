@@ -7,10 +7,10 @@ from typing import Any, Iterator, Tuple
 
 from pytest import fixture
 
-from docker_cli import Image, URLReader
-from docker_cli._docker_cmake import cmake_build_dockerfile, cmake_config_dockerfile
-from docker_cli._docker_git import git_extract_dockerfile
-from docker_cli.setup_commands import setup_all
+from wigwam import Image, URLReader
+from wigwam._docker_cmake import cmake_build_dockerfile, cmake_config_dockerfile
+from wigwam._docker_git import git_extract_dockerfile
+from wigwam.setup_commands import setup_all
 
 from .utils import determine_scope, generate_tag, remove_docker_image
 

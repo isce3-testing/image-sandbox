@@ -5,8 +5,8 @@ from typing import Dict, Iterator, Tuple
 
 from pytest import fixture, mark
 
-from docker_cli import Image, mamba_install_dockerfile
-from docker_cli._docker_cmake import cmake_build_dockerfile, cmake_config_dockerfile
+from wigwam import Image, mamba_install_dockerfile
+from wigwam._docker_cmake import cmake_build_dockerfile, cmake_config_dockerfile
 
 from .utils import (
     determine_scope,

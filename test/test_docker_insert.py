@@ -1,7 +1,7 @@
 from pytest import mark
 
-from docker_cli._docker_insert import insert_dir_dockerfile
-from docker_cli._image import Image
+from wigwam._docker_insert import insert_dir_dockerfile
+from wigwam._image import Image
 
 from .utils import generate_tag, rough_dockerfile_validity_check
 
