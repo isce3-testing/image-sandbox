@@ -132,7 +132,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     add_tag_argument(parser=compile_parser, default="compiled")
 
     install_parser = subparsers.add_parser(
-        "install",
+        "cmake-install",
         parents=[setup_params, no_cache_params],
         help="Creates an image with the project installed.",
         formatter_class=help_formatter,
