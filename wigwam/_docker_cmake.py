@@ -86,3 +86,43 @@ def cmake_build_dockerfile(base: str) -> str:
     dockerfile += "RUN cmake --build $BUILD_PREFIX --parallel"
 
     return dockerfile
+
+
+def cmake_install_dockerfile(base: str, ld_lib: str) -> str:
+    """
+    Creates a dockerfile for installing with CMAKE.
+
+    Parameters
+    ----------
+    base : str
+        The base image tag.
+    ld_lib : str
+        The name of the linking library file (e.g. "lib" or "lib64".)
+
+    Returns
+    -------
+    dockerfile: str
+        The generated Dockerfile.
+    """
+    # Begin constructing the dockerfile with the initial FROM line.
+    dockerfile = f"FROM {base}\n\n"
+
+    # Run as the $MAMBA_USER and activate the micromamba environment.
+    dockerfile += f"{micromamba_docker_lines()}\n\n"
+
+    # Install the project and set the appropriate permissions at the target directory.
+    dockerfile += dedent(
+        f"""
+            USER root
+            RUN cmake --build $BUILD_PREFIX --target install --parallel
+            RUN chmod -R 755 $BUILD_PREFIX
+
+            USER $MAMBA_USER
+            RUN mkdir /tmp/Testing
+
+            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/{ld_lib}
+            WORKDIR $BUILD_PREFIX
+        """
+    ).strip()
+
+    return dockerfile

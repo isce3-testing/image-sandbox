@@ -5,13 +5,23 @@ from shlex import split
 from subprocess import DEVNULL, PIPE, run
 from typing import Iterable, List
 
-from ._docker_cmake import cmake_build_dockerfile, cmake_config_dockerfile
+from ._docker_cmake import (
+    cmake_build_dockerfile,
+    cmake_config_dockerfile,
+    cmake_install_dockerfile,
+)
 from ._docker_git import git_extract_dockerfile
 from ._docker_insert import insert_dir_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
 from ._url_reader import URLReader
-from ._utils import image_command_check, is_conda_pkg_name, prefix_image_tag, temp_image
+from ._utils import (
+    image_command_check,
+    is_conda_pkg_name,
+    prefix_image_tag,
+    temp_image,
+    test_image,
+)
 
 
 def get_archive(
@@ -215,6 +225,46 @@ def compile_cmake(tag: str, base: str, no_cache: bool = False) -> Image:
         tag=prefixed_tag,
         dockerfile_string=dockerfile,
         no_cache=no_cache,
+    )
+
+
+def cmake_install(tag: str, base: str, no_cache: bool = False) -> Image:
+    """
+    Produces an image with the compiled working directory code installed.
+
+    .. note:
+        With this image, the workdir is moved to $BUILD_PREFIX.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag.
+    base : str
+        The base image tag.
+    no_cache : bool, optional
+        Run Docker build with no cache if True. Defaults to False.
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+
+    prefixed_tag: str = prefix_image_tag(tag)
+    prefixed_base_tag: str = prefix_image_tag(base)
+
+    image: Image = Image(prefixed_base_tag)
+
+    is_64_bit = test_image(image=image, expression='"$BUILD_PREFIX/lib64"')
+
+    if is_64_bit:
+        lib = "lib64"
+    else:
+        lib = "lib"
+
+    dockerfile: str = cmake_install_dockerfile(base=prefixed_base_tag, ld_lib=lib)
+    return Image.build(
+        tag=prefixed_tag, dockerfile_string=dockerfile, no_cache=no_cache
     )
 
 
