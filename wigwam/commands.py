@@ -255,14 +255,15 @@ def cmake_install(tag: str, base: str, no_cache: bool = False) -> Image:
 
     image: Image = Image(prefixed_base_tag)
 
-    is_64_bit = test_image(image=image, expression='"$BUILD_PREFIX/lib64"')
+    uses_lib64 = test_image(image=image, expression='"$BUILD_PREFIX/lib64"')
 
-    if is_64_bit:
+    if uses_lib64:
         lib = "lib64"
     else:
         lib = "lib"
+        assert test_image(image=image, expression='"$BUILD_PREFIX/lib"')
 
-    dockerfile: str = cmake_install_dockerfile(base=prefixed_base_tag, ld_lib=lib)
+    dockerfile: str = cmake_install_dockerfile(base=prefixed_base_tag, libdir=lib)
     return Image.build(
         tag=prefixed_tag, dockerfile_string=dockerfile, no_cache=no_cache
     )

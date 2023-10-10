@@ -88,16 +88,18 @@ def cmake_build_dockerfile(base: str) -> str:
     return dockerfile
 
 
-def cmake_install_dockerfile(base: str, ld_lib: str) -> str:
+def cmake_install_dockerfile(base: str, libdir: str) -> str:
     """
-    Creates a dockerfile for installing with CMAKE.
+    Creates a Dockerfile for installing with CMake.
 
     Parameters
     ----------
     base : str
         The base image tag.
-    ld_lib : str
-        The name of the linking library file (e.g. "lib" or "lib64".)
+    libdir : str
+        The base name of the directory where object libraries are stored (e.g. "lib" or
+        "lib64"). This should match the value of `LIBDIR` in CMake's `GNUInstallDirs`
+        module (https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html).
 
     Returns
     -------
@@ -113,15 +115,17 @@ def cmake_install_dockerfile(base: str, ld_lib: str) -> str:
     # Install the project and set the appropriate permissions at the target directory.
     dockerfile += dedent(
         f"""
+            # Set USER to root because the install prefix may require elevated
+            # privileges to write to.
             USER root
+
             RUN cmake --build $BUILD_PREFIX --target install --parallel
-            RUN chmod -R 755 $BUILD_PREFIX
+            RUN chmod -R 755 $INSTALL_PREFIX
 
             USER $MAMBA_USER
-            RUN mkdir /tmp/Testing
 
-            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/{ld_lib}
-            WORKDIR $BUILD_PREFIX
+            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/{libdir}
+            ENV PYTHONPATH $PYTHONPATH:$INSTALL_PREFIX/packages
         """
     ).strip()
 
