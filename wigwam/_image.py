@@ -17,9 +17,9 @@ class Image:
 
     Capabilities include:
     -   Building Docker images from dockerfiles or Dockerfile-formatted strings
-        via :func:`~docker_cli.Image.build`.
+        via :func:`~wigwam.Image.build`.
     -   Running commands in containers built from the image using
-        :func:`~docker_cli.Image.run`.
+        :func:`~wigwam.Image.run`.
     -   Inspecting properties of the given image.
     """
 

@@ -86,3 +86,47 @@ def cmake_build_dockerfile(base: str) -> str:
     dockerfile += "RUN cmake --build $BUILD_PREFIX --parallel"
 
     return dockerfile
+
+
+def cmake_install_dockerfile(base: str) -> str:
+    """
+    Creates a Dockerfile for installing with CMake.
+
+    Parameters
+    ----------
+    base : str
+        The base image tag.
+
+    Returns
+    -------
+    dockerfile: str
+        The generated Dockerfile.
+    """
+    # Begin constructing the dockerfile with the initial FROM line.
+    dockerfile = f"FROM {base}\n\n"
+
+    # Run as the $MAMBA_USER and activate the micromamba environment.
+    dockerfile += f"{micromamba_docker_lines()}\n\n"
+
+    # Install the project and set the appropriate permissions at the target directory.
+    dockerfile += dedent(
+        """
+            # Set USER to root because the install prefix may require elevated
+            # privileges to write to.
+            USER root
+
+            RUN cmake --build $BUILD_PREFIX --target install --parallel
+            RUN chmod -R 755 $INSTALL_PREFIX
+
+            USER $MAMBA_USER
+
+            # We don't know if this image uses lib64 or lib as its' libdir, and checking
+            # turns out to be very complicated inside of a dockerfile. So, just add both
+            # to LD_LIBRARY_PATH.
+            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/lib64
+            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/lib
+            ENV PYTHONPATH $PYTHONPATH:$INSTALL_PREFIX/packages
+        """
+    ).strip()
+
+    return dockerfile

@@ -6,9 +6,9 @@ from typing import Iterator, Tuple
 
 from pytest import fixture
 
-from docker_cli import Image, PackageManager, URLReader
-from docker_cli._docker_init import init_dockerfile
-from docker_cli._utils import image_command_check, temp_image
+from wigwam import Image, PackageManager, URLReader
+from wigwam._docker_init import init_dockerfile
+from wigwam._utils import image_command_check, temp_image
 
 from .utils import determine_scope, generate_tag, remove_docker_image
 

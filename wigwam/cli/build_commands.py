@@ -2,7 +2,13 @@ import argparse
 from pathlib import Path
 from typing import List
 
-from ..commands import compile_cmake, configure_cmake, copy_dir, get_archive
+from ..commands import (
+    cmake_install,
+    compile_cmake,
+    configure_cmake,
+    copy_dir,
+    get_archive,
+)
 from ._utils import add_tag_argument, help_formatter
 
 
@@ -18,6 +24,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         copydir,
         cmake-config,
         cmake-compile,
+        cmake-install,
     and more are being added.
 
     Parameters
@@ -124,10 +131,18 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=compile_parser, default="compiled")
 
+    install_parser = subparsers.add_parser(
+        "cmake-install",
+        parents=[setup_params, no_cache_params],
+        help="Creates an image with the project installed.",
+        formatter_class=help_formatter,
+    )
+    add_tag_argument(parser=install_parser, default="installed")
+
 
 def build_command_names() -> List[str]:
     """Returns a list of all build command names."""
-    return ["get-archive", "copydir", "cmake-config"]
+    return ["get-archive", "copydir", "cmake-config", "cmake-compile", "cmake-install"]
 
 
 def run_build(args: argparse.Namespace, command: str) -> None:
@@ -139,3 +154,5 @@ def run_build(args: argparse.Namespace, command: str) -> None:
         configure_cmake(**vars(args))
     if command == "cmake-compile":
         compile_cmake(**vars(args))
+    elif command == "cmake-install":
+        cmake_install(**vars(args))

@@ -10,9 +10,9 @@ class PackageManager(ABC):
     Capabilities include:
     -   Providing string for generating installation and configuration of
         packages on the command line via:
-    \t  -   :func:`~docker_cli.PackageManager.generate_install_command`
-    \t  -   :func:`~docker_cli.PackageManager.generate_package_command`
-    \t  -   :func:`~docker_cli.PackageManager.generate_configure_command`
+    \t  -   :func:`~wigwam.PackageManager.generate_install_command`
+    \t  -   :func:`~wigwam.PackageManager.generate_package_command`
+    \t  -   :func:`~wigwam.PackageManager.generate_configure_command`
     -   Returning an associated name and filetype
     """
 

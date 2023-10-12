@@ -10,7 +10,7 @@ class URLReader(ABC):
     Examples of such programs are cURL and wget.
     Capabilities include:
     -   Generating a command to access a URL via
-            :func:`~docker_cli.URLReader.generate_read_command`
+            :func:`~wigwam.URLReader.generate_read_command`
     -   Returning the name of the program.
     """
 
