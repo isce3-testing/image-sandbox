@@ -87,7 +87,7 @@ def cmake_build_dockerfile(base: str) -> str:
 
     # Add permissions to the testing subdirectory under the build prefix.
     # This step is necessary to enable testing on the image.
-    dockerfile += "RUN chmod -R 777 $BUILD_PREFIX/Testing"
+    dockerfile += "RUN chmod -R 777 $BUILD_PREFIX"
 
     return dockerfile
 
