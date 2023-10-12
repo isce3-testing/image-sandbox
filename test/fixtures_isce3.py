@@ -8,7 +8,11 @@ from typing import Any, Iterator, Tuple
 from pytest import fixture
 
 from wigwam import Image, URLReader
-from wigwam._docker_cmake import cmake_build_dockerfile, cmake_config_dockerfile
+from wigwam._docker_cmake import (
+    cmake_build_dockerfile,
+    cmake_config_dockerfile,
+    cmake_install_dockerfile,
+)
 from wigwam._docker_git import git_extract_dockerfile
 from wigwam.setup_commands import setup_all
 
@@ -110,7 +114,7 @@ def isce3_git_repo_image(
         tag=isce3_git_repo_tag, dockerfile_string=dockerfile, no_cache=False
     )
 
-    remove_docker_image(isce3_git_repo_image)
+    remove_docker_image(isce3_git_repo_tag)
 
 
 @fixture(scope=determine_scope)
@@ -162,4 +166,28 @@ def isce3_cmake_build_image(
         tag=isce3_cmake_build_tag, dockerfile_string=dockerfile, no_cache=False
     )
 
-    remove_docker_image(isce3_cmake_config_tag)
+    remove_docker_image(isce3_cmake_build_tag)
+
+
+@fixture(scope=determine_scope)
+def isce3_cmake_install_tag() -> str:
+    """Return a tag for the ISCE3 CMake install image."""
+    return generate_tag("isce3-cmake-install")
+
+
+@fixture(scope=determine_scope)
+def isce3_cmake_install_image(
+    isce3_cmake_install_tag: str,
+    isce3_cmake_build_tag: str,
+    isce3_cmake_build_image: Image,  # type: ignore
+) -> Iterator[Image]:
+    """Return the ISCE3 CMake install image."""
+    dockerfile = cmake_install_dockerfile(base=isce3_cmake_build_tag)
+
+    yield Image.build(
+        tag=isce3_cmake_install_tag,
+        dockerfile_string=dockerfile,
+        no_cache=False,
+    )
+
+    remove_docker_image(isce3_cmake_install_tag)

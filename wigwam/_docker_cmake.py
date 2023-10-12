@@ -88,7 +88,7 @@ def cmake_build_dockerfile(base: str) -> str:
     return dockerfile
 
 
-def cmake_install_dockerfile(base: str, libdir: str) -> str:
+def cmake_install_dockerfile(base: str) -> str:
     """
     Creates a Dockerfile for installing with CMake.
 
@@ -96,10 +96,6 @@ def cmake_install_dockerfile(base: str, libdir: str) -> str:
     ----------
     base : str
         The base image tag.
-    libdir : str
-        The base name of the directory where object libraries are stored (e.g. "lib" or
-        "lib64"). This should match the value of `LIBDIR` in CMake's `GNUInstallDirs`
-        module (https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html).
 
     Returns
     -------
@@ -114,7 +110,7 @@ def cmake_install_dockerfile(base: str, libdir: str) -> str:
 
     # Install the project and set the appropriate permissions at the target directory.
     dockerfile += dedent(
-        f"""
+        """
             # Set USER to root because the install prefix may require elevated
             # privileges to write to.
             USER root
@@ -124,7 +120,11 @@ def cmake_install_dockerfile(base: str, libdir: str) -> str:
 
             USER $MAMBA_USER
 
-            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/{libdir}
+            # We don't know if this image uses lib64 or lib as its' libdir, and checking
+            # turns out to be very complicated inside of a dockerfile. So, just add both
+            # to LD_LIBRARY_PATH.
+            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/lib64
+            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$INSTALL_PREFIX/lib
             ENV PYTHONPATH $PYTHONPATH:$INSTALL_PREFIX/packages
         """
     ).strip()

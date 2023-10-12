@@ -15,13 +15,7 @@ from ._docker_insert import insert_dir_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
 from ._url_reader import URLReader
-from ._utils import (
-    image_command_check,
-    is_conda_pkg_name,
-    prefix_image_tag,
-    temp_image,
-    test_image,
-)
+from ._utils import image_command_check, is_conda_pkg_name, prefix_image_tag, temp_image
 
 
 def get_archive(
@@ -249,21 +243,10 @@ def cmake_install(tag: str, base: str, no_cache: bool = False) -> Image:
     Image
         The generated image.
     """
-
     prefixed_tag: str = prefix_image_tag(tag)
     prefixed_base_tag: str = prefix_image_tag(base)
 
-    image: Image = Image(prefixed_base_tag)
-
-    uses_lib64 = test_image(image=image, expression='"$BUILD_PREFIX/lib64"')
-
-    if uses_lib64:
-        lib = "lib64"
-    else:
-        lib = "lib"
-        assert test_image(image=image, expression='"$BUILD_PREFIX/lib"')
-
-    dockerfile: str = cmake_install_dockerfile(base=prefixed_base_tag, libdir=lib)
+    dockerfile: str = cmake_install_dockerfile(base=prefixed_base_tag)
     return Image.build(
         tag=prefixed_tag, dockerfile_string=dockerfile, no_cache=no_cache
     )
