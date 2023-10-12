@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import io
 import os
 from shlex import split
 from subprocess import DEVNULL, CalledProcessError, run
 from sys import stdin
-from typing import Any, List, Optional, Type, TypeVar, Union, overload
+from typing import Any, Iterable, List, Optional, Type, TypeVar, overload
 
+from ._bind_mount import BindMount
 from ._exceptions import CommandNotFoundError, DockerBuildError, ImageNotFoundError
 
 
@@ -16,7 +19,7 @@ class Image:
     an interface by which to interact with that image.
 
     Capabilities include:
-    -   Building Docker images from dockerfiles or Dockerfile-formatted strings
+    -   Building Docker images from Dockerfiles or Dockerfile-formatted strings
         via :func:`~wigwam.Image.build`.
     -   Running commands in containers built from the image using
         :func:`~wigwam.Image.run`.
@@ -42,8 +45,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
-        dockerfile: Union[str, os.PathLike[str]],
-        context: Union[str, os.PathLike[str]] = ...,
+        dockerfile: os.PathLike[str] | str,
+        context: os.PathLike[str] | str = ...,
         stdout: Any = ...,
         stderr: Any = ...,
         network: str = ...,
@@ -60,8 +63,7 @@ class Image:
         tag : str
             A name for the image.
         dockerfile : os.PathLike
-            The path of the Dockerfile to build
-            directory.
+            The path of the Dockerfile to build directory.
         context : os.PathLike, optional
             The build context. Defaults to ".".
         stdout : io.TextIOBase or special value, optional
@@ -95,7 +97,7 @@ class Image:
         tag: str,
         *,
         dockerfile_string: str,
-        context: Union[str, os.PathLike[str]] = ...,
+        context: os.PathLike[str] | str = ...,
         stdout: Any = ...,
         stderr: Any = ...,
         network: str = ...,
@@ -132,7 +134,7 @@ class Image:
         DockerBuildError
             If the Docker build command fails.
         ValueError
-            If both `Dockerfile` and `dockerfile_string` are defined.
+            If both `dockerfile` and `dockerfile_string` are defined.
         """
         ...
 
@@ -224,11 +226,13 @@ class Image:
         self,
         command: str,
         *,
-        stdout: Optional[Union[io.TextIOBase, int]] = None,
-        stderr: Optional[Union[io.TextIOBase, int]] = None,
+        stdout: io.TextIOBase | int | None = None,
+        stderr: io.TextIOBase | int | None = None,
         interactive: bool = False,
         network: str = "host",
         check: bool = True,
+        host_user: bool = False,
+        bind_mounts: Iterable[BindMount] | None = None,
     ) -> str:
         """
         Run the given command on a container.
@@ -253,6 +257,11 @@ class Image:
         check: bool, optional
             If True, check for CalledProcessErrors on non-zero return codes. Defualts
             to True.
+        host_user: bool, optional
+            If True, run the command as the user on the host machine, else run as the
+            default user. Defaults to False.
+        bind_mounts : Iterable[BindMount], optional
+            A list of bind mount descriptions to apply to the run command.
 
         Returns
         -------
@@ -264,7 +273,13 @@ class Image:
         CommandNotFoundError:
             When a command is attempted that is not recognized on the image.
         """
+
         cmd = ["docker", "run", f"--network={network}", "--rm"]
+        if host_user:
+            cmd += ["-u", f"{os.getuid()}:{os.getgid()}"]
+        if bind_mounts is not None:
+            for mount in bind_mounts:
+                cmd += ["-v", f"{mount.mount_string()}"]
         if interactive:
             cmd += ["-i"]
             if stdin.isatty():
@@ -306,9 +321,9 @@ class Image:
         CommandNotFoundError:
             When bash is not recognized on the image.
         """
-        self.run(
-            "bash", interactive=True, network=network, check=False
-        )  # pragma: no cover
+        self.run(  # pragma: no cover
+            "bash", interactive=True, network=network, check=False, host_user=True
+        )
 
     def has_command(self, command: str) -> bool:
         """
