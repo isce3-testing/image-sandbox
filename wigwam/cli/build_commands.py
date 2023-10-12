@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 
 from ..commands import (
+    build_all,
     cmake_install,
     compile_cmake,
     configure_cmake,
@@ -10,6 +11,7 @@ from ..commands import (
     get_archive,
     make_distrib,
 )
+from ..defaults import universal_tag_prefix
 from ._utils import add_tag_argument, help_formatter
 
 
@@ -26,6 +28,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         cmake-config,
         cmake-compile,
         cmake-install,
+        build-all,
     and more are being added.
 
     Parameters
@@ -88,7 +91,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     archive_parser = subparsers.add_parser(
         "get-archive",
         parents=[setup_params, archive_params, no_cache_params],
-        help="Set up the GitHub repository image, in [USER]/[REPO_NAME] format.",
+        help="Set up the GitHub repository image.",
         formatter_class=help_formatter,
     )
     add_tag_argument(parser=archive_parser, default="repo")
@@ -170,6 +173,52 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         ' Defaults to "build-installed".',
     )
 
+    parser_build_all = subparsers.add_parser(
+        "build-all",
+        parents=[config_params, no_cache_params],
+        help="Performs the complete compilation process, from initial GitHub checkout "
+        "to installation.",
+        formatter_class=help_formatter,
+    )
+    parser_build_all.add_argument(
+        "--base",
+        "-b",
+        type=str,
+        default="setup-mamba-dev",
+        help='The name of the parent Docker image. Default is "setup-mamba-dev".',
+    )
+    parser_build_all.add_argument(
+        "--tag",
+        "-t",
+        default="build",
+        type=str,
+        help="The sub-prefix of the Docker images to be created. Generated images will "
+        f'have tags fitting "{universal_tag_prefix()}-[TAG]-*". Default: "build"',
+    )
+    parser_build_all.add_argument(
+        "--copy-path",
+        "-p",
+        metavar="FILEPATH",
+        type=str,
+        default=None,
+        help="The path to be copied to the image. If used, no github image will be "
+        "copied. Defaults to None.",
+    )
+    parser_build_all.add_argument(
+        "--archive-url",
+        type=str,
+        metavar="GIT_ARCHIVE",
+        help='The URL of the Git archive to be fetched. Must be a "tar.gz" file.'
+        "Ignored if --copy-path is used.",
+    )
+    parser_build_all.add_argument(
+        "--directory",
+        type=Path,
+        default=Path("/src"),
+        help="The path to place the contents of the Git archive or copied directory "
+        "into on the image.",
+    )
+
 
 def build_command_names() -> List[str]:
     """Returns a list of all build command names."""
@@ -180,6 +229,7 @@ def build_command_names() -> List[str]:
         "cmake-compile",
         "cmake-install",
         "make-distrib",
+        "build-all",
     ]
 
 
@@ -196,3 +246,5 @@ def run_build(args: argparse.Namespace, command: str) -> None:
         cmake_install(**vars(args))
     elif command == "make-distrib":
         make_distrib(**vars(args))
+    elif command == "build-all":
+        build_all(**vars(args))

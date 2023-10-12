@@ -303,6 +303,118 @@ def make_distrib(tag: str, base: str, source_tag: str, no_cache: bool = False) -
     return Image.build(tag=tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
+def build_all(
+    tag: str,
+    base: str,
+    copy_path: os.PathLike | None,
+    archive_url: str | None,
+    directory: os.PathLike,
+    build_type: str,
+    no_cuda: bool,
+    no_cache: bool = False,
+) -> dict[str, Image]:
+    """
+    Fully compiles and builds a Git repo with cmake.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag prefix.
+    base : str
+        The base image tag.
+    copy_path : str
+        The path to a directory to copy to an image.
+    archive_url : str or None
+        The URL of the Git archive to install on an image. No archive will be installed
+        if `copy_dir` is given.
+    directory : str
+        The path to place the contents of the Git archive or copied directory to.
+    build_type : str
+        The CMake build type. See
+        `here <https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html>`_
+        for possible values.
+    no_cuda : bool
+        If True, build without CUDA.
+    no_cache : bool, optional
+        Run Docker build with no cache if True. Defaults to False.
+
+    Returns
+    -------
+    dict[str, Image]
+        A dict of images produced by this process.
+    """
+
+    prefixed_tag: str = prefix_image_tag(tag)
+    prefixed_base_tag: str = prefix_image_tag(base)
+
+    images: dict[str, Image] = {}
+
+    # If the user has indicated a path to copy, the code should copy that.
+    # Otherwise, the code should fetch a git repository.
+    is_insert = copy_path is not None
+
+    initial_tag: str = ""
+    if is_insert:
+        assert isinstance(copy_path, str)
+        path_absolute = os.path.abspath(copy_path)
+        if os.path.isdir(copy_path):
+            top_dir = os.path.basename(path_absolute)
+        else:
+            top_dir = os.path.basename(os.path.dirname(path_absolute))
+
+        insert_tag = f"{prefixed_tag}-file-{top_dir}"
+        insert_image = copy_dir(
+            base=prefixed_base_tag,
+            tag=insert_tag,
+            directory=directory,
+            target_path=copy_path,
+            no_cache=no_cache,
+        )
+        images[insert_tag] = insert_image
+        initial_tag = insert_tag
+    else:
+        git_repo_tag = f"{prefixed_tag}-git-repo"
+        assert archive_url is not None
+
+        git_repo_image = get_archive(
+            base=prefixed_base_tag,
+            tag=git_repo_tag,
+            archive_url=archive_url,
+            directory=directory,
+            no_cache=no_cache,
+        )
+        images[git_repo_tag] = git_repo_image
+        initial_tag = git_repo_tag
+
+    configure_tag = f"{prefixed_tag}-configured"
+    configure_image = configure_cmake(
+        tag=configure_tag,
+        base=initial_tag,
+        build_type=build_type,
+        no_cuda=no_cuda,
+        no_cache=no_cache,
+    )
+    images[configure_tag] = configure_image
+
+    build_tag = f"{prefixed_tag}-built"
+    build_image = compile_cmake(
+        tag=build_tag,
+        base=configure_tag,
+        no_cache=no_cache,
+    )
+    images[build_tag] = build_image
+
+    install_tag = f"{prefixed_tag}-installed"
+    install_image = cmake_install(
+        tag=install_tag,
+        base=build_tag,
+        no_cache=no_cache,
+    )
+    images[install_tag] = install_image
+
+    return images
+
+
 def test(
     tag: str,
     output_xml: os.PathLike[str] | str,
