@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-from ..commands import dropin, make_lockfile, remove
+from ..commands import dropin, make_lockfile, remove, test
 from ._utils import help_formatter
 
 
@@ -17,6 +17,26 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
     prefix : str
         The image tag prefix.
     """
+
+    test_parser = subparsers.add_parser(
+        "test", help="Run unit tests on an image.", formatter_class=help_formatter
+    )
+    test_parser.add_argument(
+        "tag", metavar="IMAGE_TAG", type=str, help="The tag or ID of the test image."
+    )
+    test_parser.add_argument(
+        "--logfile",
+        "-l",
+        type=str,
+        default="Test.xml",
+        help="The logfile to output test results to.",
+    )
+    test_parser.add_argument(
+        "--compress-output", action="store_true", help="Compress ctest output."
+    )
+    test_parser.add_argument(
+        "--quiet-fail", action="store_true", help="Less verbose output on test failure."
+    )
 
     dropin_parser = subparsers.add_parser(
         "dropin", help="Start a drop-in session.", formatter_class=help_formatter
@@ -93,3 +113,5 @@ def run_util(args: argparse.Namespace, command: str) -> None:
         remove(**vars(args))
     elif command == "lockfile":
         make_lockfile(**vars(args))
+    elif command == "test":
+        test(**vars(args))

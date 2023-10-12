@@ -83,7 +83,11 @@ def cmake_build_dockerfile(base: str) -> str:
     dockerfile += f"{micromamba_docker_lines()}\n\n"
 
     # Build the project.
-    dockerfile += "RUN cmake --build $BUILD_PREFIX --parallel"
+    dockerfile += "RUN cmake --build $BUILD_PREFIX --parallel\n\n"
+
+    # Add permissions to the testing subdirectory under the build prefix.
+    # This step is necessary to enable testing on the image.
+    dockerfile += "RUN chmod -R 777 $BUILD_PREFIX/Testing"
 
     return dockerfile
 
