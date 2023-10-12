@@ -101,6 +101,7 @@ class CUDADockerfileGenerator(ABC):
             ).strip()
             + "\n\n"
             + install_lines
+            + "\n\n"
             + "USER $DEFAULT_USER"
         )
 
