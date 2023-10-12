@@ -308,3 +308,18 @@ class TestCMakeGenerators:
                     quiet_fail=False,
                 )
                 assert output_xml.is_file()
+
+        @mark.isce3
+        @mark.slow
+        def test_isce3_distributable_image(
+            self,
+            isce3_distributable_image: Image,
+        ):
+            """
+            Test the ISCE3 Distributable image.
+
+            NOTE: This test runs very slowly because it requires the building of all
+            ISCE3 base images.
+            """
+            isce3_distributable_image.run(command='python -c "import isce3"')
+            isce3_distributable_image.run(command='python -c "import nisar"')
