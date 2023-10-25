@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import io
 import os
+from collections.abc import Iterable
 from shlex import split
 from subprocess import DEVNULL, CalledProcessError, run
 from sys import stdin
-from typing import Any, Iterable, List, Optional, Type, TypeVar, overload
+from typing import Any, Type, TypeVar, overload
 
 from ._bind_mount import BindMount
 from ._exceptions import CommandNotFoundError, DockerBuildError, ImageNotFoundError
@@ -196,14 +197,14 @@ class Image:
 
         return cls(tag)
 
-    def _inspect(self, format: Optional[str] = None) -> str:
+    def _inspect(self, format: str | None = None) -> str:
         """
         Use 'docker inspect' to retrieve a piece of information about the
         image.
 
         Parameters
         ----------
-        format : str, optional
+        format : str or None, optional
             The value to be requested by the --format argument, or None.
             Defaults to None.
 
@@ -303,7 +304,7 @@ class Image:
                 raise
         return result.stdout
 
-    def drop_in(self, network: str = "host") -> None:
+    def drop_in(self, network: str = "host", host_user: bool = True) -> None:
         """
         Start a drop-in session on a disposable container.
 
@@ -315,6 +316,9 @@ class Image:
         ----------
         network : str, optional
             The name of the network. Defaults to "host".
+        host_user: bool, optional
+            If True, run as the current user on the host machine. Else, run as the
+            default user in the image. Defaults to True.
 
         Raises
         -------
@@ -322,7 +326,7 @@ class Image:
             When bash is not recognized on the image.
         """
         self.run(  # pragma: no cover
-            "bash", interactive=True, network=network, check=False, host_user=True
+            "bash", interactive=True, network=network, check=False, host_user=host_user
         )
 
     def has_command(self, command: str) -> bool:
@@ -354,8 +358,8 @@ class Image:
             return True
 
     @property
-    def tags(self) -> List[str]:
-        """List[str]: The Repo Tags held on this Docker image."""
+    def tags(self) -> list[str]:
+        """list[str]: The Repo Tags held on this Docker image."""
         return self._inspect(format="{{.RepoTags}}").strip("][\n").split(", ")
 
     @property

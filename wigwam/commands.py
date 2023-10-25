@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
+import shlex
+from collections.abc import Iterable
 from pathlib import Path
 from shlex import split
 from subprocess import DEVNULL, PIPE, run
-from typing import Iterable, List
 
 from ._bind_mount import BindMount
 from ._docker_cmake import (
@@ -257,7 +258,7 @@ def cmake_install(tag: str, base: str, no_cache: bool = False) -> Image:
 
 def test(
     tag: str,
-    logfile: os.PathLike[str] | str,
+    output_xml: os.PathLike[str] | str,
     compress_output: bool,
     quiet_fail: bool,
 ) -> None:
@@ -268,21 +269,20 @@ def test(
     ----------
     tag : str
         The tag of the image to test.
-    logfile : os.PathLike[str] | str
+    output_xml : os.PathLike[str] | str
         The name of the XML test output file.
     compress_output : bool
         If True, compress the output of the test.
     quiet_fail : bool
-        If True, don't output on failure.
+        If True, don't generate verbose output on failure.
     """
 
     prefixed_tag: str = prefix_image_tag(tag)
 
-    host_volume_path = "./Testing/Temps"
-    image_volume_path = "/tmp/Testing"
-    image: Image = Image(prefixed_tag)
+    image_volume_path = "/temporary/Testing"
+    image = Image(prefixed_tag)
 
-    move_cmd = ["cd", str(build_prefix())]
+    move_cmd = ["cd", os.fspath(build_prefix())]
     test_cmd = ["(", "ctest"]
 
     # Add arguments
@@ -291,29 +291,33 @@ def test(
     if not quiet_fail:
         test_cmd += ["--output-on-failure"]
 
+    # Note: as an alternative to copying the Test.xml file
+    # from the default location to the specified output directory,
+    # we could instead use `ctest --output-junit <file>`, although
+    # this requires CMake>=3.21
     test_cmd += ["-T", "Test", "||", "true", ")"]
     file_cmd = [
         "cp",
         f"{build_prefix()}/Testing/*/Test.xml",
-        f"{image_volume_path}/{logfile}",
+        f"{image_volume_path}/{output_xml}",
     ]
 
-    cmd: list[str] = move_cmd + ["&&"] + test_cmd + ["&&"] + file_cmd
+    cmd = move_cmd + ["&&"] + test_cmd + ["&&"] + file_cmd
 
-    command = " ".join(cmd)
+    command = shlex.join(cmd)
 
-    host_vol_abspath = Path(host_volume_path).resolve()
-    host_vol_abspath.parent.mkdir(parents=True, exist_ok=True)
+    host_volume_path = Path(output_xml).parent.resolve()
+    host_volume_path.mkdir(parents=True, exist_ok=True)
 
     bind_mount = BindMount(
-        src=image_volume_path,
-        dst=host_vol_abspath,
+        src=host_volume_path,
+        dst=image_volume_path,
         permissions="rw",
     )
     image.run(command=command, host_user=True, bind_mounts=[bind_mount])
 
 
-def dropin(tag: str) -> None:
+def dropin(tag: str, default_user: bool = False) -> None:
     """
     Initiates a drop-in session on an image.
 
@@ -321,11 +325,14 @@ def dropin(tag: str) -> None:
     ----------
     tag : str
         The tag or ID of the image.
+    default_user: bool, optional
+        If True, run as the default user in the image. Else, run as the current user on
+        the host machine. Defaults to False.
     """
     tag = prefix_image_tag(tag)
     image: Image = Image(tag)
 
-    image.drop_in()
+    image.drop_in(host_user=not default_user)
 
 
 def remove(
@@ -410,13 +417,13 @@ def make_lockfile(
     assert isinstance(lockfile, str)
 
     # Split the lockfile into two parts - initial lines and conda package lines.
-    lockfile_list: List[str] = lockfile.split("\n")
+    lockfile_list: list[str] = lockfile.split("\n")
     conda_package_filter = filter(is_conda_pkg_name, lockfile_list)
     other_lines_filter = filter(
         lambda line: not is_conda_pkg_name(line) and line != "", lockfile_list
     )
-    lockfile_conda_packages: List[str] = list(conda_package_filter)
-    lockfile_other_lines: List[str] = list(other_lines_filter)
+    lockfile_conda_packages: list[str] = list(conda_package_filter)
+    lockfile_other_lines: list[str] = list(other_lines_filter)
 
     # Sort the conda packages, then join the parts back together.
     lockfile_conda_packages.sort()

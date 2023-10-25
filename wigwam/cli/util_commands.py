@@ -25,11 +25,11 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
         "tag", metavar="IMAGE_TAG", type=str, help="The tag or ID of the test image."
     )
     test_parser.add_argument(
-        "--logfile",
-        "-l",
+        "--output-xml",
+        "-o",
         type=str,
         default="Test.xml",
-        help="The logfile to output test results to.",
+        help="The output XML file to write test results to.",
     )
     test_parser.add_argument(
         "--compress-output", action="store_true", help="Compress ctest output."
@@ -43,6 +43,12 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
     )
     dropin_parser.add_argument(
         "tag", metavar="IMAGE_TAG", type=str, help="The tag or ID of the desired image."
+    )
+    test_parser.add_argument(
+        "--default-user",
+        action="store_true",
+        help="Run as the default user on the image. If not used, will run as the "
+        "current user on the host machine.",
     )
 
     remove_parser = subparsers.add_parser(

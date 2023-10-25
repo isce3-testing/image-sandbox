@@ -38,10 +38,10 @@ def cmake_config_dockerfile(base: str, build_type: str, with_cuda: bool = True) 
     cmake_extra_args = " ".join(additional_args)
 
     # Begin constructing the dockerfile with the initial FROM line.
-    dockerfile: str = f"FROM {base}\n\n"
+    dockerfile: str = f"FROM {base}"
 
     # Activate the micromamba user and environment.
-    dockerfile += micromamba_docker_lines() + "\n\n"
+    dockerfile += f"\n\n{micromamba_docker_lines()}\n\n"
     dockerfile += dedent(
         f"""
             ENV INSTALL_PREFIX {str(install_prefix())}
@@ -59,6 +59,7 @@ def cmake_config_dockerfile(base: str, build_type: str, with_cuda: bool = True) 
         """
     ).strip()
 
+    dockerfile += "\n"
     return dockerfile
 
 
@@ -77,18 +78,19 @@ def cmake_build_dockerfile(base: str) -> str:
         The generated Dockerfile.
     """
     # Begin constructing the dockerfile with the initial FROM line.
-    dockerfile = f"FROM {base}\n\n"
+    dockerfile = f"FROM {base}"
 
     # Run as the $MAMBA_USER and activate the micromamba environment.
-    dockerfile += f"{micromamba_docker_lines()}\n\n"
+    dockerfile += f"\n\n{micromamba_docker_lines()}"
 
     # Build the project.
-    dockerfile += "RUN cmake --build $BUILD_PREFIX --parallel\n\n"
+    dockerfile += "\n\nRUN cmake --build $BUILD_PREFIX --parallel"
 
     # Add permissions to the testing subdirectory under the build prefix.
     # This step is necessary to enable testing on the image.
-    dockerfile += "RUN chmod -R 777 $BUILD_PREFIX"
+    dockerfile += "\n\nRUN chmod -R 777 $BUILD_PREFIX"
 
+    dockerfile += "\n"
     return dockerfile
 
 
@@ -107,10 +109,10 @@ def cmake_install_dockerfile(base: str) -> str:
         The generated Dockerfile.
     """
     # Begin constructing the dockerfile with the initial FROM line.
-    dockerfile = f"FROM {base}\n\n"
+    dockerfile = f"FROM {base}"
 
     # Run as the $MAMBA_USER and activate the micromamba environment.
-    dockerfile += f"{micromamba_docker_lines()}\n\n"
+    dockerfile += f"\n\n{micromamba_docker_lines()}\n\n"
 
     # Install the project and set the appropriate permissions at the target directory.
     dockerfile += dedent(
@@ -133,4 +135,5 @@ def cmake_install_dockerfile(base: str) -> str:
         """
     ).strip()
 
+    dockerfile += "\n"
     return dockerfile
