@@ -279,6 +279,8 @@ def test(
 
     prefixed_tag: str = prefix_image_tag(tag)
 
+    xml_filename = Path(output_xml).name
+
     image_volume_path = "/temporary/Testing"
     image = Image(prefixed_tag)
 
@@ -299,7 +301,7 @@ def test(
     file_cmd = [
         "cp",
         f"{build_prefix()}/Testing/*/Test.xml",
-        f"{image_volume_path}/{output_xml}",
+        f"{image_volume_path}/{xml_filename}",
     ]
 
     cmd = move_cmd + ["&&"] + test_cmd + ["&&"] + file_cmd

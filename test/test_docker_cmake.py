@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 from subprocess import PIPE
+from tempfile import TemporaryDirectory
 from typing import Dict, Iterator, Tuple
 
 from pytest import fixture, mark
@@ -11,6 +12,7 @@ from wigwam._docker_cmake import (
     cmake_config_dockerfile,
     cmake_install_dockerfile,
 )
+from wigwam.commands import test as command_test
 
 from .utils import (
     determine_scope,
@@ -289,3 +291,20 @@ class TestCMakeGenerators:
             """
             isce3_cmake_install_image.run(command='python -c "import isce3"')
             isce3_cmake_install_image.run(command='python -c "import nisar"')
+
+        @mark.isce3
+        @mark.slow
+        def test_test_command(
+            self,
+            isce3_cmake_install_tag: str,
+            isce3_cmake_install_image: Image,  # type: ignore
+        ):
+            with TemporaryDirectory() as temp_dir:
+                output_xml = Path(temp_dir) / "temp.xml"
+                command_test(
+                    tag=isce3_cmake_install_tag,
+                    output_xml=output_xml,
+                    compress_output=False,
+                    quiet_fail=False,
+                )
+                assert output_xml.is_file()
