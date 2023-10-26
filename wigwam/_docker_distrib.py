@@ -45,15 +45,11 @@ def distrib_dockerfile(
 
             FROM {base}
 
-            # Change user to root - this is necessary to enable file copying.
-            #USER root
-
             COPY --from=source {source_path} {distrib_path}
 
             ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:{distrib_path}/{libdir}
             ENV PYTHONPATH $PYTHONPATH:{distrib_path}/packages
 
-            USER $DEFAULT_USER
             ENV ISCE3_PREFIX={distrib_path}
             WORKDIR $ISCE3_PREFIX
         """
