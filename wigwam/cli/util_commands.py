@@ -44,7 +44,7 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
     dropin_parser.add_argument(
         "tag", metavar="IMAGE_TAG", type=str, help="The tag or ID of the desired image."
     )
-    test_parser.add_argument(
+    dropin_parser.add_argument(
         "--default-user",
         action="store_true",
         help="Run as the default user on the image. If not used, will run as the "
