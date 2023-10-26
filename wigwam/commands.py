@@ -281,7 +281,7 @@ def test(
 
     xml_filename = Path(output_xml).name
 
-    image_volume_path = "/temporary/Testing"
+    image_volume_path = "/scratch/Testing"
     image = Image(prefixed_tag)
 
     move_cmd = ["cd", os.fspath(build_prefix())]
