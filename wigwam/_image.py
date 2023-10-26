@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import io
 import os
+from collections.abc import Iterable
 from shlex import split
 from subprocess import DEVNULL, CalledProcessError, run
 from sys import stdin
-from typing import Any, List, Optional, Type, TypeVar, Union, overload
+from typing import Any, Type, TypeVar, overload
 
+from ._bind_mount import BindMount
 from ._exceptions import CommandNotFoundError, DockerBuildError, ImageNotFoundError
 
 
@@ -16,7 +20,7 @@ class Image:
     an interface by which to interact with that image.
 
     Capabilities include:
-    -   Building Docker images from dockerfiles or Dockerfile-formatted strings
+    -   Building Docker images from Dockerfiles or Dockerfile-formatted strings
         via :func:`~wigwam.Image.build`.
     -   Running commands in containers built from the image using
         :func:`~wigwam.Image.run`.
@@ -42,8 +46,8 @@ class Image:
         cls: Type[Self],
         tag: str,
         *,
-        dockerfile: Union[str, os.PathLike[str]],
-        context: Union[str, os.PathLike[str]] = ...,
+        dockerfile: os.PathLike[str] | str,
+        context: os.PathLike[str] | str = ...,
         stdout: Any = ...,
         stderr: Any = ...,
         network: str = ...,
@@ -60,8 +64,7 @@ class Image:
         tag : str
             A name for the image.
         dockerfile : os.PathLike
-            The path of the Dockerfile to build
-            directory.
+            The path of the Dockerfile to build directory.
         context : os.PathLike, optional
             The build context. Defaults to ".".
         stdout : io.TextIOBase or special value, optional
@@ -95,7 +98,7 @@ class Image:
         tag: str,
         *,
         dockerfile_string: str,
-        context: Union[str, os.PathLike[str]] = ...,
+        context: os.PathLike[str] | str = ...,
         stdout: Any = ...,
         stderr: Any = ...,
         network: str = ...,
@@ -132,7 +135,7 @@ class Image:
         DockerBuildError
             If the Docker build command fails.
         ValueError
-            If both `Dockerfile` and `dockerfile_string` are defined.
+            If both `dockerfile` and `dockerfile_string` are defined.
         """
         ...
 
@@ -194,14 +197,14 @@ class Image:
 
         return cls(tag)
 
-    def _inspect(self, format: Optional[str] = None) -> str:
+    def _inspect(self, format: str | None = None) -> str:
         """
         Use 'docker inspect' to retrieve a piece of information about the
         image.
 
         Parameters
         ----------
-        format : str, optional
+        format : str or None, optional
             The value to be requested by the --format argument, or None.
             Defaults to None.
 
@@ -224,11 +227,13 @@ class Image:
         self,
         command: str,
         *,
-        stdout: Optional[Union[io.TextIOBase, int]] = None,
-        stderr: Optional[Union[io.TextIOBase, int]] = None,
+        stdout: io.TextIOBase | int | None = None,
+        stderr: io.TextIOBase | int | None = None,
         interactive: bool = False,
         network: str = "host",
         check: bool = True,
+        host_user: bool = False,
+        bind_mounts: Iterable[BindMount] | None = None,
     ) -> str:
         """
         Run the given command on a container.
@@ -253,6 +258,11 @@ class Image:
         check: bool, optional
             If True, check for CalledProcessErrors on non-zero return codes. Defualts
             to True.
+        host_user: bool, optional
+            If True, run the command as the user on the host machine, else run as the
+            default user. Defaults to False.
+        bind_mounts : Iterable[BindMount], optional
+            A list of bind mount descriptions to apply to the run command.
 
         Returns
         -------
@@ -264,7 +274,13 @@ class Image:
         CommandNotFoundError:
             When a command is attempted that is not recognized on the image.
         """
+
         cmd = ["docker", "run", f"--network={network}", "--rm"]
+        if host_user:
+            cmd += ["-u", f"{os.getuid()}:{os.getgid()}"]
+        if bind_mounts is not None:
+            for mount in bind_mounts:
+                cmd += ["-v", f"{mount.mount_string()}"]
         if interactive:
             cmd += ["-i"]
             if stdin.isatty():
@@ -288,7 +304,7 @@ class Image:
                 raise
         return result.stdout
 
-    def drop_in(self, network: str = "host") -> None:
+    def drop_in(self, network: str = "host", host_user: bool = True) -> None:
         """
         Start a drop-in session on a disposable container.
 
@@ -300,15 +316,18 @@ class Image:
         ----------
         network : str, optional
             The name of the network. Defaults to "host".
+        host_user: bool, optional
+            If True, run as the current user on the host machine. Else, run as the
+            default user in the image. Defaults to True.
 
         Raises
         -------
         CommandNotFoundError:
             When bash is not recognized on the image.
         """
-        self.run(
-            "bash", interactive=True, network=network, check=False
-        )  # pragma: no cover
+        self.run(  # pragma: no cover
+            "bash", interactive=True, network=network, check=False, host_user=host_user
+        )
 
     def has_command(self, command: str) -> bool:
         """
@@ -339,8 +358,8 @@ class Image:
             return True
 
     @property
-    def tags(self) -> List[str]:
-        """List[str]: The Repo Tags held on this Docker image."""
+    def tags(self) -> list[str]:
+        """list[str]: The Repo Tags held on this Docker image."""
         return self._inspect(format="{{.RepoTags}}").strip("][\n").split(", ")
 
     @property
