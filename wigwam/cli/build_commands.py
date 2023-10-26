@@ -8,7 +8,7 @@ from ..commands import (
     configure_cmake,
     copy_dir,
     get_archive,
-    make_distributable,
+    make_distrib,
 )
 from ._utils import add_tag_argument, help_formatter
 
@@ -141,7 +141,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     add_tag_argument(parser=install_parser, default="installed")
 
     distrib_parser = subparsers.add_parser(
-        "make-distributable",
+        "make-distrib",
         parents=[no_cache_params],
         help="Creates a distributable image.",
         formatter_class=help_formatter,
@@ -179,7 +179,7 @@ def build_command_names() -> List[str]:
         "cmake-config",
         "cmake-compile",
         "cmake-install",
-        "make-distributable",
+        "make-distrib",
     ]
 
 
@@ -194,5 +194,5 @@ def run_build(args: argparse.Namespace, command: str) -> None:
         compile_cmake(**vars(args))
     elif command == "cmake-install":
         cmake_install(**vars(args))
-    elif command == "make-distributable":
-        make_distributable(**vars(args))
+    elif command == "make-distrib":
+        make_distrib(**vars(args))

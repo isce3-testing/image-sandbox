@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from textwrap import dedent
 
-from .defaults import install_prefix
-
 
 def distrib_dockerfile(
     base: str,
@@ -15,6 +13,10 @@ def distrib_dockerfile(
 ) -> str:
     """
     Returns a Dockerfile for a distributable build.
+
+    The distributable image includes the installed software and all of its runtime
+    dependencies, but excludes build-time dependencies. The working directory on the
+    generated image will also be moved to the location given at `distrib_path`.
 
     Parameters
     ----------
@@ -43,12 +45,13 @@ def distrib_dockerfile(
 
             FROM {base}
 
-            USER root
+            # Change user to root - this is necessary to enable file copying.
+            #USER root
 
             COPY --from=source {source_path} {distrib_path}
 
-            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:{install_prefix()}/{libdir}
-            ENV PYTHONPATH $PYTHONPATH:{install_prefix()}/packages
+            ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:{distrib_path}/{libdir}
+            ENV PYTHONPATH $PYTHONPATH:{distrib_path}/packages
 
             USER $DEFAULT_USER
             ENV ISCE3_PREFIX={distrib_path}

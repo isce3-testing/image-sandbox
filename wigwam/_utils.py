@@ -203,22 +203,22 @@ def test_image(image: Image, expression: str) -> bool:
             raise
 
 
-def get_libdir(
-    base_tag: str,
-) -> str:
-    """Determine if the given image uses `lib64` or `lib` as its `LIBDIR`."""
-    # Unlike with the CMake Install step, `libdir` can be checked directly on this image
-    # because it has something at $INSTALL_PREFIX. Check the base tag for lib64 or lib.
+def get_libdir(base_tag: str) -> str:
+    """
+    Determine if the given image uses `lib64` or `lib` as its `LIBDIR`.
+
+    This function assumes that the base_tag has something at either
+    `$INSTALL_PREFIX/lib64` or `$INSTALL_PREFIX/lib`.
+    """
     with temp_image(base_tag) as temp_img:
-        uses_lib64 = test_image(image=temp_img, expression='"$INSTALL_PREFIX/lib64"')
-
-    if uses_lib64:
-        libdir: str = "lib64"
-    else:
-        libdir = "lib"
-        assert test_image(image=temp_img, expression='"$INSTALL_PREFIX/lib"')
-
-    return libdir
+        for libdir in ["lib64", "lib"]:
+            if test_image(temp_img, f'"$INSTALL_PREFIX/{libdir}"'):
+                return libdir
+        else:
+            raise ValueError(
+                "could not find a directory named $INSTALL_PREFIX/lib64"
+                " or $INSTALL_PREFIX/lib in the specified image"
+            )
 
 
 def _package_manager_check(image: Image) -> PackageManager:

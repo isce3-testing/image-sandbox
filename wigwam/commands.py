@@ -64,12 +64,12 @@ def get_archive(
     Image
         The generated image.
     """
-    if url_reader is None:
-        with temp_image(base) as temp_img:
-            _, url_reader, _ = image_command_check(temp_img)
-
     img_tag = prefix_image_tag(tag)
     base_tag = prefix_image_tag(base)
+
+    if url_reader is None:
+        with temp_image(base_tag) as temp_img:
+            _, url_reader, _ = image_command_check(temp_img)
 
     dockerfile = git_extract_dockerfile(
         base=base_tag,
@@ -262,9 +262,8 @@ def cmake_install(tag: str, base: str, no_cache: bool = False) -> Image:
         tag=prefixed_tag, dockerfile_string=dockerfile, no_cache=no_cache
     )
 
-def make_distributable(
-    tag: str, base: str, source_tag: str, no_cache: bool = False
-) -> Image:
+
+def make_distrib(tag: str, base: str, source_tag: str, no_cache: bool = False) -> Image:
     """
     Produces a distributable image.
 
