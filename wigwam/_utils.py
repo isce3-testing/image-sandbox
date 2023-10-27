@@ -203,6 +203,24 @@ def test_image(image: Image, expression: str) -> bool:
             raise
 
 
+def get_libdir(base_tag: str) -> str:
+    """
+    Determine if the given image uses `lib64` or `lib` as its `LIBDIR`.
+
+    This function assumes that the base_tag has something at either
+    `$INSTALL_PREFIX/lib64` or `$INSTALL_PREFIX/lib`.
+    """
+    with temp_image(base_tag) as temp_img:
+        for libdir in ["lib64", "lib"]:
+            if test_image(temp_img, f'"$INSTALL_PREFIX/{libdir}"'):
+                return libdir
+        else:
+            raise ValueError(
+                "could not find a directory named $INSTALL_PREFIX/lib64"
+                " or $INSTALL_PREFIX/lib in the specified image"
+            )
+
+
 def _package_manager_check(image: Image) -> PackageManager:
     """
     Returns the package manager present on an image.

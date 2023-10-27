@@ -13,13 +13,20 @@ from ._docker_cmake import (
     cmake_config_dockerfile,
     cmake_install_dockerfile,
 )
+from ._docker_distrib import distrib_dockerfile
 from ._docker_git import git_extract_dockerfile
 from ._docker_insert import insert_dir_dockerfile
 from ._docker_mamba import mamba_lockfile_command
 from ._image import Image
 from ._url_reader import URLReader
-from ._utils import image_command_check, is_conda_pkg_name, prefix_image_tag, temp_image
-from .defaults import build_prefix
+from ._utils import (
+    get_libdir,
+    image_command_check,
+    is_conda_pkg_name,
+    prefix_image_tag,
+    temp_image,
+)
+from .defaults import build_prefix, install_prefix
 
 
 def get_archive(
@@ -57,12 +64,12 @@ def get_archive(
     Image
         The generated image.
     """
-    if url_reader is None:
-        with temp_image(base) as temp_img:
-            _, url_reader, _ = image_command_check(temp_img)
-
     img_tag = prefix_image_tag(tag)
     base_tag = prefix_image_tag(base)
+
+    if url_reader is None:
+        with temp_image(base_tag) as temp_img:
+            _, url_reader, _ = image_command_check(temp_img)
 
     dockerfile = git_extract_dockerfile(
         base=base_tag,
@@ -254,6 +261,46 @@ def cmake_install(tag: str, base: str, no_cache: bool = False) -> Image:
     return Image.build(
         tag=prefixed_tag, dockerfile_string=dockerfile, no_cache=no_cache
     )
+
+
+def make_distrib(tag: str, base: str, source_tag: str, no_cache: bool = False) -> Image:
+    """
+    Produces a distributable image.
+
+    Parameters
+    ----------
+    tag : str
+        The image tag.
+    base : str
+        The base image tag.
+    source_tag : str
+        The tag of the source image from which to acquire the install directory.
+    no_cache : bool, optional
+        Run Docker build with no cache if True. Defaults to False.
+
+    Returns
+    -------
+    Image
+        The generated image.
+    """
+
+    prefixed_base_tag: str = prefix_image_tag(base)
+    prefixed_source_tag: str = prefix_image_tag(source_tag)
+
+    # Unlike with the CMake Install function, `libdir` can be checked directly on this
+    # image because it has something at $INSTALL_PREFIX. Check the base tag for lib64 or
+    # lib.
+    libdir: str = get_libdir(prefixed_base_tag)
+
+    dockerfile = distrib_dockerfile(
+        base=prefixed_base_tag,
+        source_tag=prefixed_source_tag,
+        source_path=install_prefix(),
+        distrib_path=install_prefix(),
+        libdir=libdir,
+    )
+
+    return Image.build(tag=tag, dockerfile_string=dockerfile, no_cache=no_cache)
 
 
 def test(

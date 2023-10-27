@@ -13,7 +13,10 @@ from wigwam._docker_cmake import (
     cmake_config_dockerfile,
     cmake_install_dockerfile,
 )
+from wigwam._docker_distrib import distrib_dockerfile
 from wigwam._docker_git import git_extract_dockerfile
+from wigwam._utils import get_libdir
+from wigwam.defaults import install_prefix
 from wigwam.setup_commands import setup_all
 
 from .utils import determine_scope, generate_tag, remove_docker_image
@@ -80,6 +83,20 @@ def isce3_env_dev_image_tag(
 ) -> str:
     """Return the tag of the ISCE3 development environment image."""
     pattern = re.compile(rf".*{isce3_build_tag}.*mamba-dev")
+    for tag in isce3_setup_images:
+        if pattern.match(tag):
+            return tag
+
+    raise ValueError("No development environment image tag found.")
+
+
+@fixture(scope=determine_scope)
+def isce3_env_runtime_image_tag(
+    isce3_build_tag: str,
+    isce3_setup_images: dict[str, Image],
+) -> str:
+    """Return the tag of the ISCE3 development environment image."""
+    pattern = re.compile(rf".*{isce3_build_tag}.*mamba-runtime")
     for tag in isce3_setup_images:
         if pattern.match(tag):
             return tag
@@ -191,3 +208,36 @@ def isce3_cmake_install_image(
     )
 
     remove_docker_image(isce3_cmake_install_tag)
+
+
+@fixture(scope=determine_scope)
+def isce3_distributable_tag() -> str:
+    """Return a tag for the ISCE3 CMake install image."""
+    return generate_tag("isce3-distributable")
+
+
+@fixture(scope=determine_scope)
+def isce3_distributable_image(
+    isce3_distributable_tag: str,
+    isce3_cmake_install_tag: str,
+    isce3_env_runtime_image_tag: str,
+    isce3_cmake_install_image: Image,  # type: ignore
+) -> Iterator[Image]:
+    """Return the ISCE3 distributable image."""
+    libdir = get_libdir(isce3_cmake_install_tag)
+
+    dockerfile = distrib_dockerfile(
+        base=isce3_env_runtime_image_tag,
+        source_tag=isce3_cmake_install_tag,
+        source_path=install_prefix(),
+        distrib_path=install_prefix(),
+        libdir=libdir,
+    )
+
+    yield Image.build(
+        tag=isce3_distributable_tag,
+        dockerfile_string=dockerfile,
+        no_cache=False,
+    )
+
+    remove_docker_image(isce3_distributable_tag)

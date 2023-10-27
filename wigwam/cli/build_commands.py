@@ -8,6 +8,7 @@ from ..commands import (
     configure_cmake,
     copy_dir,
     get_archive,
+    make_distrib,
 )
 from ._utils import add_tag_argument, help_formatter
 
@@ -139,10 +140,47 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=install_parser, default="installed")
 
+    distrib_parser = subparsers.add_parser(
+        "make-distrib",
+        parents=[no_cache_params],
+        help="Creates a distributable image.",
+        formatter_class=help_formatter,
+    )
+    distrib_parser.add_argument(
+        "--tag",
+        "-t",
+        default="isce3",
+        type=str,
+        help="The complete tag of the Docker image to be created. " 'Default: "isce3"',
+    )
+    distrib_parser.add_argument(
+        "--base",
+        "-b",
+        default="setup-mamba-runtime",
+        type=str,
+        help="The complete tag of the Docker image to be created. "
+        'Default: "setup-mamba-runtime"',
+    )
+    distrib_parser.add_argument(
+        "--source-tag",
+        "-s",
+        default="build-installed",
+        type=str,
+        help="The tag or ID of the source image which has the project installed. "
+        ' Defaults to "build-installed".',
+    )
+
 
 def build_command_names() -> List[str]:
     """Returns a list of all build command names."""
-    return ["get-archive", "copydir", "cmake-config", "cmake-compile", "cmake-install"]
+    return [
+        "get-archive",
+        "copydir",
+        "cmake-config",
+        "cmake-compile",
+        "cmake-install",
+        "make-distrib",
+    ]
 
 
 def run_build(args: argparse.Namespace, command: str) -> None:
@@ -156,3 +194,5 @@ def run_build(args: argparse.Namespace, command: str) -> None:
         compile_cmake(**vars(args))
     elif command == "cmake-install":
         cmake_install(**vars(args))
+    elif command == "make-distrib":
+        make_distrib(**vars(args))
