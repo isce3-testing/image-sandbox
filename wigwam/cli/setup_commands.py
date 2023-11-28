@@ -60,15 +60,15 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
         metavar="REPO_NAME",
     )
 
-    setup_parser = subparsers.add_parser(
+    setup_parser: argparse.ArgumentParser = subparsers.add_parser(
         "setup", help="Docker image setup commands.", formatter_class=help_formatter
     )
 
-    setup_subparsers = setup_parser.add_subparsers(
+    setup_subparsers: argparse._SubParsersAction = setup_parser.add_subparsers(
         dest="setup_subcommand", required=True
     )
 
-    setup_all_parser = setup_subparsers.add_parser(
+    setup_all_parser: argparse.ArgumentParser = setup_subparsers.add_parser(
         "all",
         parents=[cuda_run_parse, no_cache_parse],
         help="Set up the full Docker image stack.",
@@ -111,7 +111,7 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
         help="If used, output informational messages upon completion.",
     )
 
-    setup_init_parser = setup_subparsers.add_parser(
+    setup_init_parser: argparse.ArgumentParser = setup_subparsers.add_parser(
         "init",
         parents=[no_cache_parse],
         help="Set up the configuration image.",
@@ -126,7 +126,7 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     add_tag_argument(parser=setup_init_parser, default="init")
 
-    setup_cuda_parser = setup_subparsers.add_parser(
+    setup_cuda_parser: argparse.ArgumentParser = setup_subparsers.add_parser(
         "cuda",
         help="Set up a CUDA image. Designate dev or runtime.",
         formatter_class=help_formatter,
@@ -159,7 +159,7 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     add_tag_argument(parser=setup_cuda_dev_parser, default="cuda-dev")
 
-    setup_conda_parser = setup_subparsers.add_parser(
+    setup_conda_parser: argparse.ArgumentParser = setup_subparsers.add_parser(
         "conda",
         help="Set up a conda environment image. Designate dev or runtime.",
         formatter_class=help_formatter,
@@ -168,7 +168,7 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     conda_subparsers = setup_conda_parser.add_subparsers(
         dest="conda_subcommand", required=True
     )
-    setup_conda_runtime_parser = conda_subparsers.add_parser(
+    setup_conda_runtime_parser: argparse.ArgumentParser = conda_subparsers.add_parser(
         "runtime",
         parents=[setup_parse, no_cache_parse],
         help="Set up the runtime conda environment image",
@@ -183,7 +183,7 @@ def init_setup_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> N
     )
     add_tag_argument(parser=setup_conda_runtime_parser, default="conda-runtime")
 
-    setup_conda_dev_parser = conda_subparsers.add_parser(
+    setup_conda_dev_parser: argparse.ArgumentParser = conda_subparsers.add_parser(
         "dev",
         parents=[setup_parse, no_cache_parse],
         help="Set up the dev conda environment image",
