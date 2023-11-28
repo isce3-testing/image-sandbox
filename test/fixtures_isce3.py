@@ -123,7 +123,7 @@ def isce3_git_repo_image(
     dockerfile = git_extract_dockerfile(
         base=isce3_env_dev_image_tag,
         archive_url=archive,
-        directory=Path("/src/"),
+        dst_path=Path("/src/"),
         url_reader=url_reader,
     )
 

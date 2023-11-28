@@ -12,7 +12,7 @@ def git_extract_dockerfile(
     base: str,
     archive_url: str,
     url_reader: URLReader,
-    directory: str | os.PathLike[str] = Path("repo"),
+    dst_path: str | os.PathLike[str] = Path("repo"),
 ) -> str:
     """
     Returns a Dockerfile-formatted string with instructions to fetch a Git archive.
@@ -25,15 +25,15 @@ def git_extract_dockerfile(
         The URL of the Git archive. Must be a `tar.gz` file.
     url_reader : URLReader
         The URL reader program to fetch the archive with.
-    directory : path-like, optional
-        The name of the folder to store the repository in. Defaults to "repo".
+    dst_path : path-like, optional
+        The prefix of the directory to store the repository in. Defaults to "repo".
 
     Returns
     -------
     dockerfile : str
         The generated Dockerfile.
     """
-    folder_path_str = os.fspath(directory)
+    folder_path_str = os.fspath(dst_path)
 
     # Dockerfile preparation:
     # Prepare the repository file, ensure proper ownership and permissions.
@@ -67,7 +67,7 @@ def git_extract_dockerfile(
             f"""
                 RUN {fetch_command} | tar -xvz -C {folder_path_str} --strip-components 1
 
-                WORKDIR {directory}
+                WORKDIR {dst_path}
                 USER $DEFAULT_USER
             """
         ).strip()

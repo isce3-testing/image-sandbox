@@ -18,7 +18,7 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
         The image tag prefix.
     """
 
-    test_parser = subparsers.add_parser(
+    test_parser: argparse.ArgumentParser = subparsers.add_parser(
         "test", help="Run unit tests on an image.", formatter_class=help_formatter
     )
     test_parser.add_argument(
@@ -38,7 +38,7 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
         "--quiet-fail", action="store_true", help="Less verbose output on test failure."
     )
 
-    dropin_parser = subparsers.add_parser(
+    dropin_parser: argparse.ArgumentParser = subparsers.add_parser(
         "dropin", help="Start a drop-in session.", formatter_class=help_formatter
     )
     dropin_parser.add_argument(
@@ -51,7 +51,7 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
         "current user on the host machine.",
     )
 
-    remove_parser = subparsers.add_parser(
+    remove_parser: argparse.ArgumentParser = subparsers.add_parser(
         "remove",
         help=f"Remove all Docker images beginning with {prefix}-[IMAGE_TAG] for each "
         "image tag provided.",
@@ -82,7 +82,7 @@ def init_util_parsers(subparsers: argparse._SubParsersAction, prefix: str) -> No
         "if not already prefixed.",
     )
 
-    lockfile_parser = subparsers.add_parser(
+    lockfile_parser: argparse.ArgumentParser = subparsers.add_parser(
         "lockfile",
         help="Produce a lockfile for the image.",
         formatter_class=help_formatter,

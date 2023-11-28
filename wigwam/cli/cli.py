@@ -23,7 +23,9 @@ def initialize_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=__package__, formatter_class=help_formatter)
 
     # Add arguments
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers: argparse._SubParsersAction = parser.add_subparsers(
+        dest="command", required=True
+    )
 
     init_setup_parsers(subparsers, prefix)
     init_build_parsers(subparsers)

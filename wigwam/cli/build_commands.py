@@ -48,7 +48,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help='The URL of the Git archive to be fetched. Must be a "tar.gz" file.',
     )
     archive_params.add_argument(
-        "--directory",
+        "--dst-path",
         type=Path,
         default=Path("/src"),
         help="The path to place the contents of the Git archive at on the image.",
@@ -88,7 +88,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="Run Docker build with no cache if used.",
     )
 
-    archive_parser = subparsers.add_parser(
+    archive_parser: argparse.ArgumentParser = subparsers.add_parser(
         "get-archive",
         parents=[setup_params, archive_params, no_cache_params],
         help="Set up the GitHub repository image.",
@@ -96,7 +96,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=archive_parser, default="repo")
 
-    copy_dir_parser = subparsers.add_parser(
+    copy_dir_parser: argparse.ArgumentParser = subparsers.add_parser(
         "copydir",
         parents=[setup_params, no_cache_params],
         help="Insert the contents of a directory at the given path.",
@@ -104,14 +104,14 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=copy_dir_parser, default="dir-copy")
     copy_dir_parser.add_argument(
-        "--directory",
+        "--src-path",
         "-d",
         type=Path,
         required=True,
         help="The directory to be copied to the image.",
     )
     copy_dir_parser.add_argument(
-        "--target-path",
+        "--dst-path",
         "-p",
         type=Path,
         default=None,
@@ -119,7 +119,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         "the base name of the path given by the directory argument will be used.",
     )
 
-    config_parser = subparsers.add_parser(
+    config_parser: argparse.ArgumentParser = subparsers.add_parser(
         "cmake-config",
         parents=[setup_params, config_params, no_cache_params],
         help="Creates an image with a configured compiler.",
@@ -127,7 +127,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=config_parser, default="configured")
 
-    compile_parser = subparsers.add_parser(
+    compile_parser: argparse.ArgumentParser = subparsers.add_parser(
         "cmake-compile",
         parents=[setup_params, no_cache_params],
         help="Creates an image with the project built.",
@@ -135,7 +135,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=compile_parser, default="compiled")
 
-    install_parser = subparsers.add_parser(
+    install_parser: argparse.ArgumentParser = subparsers.add_parser(
         "cmake-install",
         parents=[setup_params, no_cache_params],
         help="Creates an image with the project installed.",
@@ -143,7 +143,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
     )
     add_tag_argument(parser=install_parser, default="installed")
 
-    distrib_parser = subparsers.add_parser(
+    distrib_parser: argparse.ArgumentParser = subparsers.add_parser(
         "make-distrib",
         parents=[no_cache_params],
         help="Creates a distributable image.",
@@ -154,26 +154,24 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         "-t",
         default="isce3",
         type=str,
-        help="The complete tag of the Docker image to be created. " 'Default: "isce3"',
+        help="The complete tag of the Docker image to be created.",
     )
     distrib_parser.add_argument(
         "--base",
         "-b",
         default="setup-mamba-runtime",
         type=str,
-        help="The complete tag of the Docker image to be created. "
-        'Default: "setup-mamba-runtime"',
+        help="The complete tag of the Docker image to be created.",
     )
     distrib_parser.add_argument(
         "--source-tag",
         "-s",
         default="build-installed",
         type=str,
-        help="The tag or ID of the source image which has the project installed. "
-        ' Defaults to "build-installed".',
+        help="The tag or ID of the source image which has the project installed.",
     )
 
-    parser_build_all = subparsers.add_parser(
+    parser_build_all: argparse.ArgumentParser = subparsers.add_parser(
         "build-all",
         parents=[config_params, no_cache_params],
         help="Performs the complete compilation process, from initial GitHub checkout "
@@ -185,7 +183,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         "-b",
         type=str,
         default="setup-mamba-dev",
-        help='The name of the parent Docker image. Default is "setup-mamba-dev".',
+        help="The name of the parent Docker image.",
     )
     parser_build_all.add_argument(
         "--tag",
@@ -193,30 +191,35 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         default="build",
         type=str,
         help="The sub-prefix of the Docker images to be created. Generated images will "
-        f'have tags fitting "{universal_tag_prefix()}-[TAG]-*". Default: "build"',
+        f'have tags fitting "{universal_tag_prefix()}-[TAG]-*".',
     )
     parser_build_all.add_argument(
-        "--copy-path",
-        "-p",
-        metavar="FILEPATH",
-        type=str,
-        default=None,
-        help="The path to be copied to the image. If used, no github image will be "
-        "copied. Defaults to None.",
-    )
-    parser_build_all.add_argument(
-        "--archive-url",
-        type=str,
-        metavar="GIT_ARCHIVE",
-        help='The URL of the Git archive to be fetched. Must be a "tar.gz" file.'
-        "Ignored if --copy-path is used.",
-    )
-    parser_build_all.add_argument(
-        "--directory",
+        "--dst-path",
         type=Path,
         default=Path("/src"),
         help="The path to place the contents of the Git archive or copied directory "
         "into on the image.",
+    )
+    # This group ensures that only one of --archive-url or --src-path is used, since
+    # this command only builds either the contents of a source directory or the contents
+    # of a Git archive.
+    build_all_mutex_group = parser_build_all.add_mutually_exclusive_group(required=True)
+    build_all_mutex_group.add_argument(
+        "--src-path",
+        "-p",
+        metavar="FILEPATH",
+        type=str,
+        default=None,
+        help="The path to the source prefix on the host to be copied to the image. "
+        "Cannot be used with --archive-url.",
+    )
+    build_all_mutex_group.add_argument(
+        "--archive-url",
+        type=str,
+        metavar="GIT_ARCHIVE",
+        default=None,
+        help='The URL of the Git archive to be fetched. Must be a "tar.gz" file. '
+        "Cannot be used with --src-path.",
     )
 
 
