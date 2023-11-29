@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from ..data_commands import data_search
+from ..data_commands import print_search
 from ..defaults import default_workflowdata_path
 from ._utils import help_formatter
 
@@ -49,12 +49,12 @@ def init_data_parsers(subparsers: argparse._SubParsersAction) -> None:
         help="If used, get all repositories. Other search parameters will be ignored.",
     )
 
-    data_parser = subparsers.add_parser(
+    data_parser: argparse.ArgumentParser = subparsers.add_parser(
         "data", help="Perform data operations.", formatter_class=help_formatter
     )
     data_subparsers = data_parser.add_subparsers(dest="data_subcommand")
 
-    search_parser = data_subparsers.add_parser(
+    search_parser: argparse.ArgumentParser = data_subparsers.add_parser(
         "search",
         parents=[search_params],
         help="Search a file for repository metadata.",
@@ -73,4 +73,4 @@ def run_data(args: argparse.Namespace) -> None:
     data_subcommand = args.data_subcommand
     del args.data_subcommand
     if data_subcommand == "search":
-        data_search(**vars(args))
+        print_search(**vars(args))

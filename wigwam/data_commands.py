@@ -1,26 +1,25 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Dict, Iterable, List
+import os
+from collections.abc import Iterable
 
-from .search import filtered_file_search, names_only_search, search_file
+from .search import TestDataset, names_only_search, search_file
 
 
-def data_search(
-    data_file: Path,
+def print_search(
+    data_file: str | os.PathLike,
     tags: Iterable[Iterable[str]],
     names: Iterable[str],
-    fields: Iterable[str],
+    fields: Iterable[str] = [],
     all: bool = False,
-    print_output: bool = True,
-) -> List[Dict[str, str | Dict[str, str]]]:
+) -> None:
     """
-    Query a file database for items.
+    Query a file database for items and print the resulting output.
 
     Parameters
     ----------
-    data_file : Path
+    data_file : path-like
         The name of the database file.
     tags : Iterable[Iterable[str]]
         A set of sets of tags - this function will return the union of items that have
@@ -28,47 +27,42 @@ def data_search(
     names : Iterable[str]
         A list of names of data items to return.
     fields : Iterable[str]
-        The set of fields to be returned on the data items. This should be a strict
-        subset of the fields present on the items. Fields not included in this parameter
-        will be filtered from the items prior to returning them.
+        The set of fields to be returned on the data items. This should be a
+        strict subset of the fields present on the items. If given, fields not included
+        in this parameter will be filtered from the items prior to returning them. If
+        empty, all fields will be returned.
     all : bool, optional
-        If true, return all of the items in the database. Defaults to False
-
-    Returns
-    -------
-    List[Dict[str, str | Dict[str, str]]]
-        The items returned by the query, in dictionary format.
+        If True, return all of the items in the database. Defaults to False.
     """
-    if all:
-        if (any(True for _ in names)) or (any(True for _ in tags)):
-            print("'all' cannot be used in conjunction with 'tags' or 'names'.")
-            exit()
-
-    if fields == []:
-        return search_file(tags=tags, names=names, filename=data_file, all=all)
-
-    filtered_search = filtered_file_search(
-        fields=fields, names=names, tags=tags, filename=data_file, all=all
+    test_datasets: list[TestDataset] = search_file(
+        filename=data_file,
+        tags=tags,
+        names=names,
+        all=all,
     )
 
-    if print_output:
-        print(json.dumps(filtered_search, indent=2))
+    json_objects = []
+    for file in test_datasets:
+        # This should always be true, so we'd like to know if it isn't.
+        assert isinstance(file, TestDataset)
+        json_object = file.to_dict(fields)
+        json_objects.append(json_object)
 
-    return filtered_search
+    print(json.dumps(json_objects, indent=2))
 
 
 def data_names(
-    data_file: Path,
+    data_file: str | os.PathLike,
     tags: Iterable[Iterable[str]],
     names: Iterable[str],
     all: bool = False,
-) -> List[str]:
+) -> list[str]:
     """
     Query a database file and return the names of all data items that match the query.
 
     Parameters
     ----------
-    data_file : Path
+    data_file : path-like
         The path to the database file.
     tags : Iterable[Iterable[str]]
         A set of sets of tags - this function will return the union of items that have
@@ -80,7 +74,7 @@ def data_names(
 
     Returns
     -------
-    List[str]
+    list[str]
         A list of the names of items that were returned by the query.
     """
     if all:
