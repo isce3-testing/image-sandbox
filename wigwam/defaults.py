@@ -14,3 +14,8 @@ def install_prefix() -> Path:
 def build_prefix() -> Path:
     """Returns the build system's default build prefix path."""
     return Path("/tmp/build")
+
+
+def default_workflowdata_path() -> Path:
+    """The default workflowdata.json path"""
+    return Path("workflowdata.json")

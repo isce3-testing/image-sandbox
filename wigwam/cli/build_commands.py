@@ -26,6 +26,7 @@ def init_build_parsers(subparsers: argparse._SubParsersAction) -> None:
         cmake-config,
         cmake-compile,
         cmake-install,
+        make-distrib,
     and more are being added.
 
     Parameters
